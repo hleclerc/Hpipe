@@ -1,0 +1,18 @@
+main = (
+    ( 'a' { os << *data; } ) |
+    any
+)**
+
+beg_test basic include read
+    input
+        ababaaa
+    output
+        aaaaa status=OK
+end_test
+
+beg_training
+    input
+        ababaaa
+    freq
+        1
+end_training

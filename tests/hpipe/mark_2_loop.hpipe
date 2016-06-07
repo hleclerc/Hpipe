@@ -1,0 +1,15 @@
+main = ( ( any { os << *data; } 'b' ) | ( any any ) )* 'c'
+
+beg_test 1
+    input
+        abc
+    output
+        a status=OK
+end_test
+
+beg_test 2
+    input
+        ababc
+    output
+        aa status=OK
+end_test

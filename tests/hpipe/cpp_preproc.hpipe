@@ -1,0 +1,22 @@
+
+inc_i =
+    '@<' ( any add_str[ "res" ] )* '>' { os << "(" << res << ")"; } clr_str[ "res" ] #
+
+inc_s =
+    '@{' ( any add_str[ "res" ] )* '}' { os << "(" << res << ")"; } clr_str[ "res" ] #
+
+main = (
+    inc_i |
+    inc_s |
+    any
+)**
+
+beg_test basic include read
+    input
+        @<ab>
+        @<cd>
+        @<@ef>
+        @<g@h>
+    output
+        (ab)(cd)(@ef)(g@h) status=OK
+end_test

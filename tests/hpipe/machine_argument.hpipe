@@ -1,0 +1,10 @@
+foo[ arg, val = 120, xsq = 43 ] = { os << "arg val xsq"; }
+bar = "baz"
+
+main = foo[ bar, 17 ]
+
+beg_test basic include read
+    input
+    output
+        baz 17 43 status=OK
+end_test

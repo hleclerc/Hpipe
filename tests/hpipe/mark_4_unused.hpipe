@@ -1,0 +1,18 @@
+
+ifdef  = '#' ' '++ ( any - ' ' add_str[ "res" ] )** { os << res; } clr_str[ "res" ]
+
+main = ( ifdef | any )**
+
+beg_test 1
+    input
+        #  foo
+    output
+        foo status=OK
+end_test
+
+beg_training
+    input
+        # foo
+    freq
+        1
+end_training

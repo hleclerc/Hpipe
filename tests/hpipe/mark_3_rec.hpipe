@@ -1,0 +1,17 @@
+main = 'a' { os << '1' << *data; } (
+    ( 'b' { os << '2' << *data; } 'c' ) | ( 'b' any )
+)* 'c' { os << '3' << *data; }
+
+beg_test 1
+    input
+        abcbcbdc
+    output
+        1a2b2b3c status=OK
+end_test
+
+beg_training
+    input
+        abcbcbdc
+    freq
+        1
+end_training

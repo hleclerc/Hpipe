@@ -1,0 +1,8 @@
+main = 'a' { os << '1' << *data; } 'b' { os << '2' << *data; }
+
+beg_test 1
+    input
+        ab
+    output
+        1a2b status=OK
+end_test

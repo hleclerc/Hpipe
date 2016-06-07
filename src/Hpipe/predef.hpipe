@@ -1,0 +1,148 @@
+# char sets
+any       = 0 .. 255 # Any character in the alphabet.
+ascii     = 0 .. 127 # Ascii characters. 0..127
+extend    = 0 .. 255 # Ascii extended characters. This is the range -128..127 for signed alphabets and the range 0..255 for unsigned alphabets.
+lower     = 'a' .. 'z' # Lowercase characters. [a-z]
+upper     = 'A' .. 'Z' # Uppercase characters. [A-Z]
+digit     = '0' .. '9' # Digits. [0-9]
+alpha     = upper | lower # Alphabetic characters. [A-Za-z]
+alnum     = digit | alpha # Alpha numerics. [0-9A-Za-z]
+xdigit    = digit | 'A' .. 'F' | 'a' .. 'f' # Hexadecimal digits. [0-9A-Fa-f]
+cntrl     = 0 .. 31 # Control characters. 0..31
+graph     = '!' .. '~' # Graphical characters. [!-~]
+print     = ' ' .. '~' # Printable characters. [ -~]
+punct     = '!' .. '/' | ':' .. '@' | ']' .. '`' | '{' .. '~' # Punctuation. Graphical characters that are not alphanumerics.
+null      = 0
+tab       = 9  # tabulation
+lf        = 10 # line feed
+vert_tab  = 11 # vertical tab
+ff        = 12 # form feed
+cr        = 13 # carriage return
+eol       = cr? lf # unix or window$ end line
+space     = tab | lf | vert_tab | ff | cr | ' ' # [\\t\\v\\f\\n\\r ]
+hspace    = tab | ' ' # [\\t\\v\\f\\n\\r ]
+zlen      = '' # Zero length string
+base64    = alnum | '+' | '/' | '='
+backslash = '\'
+end       = { end: inp_cont = &&end; return false; } any** #
+
+
+
+# mandatory arg: val (e.g. uint[ content_length ])
+uint[ val, type = 'unsigned long' ] =
+    add_attr[ 'type val;' 'sipe_data->val = 0' ]
+    digit { sipe_data->val = *data - '0'; }
+    ( digit { sipe_data->val = 10 * sipe_data->val + ( *data - '0' ); } )**
+
+# print a char
+p[ msg = '' ] =
+    add_prel[ '#ifdef SIPE_MAIN' ]
+    add_prel[ '#include <iostream>' ]
+    add_prel[ '#endif // SIPE_MAIN' ]
+    { std::cout << "msg" << std::endl; }
+
+# print "val -> $sipe_data->val"
+i[ val ] =
+    add_prel[ '#ifdef SIPE_MAIN' ]
+    add_prel[ '#include <iostream>' ]
+    add_prel[ '#endif // SIPE_MAIN' ]
+    { std::cout << "val -> '" << sipe_data->val << "'" << std::endl; }
+
+# print a value (by default, print current char)
+d[ __val__ ] =
+    add_prel[ '#ifdef SIPE_MAIN' ]
+    add_prel[ '#include <iostream>' ]
+    add_prel[ '#endif // SIPE_MAIN' ]
+    { std::cout << sipe_data->__val__; }
+
+# print a value (by default, print current char)
+c =
+    add_prel[ '#ifdef SIPE_MAIN' ]
+    add_prel[ '#include <iostream>' ]
+    add_prel[ '#endif // SIPE_MAIN' ]
+    { std::cout << *data; }
+
+# should be followed by a stoping condition (e.g. ' ')
+word[ __var__ ] =
+    add_prel[ '#ifdef SIPE_MAIN' ]
+    add_prel[ '#include <string>' ]
+    add_prel[ '#endif // SIPE_MAIN' ]
+    add_attr[ 'std::string __var__;' ]
+    { sipe_data->__var__.clear(); }
+    ( any { sipe_data->__var__ += *data; } )*
+
+eword[ __var__, __end__ ] =
+    add_attr[ 'std::string __var__;' ]
+    { sipe_data->__var__.clear(); }
+    ( any - '__end__' { sipe_data->__var__ += *data; } )**
+
+
+# read binary int little endian
+uint8_bin_le[ __val__ ] =
+    add_attr[ 'unsigned char __val__;' 'sipe_data->__val__ = 0;' ]
+    any { sipe_data->__val__  = *reinterpret_cast<const unsigned char *>( data ) <<  0; }
+
+# read binary int little endian
+uint16_bin_le[ __val__ ] =
+    add_attr[ 'unsigned short __val__;' 'sipe_data->__val__ = 0;' ]
+    any { sipe_data->__val__  = *reinterpret_cast<const unsigned char *>( data ) <<  0; }
+    any { sipe_data->__val__ += *reinterpret_cast<const unsigned char *>( data ) <<  8; }
+
+# read binary int little endian
+uint32_bin_le[ __val__ ] =
+    add_attr[ 'unsigned __val__;' 'sipe_data->__val__ = 0;' ]
+    any { sipe_data->__val__  = *reinterpret_cast<const unsigned char *>( data ) <<  0; }
+    any { sipe_data->__val__ += *reinterpret_cast<const unsigned char *>( data ) <<  8; }
+    any { sipe_data->__val__ += *reinterpret_cast<const unsigned char *>( data ) << 16; }
+    any { sipe_data->__val__ += *reinterpret_cast<const unsigned char *>( data ) << 24; }
+
+# read binary int little endian
+uint64_bin_le[ __val__, __type__ = 'quint64' ] =
+    add_attr[ '__type__ __val__;' 'sipe_data->__val__ = 0;' ]
+    any { sipe_data->__val__  = (__type__)*reinterpret_cast<const unsigned char *>( data ) <<  0; }
+    any { sipe_data->__val__ += (__type__)*reinterpret_cast<const unsigned char *>( data ) <<  8; }
+    any { sipe_data->__val__ += (__type__)*reinterpret_cast<const unsigned char *>( data ) << 16; }
+    any { sipe_data->__val__ += (__type__)*reinterpret_cast<const unsigned char *>( data ) << 24; }
+    any { sipe_data->__val__ += (__type__)*reinterpret_cast<const unsigned char *>( data ) << 32; }
+    any { sipe_data->__val__ += (__type__)*reinterpret_cast<const unsigned char *>( data ) << 40; }
+    any { sipe_data->__val__ += (__type__)*reinterpret_cast<const unsigned char *>( data ) << 48; }
+    any { sipe_data->__val__ += (__type__)*reinterpret_cast<const unsigned char *>( data ) << 56; }
+
+# read binary int little endian
+int64_bin_le[ __val__, __type__ = 'qint64' ] =
+    add_attr[ '__type__ __val__;' 'sipe_data->__val__ = 0;' ]
+    any { sipe_data->__val__  = (__type__)*reinterpret_cast<const unsigned char *>( data ) <<  0; }
+    any { sipe_data->__val__ += (__type__)*reinterpret_cast<const unsigned char *>( data ) <<  8; }
+    any { sipe_data->__val__ += (__type__)*reinterpret_cast<const unsigned char *>( data ) << 16; }
+    any { sipe_data->__val__ += (__type__)*reinterpret_cast<const unsigned char *>( data ) << 24; }
+    any { sipe_data->__val__ += (__type__)*reinterpret_cast<const unsigned char *>( data ) << 32; }
+    any { sipe_data->__val__ += (__type__)*reinterpret_cast<const unsigned char *>( data ) << 40; }
+    any { sipe_data->__val__ += (__type__)*reinterpret_cast<const unsigned char *>( data ) << 48; }
+    any { sipe_data->__val__ += (__type__)*reinterpret_cast<const unsigned char *>( data ) << 56; }
+
+# read a string (char *)
+str_sized[ __val__, __len__, __type__ = "std::string" ] =
+    add_attr[ '__type__ __val__;' ]
+    add_attr[ 'int __val___rem;' ]
+    {
+        sipe_data->__val___rem = __len__;
+        sipe_data->__val__.clear();
+        sipe_data->__val__.reserve( __len__ );
+    jmp_rd___val__$$$uid$$$:
+        if ( not sipe_data->__val___rem )
+            goto end_rd___val__$$$uid$$$;
+        if ( ++data >= end ) {
+            sipe_data->_inp_cont = &&cnt_rd___val__$$$uid$$$;
+            return 0;
+        }
+    cnt_rd___val__$$$uid$$$:
+            sipe_data->__val__ += *data;
+            --sipe_data->__val___rem;
+            goto jmp_rd___val__$$$uid$$$;
+    end_rd___val__$$$uid$$$: ;
+    }
+
+# size 32 bits then data
+str_32[ __len__ = 'len', __str__ = 'str' ] =
+    uint32_bin_le[ '__len__' ]
+    str_sized[ __str__, 'sipe_data->__len__' ]

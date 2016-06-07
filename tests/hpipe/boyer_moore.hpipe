@@ -1,0 +1,94 @@
+# main = (
+#     ( eof -> out ) |
+#     ( 'gravida'     { ++nb_gravida;     } ) |
+#     ( 'consectetur' { ++nb_consectetur; } ) |
+#     any
+# )** <- out { os << nb_gravida << " " << nb_consectetur; }
+# main = (
+#     ( 'g' { ++nb_gravida;     } ) |
+#     ( 'c' { ++nb_consectetur; } ) |
+#     any
+# )* eof { os << nb_gravida << " " << nb_consectetur; }
+# main = (
+#     ( eof -> out ) |
+#     #( 'gravida'     { ++nb_gravida;     } ) |
+#     #( 'consectetur' { ++nb_consectetur; } ) |
+#     ( 'gra' { ++nb_gravida;     } ) |
+#     ( 'con' { ++nb_consectetur; } ) |
+#     any
+# )** <- out { os << nb_gravida << " " << nb_consectetur; }
+main = (
+    ( 'bcdefghi' { /*os << "a";*/ cpt += 1; } ) |
+    # ( 'def' { os << "c"; } ) |
+    any
+)** { return cpt; }
+
+
+beg_methods
+    unsigned nb_gravida     = 0;
+    unsigned nb_consectetur = 0;
+end_methods
+
+# beg_test lorem_ipsum
+#     input
+#         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed lobortis venenatis vehicula. Vestibulum convallis ante tellus, non molestie velit finibus ut. Cras vestibulum cursus blandit. Mauris varius purus ut leo hendrerit, eget cursus tortor aliquam. Vestibulum varius, turpis eget iaculis suscipit, libero urna placerat massa, quis sodales odio nisi at est. Nulla sollicitudin posuere ligula nec volutpat. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Mauris porta turpis a gravida venenatis. Vestibulum nec nulla et dui vulputate mattis at id velit.
+#         Praesent aliquam iaculis viverra. Aliquam justo urna, venenatis a suscipit posuere, imperdiet ac velit. Etiam id risus sed risus bibendum placerat non viverra enim. Nam feugiat fringilla nisl sed volutpat. Donec vehicula, dolor nec ullamcorper dignissim, mauris dolor malesuada justo, eu dignissim arcu elit non felis. Vestibulum malesuada finibus congue. Cras non mauris neque. Phasellus imperdiet turpis erat, hendrerit interdum mauris efficitur in. Donec cursus elit et erat maximus fringilla. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Praesent tempor ac neque a tristique. Cras iaculis fringilla mauris vel tristique. Vivamus eget sodales diam. In eu leo vestibulum, mollis quam sed, dapibus purus. Phasellus in ultricies neque. Vestibulum ac pellentesque lacus.
+#         Sed maximus augue vel maximus tempus. Curabitur ante metus, iaculis accumsan sapien ac, viverra vulputate magna. Mauris mauris nibh, cursus sit amet commodo in, vulputate in odio. Maecenas erat mauris, ultricies vel risus a, tempor finibus quam. Sed euismod, nibh at efficitur porta, lacus elit maximus mi, eget cursus ante justo a ex. Nunc in ante ut nibh rutrum rhoncus. Aliquam ex arcu, pretium ut facilisis a, interdum in eros.
+#         Sed lobortis varius dolor, non tincidunt ex hendrerit vitae. Morbi gravida est in maximus posuere. Morbi posuere, arcu ac dignissim dictum, odio turpis efficitur nisi, quis maximus mi dolor sed ex. Praesent tempus purus gravida tellus facilisis commodo. Donec dui quam, interdum non vulputate et, cursus gravida odio. Phasellus posuere malesuada dolor, in gravida arcu commodo pellentesque. Mauris placerat pellentesque elit sit amet euismod. Nunc elementum turpis mauris, sit amet mollis nisi suscipit ac. Aenean eleifend faucibus nibh, id pulvinar metus porttitor maximus. Pellentesque vel sollicitudin elit, et ornare neque. Morbi egestas tellus nunc, sit amet maximus ante tincidunt et.
+#         Morbi finibus orci nunc, vitae lacinia velit condimentum eget. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec ex diam, maximus a sagittis sit amet, vestibulum ut augue. Duis quam eros, elementum ullamcorper lectus nec, molestie mollis nibh. Suspendisse vel vulputate nibh. Curabitur lacinia tellus non facilisis sollicitudin. Nam imperdiet lacus sed malesuada volutpat. Phasellus consequat, nisi sit amet vestibulum mattis, nibh arcu cursus ligula, at cursus tellus lorem quis augue. Praesent et leo ac ligula lobortis consectetur a eget ante. Duis quam ex, rhoncus in efficitur sit amet, tempor nec ex. Nunc pretium dolor ac pretium laoreet. Cras eu vestibulum quam.
+#     output
+#         5 3 status=OK
+# end_test
+
+beg_test lorem_ipsum
+    input
+        abababaccccccccabcab
+    output
+        aaaaa status=OK
+end_test
+
+beg_training
+    input
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    freq
+        1
+end_training

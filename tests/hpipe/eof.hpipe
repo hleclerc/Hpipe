@@ -1,0 +1,8 @@
+main = ( 'a' )** { os << *data; } { os << *data; }
+
+beg_test 1
+    input
+        aaaa
+    output
+        aa status=OK
+end_test

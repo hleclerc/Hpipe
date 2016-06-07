@@ -1,0 +1,27 @@
+main = { os << "B"; }
+(
+    ( ( 'a' .. 'd' { os << *data << '1'; } )* 'e' { os << 'E'; } ) |
+    ( ( 'a' .. 'd' { os << *data << '2'; } )* 'f' { os << 'F'; } ) |
+    'a' .. 'd'
+)* 'g'
+
+beg_test 1
+    input
+        abceg
+    output
+        Ba1b1c1E status=OK
+end_test
+
+beg_test 2
+    input
+        cbafg
+    output
+        Bc2b2a2F status=OK
+end_test
+
+beg_training
+    input
+        abcef
+    freq
+        1
+end_training

@@ -1,0 +1,15 @@
+main = 'a' .. 'z' { os << '1' << *data; } any { os << '2' << *data; } 'c' { os << '3' << *data; }
+
+beg_test 1
+    input
+        abc
+    output
+        1a2b3c status=OK
+end_test
+
+beg_test 2
+    input
+        abd
+    output
+        status=KO
+end_test

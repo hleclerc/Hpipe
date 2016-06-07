@@ -1,0 +1,16 @@
+# main = '<' ( ( any { os << *data; } ) | "a" )* '>'
+main = '<' ( any { os << *data; } )* '>'
+
+beg_test basic include read
+    input
+        <foo>
+    output
+        foo status=OK
+end_test
+
+beg_training
+    input
+        <foo>
+    freq
+        1
+end_training

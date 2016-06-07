@@ -1,0 +1,111 @@
+# strings
+char   = "'" ( "\\" | "\'" | ( "'" -> out_char   ) | any )** <- out_char
+string = '"' ( '\\' | '\"' | ( '"' -> out_string ) | any )** <- out_string
+
+# comments
+com_l  = '//' ( any - lf )**
+com_b  = '/*' any* '*/'
+s_com  = hspace | com_b
+
+# preprocessor
+variable[ shmurtz ] = ( alpha | '_' ) clr_str[ shmurtz ] add_str[ shmurtz ] ( alnum | '_' add_str[ shmurtz ] )**
+var_any[ shmurtz ] = clr_str[ shmurtz ] ( any add_str[ shmurtz ] )*
+
+if_content[ func_name = "_if" ] = (
+        ( backslash cr? lf { arg += "\n"; } ) | # continue to the next line
+        ( lf | eof | "//" -> out_if_content ) |
+        ( any add_str[ "arg" ] )
+    )** <- out_if_content { func_name( std::move( arg ) ); } clr_str[ "arg" ]
+
+preproc_word =
+    add_include[ "Hpipe/Vec.h" ]
+    add_include[ "map" ]
+    ( 'ifdef'  s_com* variable[ "res" ] { _ifdef ( res ); } ) |
+    ( 'ifndef' s_com* variable[ "res" ] { _ifndef( res ); } ) |
+    ( 'define' s_com* variable[ "res" ]
+        (
+            '(' { cur_args_define.clear(); }
+            (
+                ( ')' { cur_args_define.emplace_back( arg ); } clr_str[ "arg" ]; -> out_define_args ) |
+                ( ',' { cur_args_define.emplace_back( arg ); } clr_str[ "arg" ]; ) |
+                ( any add_str[ "arg" ] )
+            )** <- out_define_args
+        )?? (
+            ( backslash cr? lf { arg += "\n"; } ) | # continue to the next line
+            ( lf | "//" -> out_define_content ) |
+            ( any add_str[ "arg" ] )
+        )** <- out_define_content { _define( res, std::move( cur_args_define ), std::move( arg ) ); } clr_str[ "arg" ]
+    ) |
+    ( 'if' s_com+ if_content ) |
+    ( 'include' s_com* '<' var_any[ "res" ] '>' { _include( res, true ); } ) |
+    ( 'include' s_com* '"' var_any[ "res" ] '"' { _include( res, false ); } ) |
+    ( 'endif' { _endif(); } ) |
+    ( 'else' { _else(); } )
+
+preproc = '#' s_com** preproc_word
+
+main = (
+    char    |
+    string  |
+    preproc |
+    any
+)**
+
+beg_methods
+    struct Define {
+        Define( Hpipe::Vec<std::string> &&variables, std::string &&content ) : variables( std::move( variables ) ), content( std::move( content ) ) {}
+        Hpipe::Vec<std::string> variables;
+        std::string content;
+    };
+
+    template<class Str> void _if( const Str &var ) { os << var; }
+    template<class Str> void _ifdef( const Str &var ) { if ( not defines.count( var ) ) ++nb_neg_preproc; }
+    template<class Str> void _ifndef( const Str &var ) { if ( defines.count( var ) ) ++nb_neg_preproc; }
+    template<class Str,class Vec> void _define( Str &&var, Vec &&args, std::string &&content = {} ) {
+        // os << var << "(" << values( args ) << ") ";
+        std::cout << "content: " << content << std::endl;
+        if ( not nb_neg_preproc )
+            defines.insert( decltype( defines )::value_type{ var, { std::move( args ), std::move( content ) } } );
+    }
+    template<class Str> void _include( const Str &var, bool ext ) {
+        if ( not nb_neg_preproc )
+            os << "include " << ( ext ? '<' : '"' ) << var << ( ext ? '>' : '"' ) << " ";
+    }
+    void _endif() { if ( nb_neg_preproc ) --nb_neg_preproc; }
+    void _else() { if ( nb_neg_preproc == 1 ) nb_neg_preproc = 0; else if ( nb_neg_preproc == 0 ) nb_neg_preproc = 1; }
+
+    std::map<std::string,Define> defines;
+    Hpipe::Vec<std::string> cur_args_define;
+    int nb_neg_preproc = 0;
+end_methods
+
+beg_test preproc
+    input
+        #include <a.h>
+        #include "b.h"
+        "#ifdef <c.h>"
+        #define DEFINED
+        #ifdef DEFINED
+            #ifdef bar
+                #define NOT_DEFINED // not defined
+                #include "d.h"
+            #else
+                #include "e.h"
+            #endif
+            #include "f.h"
+        #endif
+
+        #ifndef NOT_DEFINED
+            #include <g.h>
+        #else
+            #include <h.h>
+        #endif
+
+        #define def_with_args( a, b ) toto \
+           tata
+        foo();
+
+        #if 1 > 0
+    output
+        include <a.h> include "b.h" include "e.h" include "f.h" include <g.h> 1 > 0 status=OK
+end_test

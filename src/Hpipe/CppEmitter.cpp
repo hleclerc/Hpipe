@@ -1,0 +1,374 @@
+#include "InstructionNextChar.h"
+#include "FindVarInCode.h"
+#include "CppEmitter.h"
+#include "StreamSep.h"
+#include "Assert.h"
+#include <algorithm>
+#include <string.h>
+#include <fstream>
+
+namespace Hpipe {
+
+CppEmitter::CppEmitter( InstructionGraph *sg ) : root( sg->root() ), sg( sg ) {
+    // default values
+    end_char         = 0;
+    buffer_type      = HPIPE_BUFFER;
+    test_mode        = false;
+    inst_to_go_if_ok = 0;
+    rewind_rec_level = 0;
+
+    // update variables, max_mark_level, size_save_...
+    max_mark_level = 0;
+    size_save_glo  = 0;
+    size_save_loc  = 0;
+
+    ++Instruction::cur_op_id;
+    root->apply_rec_rewind_l( [&]( Instruction *inst, unsigned rewind_level ) {
+        if ( inst->is_a_mark() )
+            max_mark_level = std::max( max_mark_level, rewind_level + 1 );
+        inst->reg_var( [&]( std::string type, std::string name ) {
+            variables[ name ].type = type;
+        } );
+        if ( inst->save_in_loc_reg() >= 0 ) {
+            unsigned &si = rewind_level ? size_save_loc : size_save_glo;
+            si = std::max( si, unsigned( inst->save_in_loc_reg() + 1 ) );
+        }
+    } );
+}
+
+void CppEmitter::write_constants( StreamSepMaker &ss ) {
+    ss << "// constants";
+    ss << "static const unsigned RET_CONT = 0;";
+    ss << "static const unsigned RET_OK   = 1;";
+    ss << "static const unsigned RET_KO   = 2;";
+}
+
+void CppEmitter::write_hpipe_data( StreamSepMaker &ss, const std::string &name ) {
+    ss << "struct " << name << " {";
+    if ( interruptible() ) {
+        ss << "    " << name << "() : inp_cont( 0 ) {}";
+        if ( max_mark_level ) {
+            ss << "    Hpipe::Buffer       *pending_buf; ///< if we need to add the current buffer to a previous one";
+            ss << "    Hpipe::Buffer       *rw_buf;";
+            ss << "    const unsigned char *rw_ptr;";
+        }
+        if ( size_save_glo )
+            ss << "    unsigned char __save[ " << size_save_glo << " ];";
+        ss << "    void *inp_cont;";
+    }
+    for( auto &p : variables )
+        ss << "    " << p.second.type << " " << p.first << ";";
+    ss << "};";
+}
+
+void CppEmitter::write_parse_function( StreamSepMaker &ss, const std::string &hpipe_data_name, const std::string &func_name ) {
+    StreamSepMaker nss( *ss.stream, ss.beg + "    " );
+
+    std::string m = sg->methods();
+    if ( m.size() )
+        ss << m;
+
+    switch ( buffer_type ) {
+    case HPIPE_BUFFER:
+        ss << "unsigned " << func_name << "( " << hpipe_data_name << " *sipe_data, Hpipe::Buffer *buf, bool last_buf = false ) {";
+        nss << "const unsigned char *data = buf->data, *end_m1 = buf->data - 1 + buf->used" << ( max_mark_level > 1 ? ", *rw_ptr[" + to_string( max_mark_level - 1 ) + "]" : "" ) << ";";
+        break;
+    case BEGEND:
+        ss << "unsigned " << func_name << "( " << hpipe_data_name << " *sipe_data, const unsigned char *data, const unsigned char *end_m1 ) {";
+        if ( max_mark_level )
+            nss << "const unsigned char *rw_ptr[ " << to_string( max_mark_level ) << " ]" << ";";
+        break;
+    case C_STR:
+        ss << "unsigned " << func_name << "( " << hpipe_data_name << " *sipe_data, const unsigned char *data ) {";
+        if ( max_mark_level )
+            nss << "const unsigned char *rw_ptr[ " << to_string( max_mark_level ) << " ]" << ";";
+        break;
+    }
+
+    if ( size_save_loc or ( size_save_glo and not interruptible() ) )
+        ss << "    unsigned char save[ " << std::max( size_save_loc, size_save_glo ) << " ];";
+    if ( test_mode )
+        ss << "    unsigned cpt = 0;";
+    if ( buffer_type == HPIPE_BUFFER and max_mark_level > 1 )
+        ss << "    Hpipe::Buffer *rw_buf[ " << max_mark_level - 1 << " ];";
+    if ( interruptible() ) {
+        ss << "    if ( sipe_data->inp_cont )";
+        ss << "        goto *sipe_data->inp_cont;";
+    }
+
+    nb_cont_label = 0;
+    nb_id_gen     = 0;
+    write_parse_body( nss, root );
+
+    ss << "}";
+}
+
+
+void CppEmitter::write_parse_body( StreamSepMaker &ss, Instruction *root ) {
+    std::ostringstream end_stream;
+    StreamSepMaker es( end_stream, ss.beg );
+
+    // ordering
+    ++Instruction::cur_op_id;
+    Vec<Instruction *> ordering;
+    get_ordering( ordering, root );
+
+    // update id_gen (for now, we set id_gen only for transition to the "past" -- in ordering)
+    for( Instruction *inst : ordering )
+        inst->id_gen = 0;
+    for( Instruction *inst : ordering )
+        for( Transition &t : inst->next )
+            if ( t.inst->num_ordering <= inst->num_ordering and not t.inst->id_gen )
+                t.inst->id_gen = ++nb_id_gen;
+
+    // go
+    for( Instruction *inst : ordering ) {
+        // write a label if neceassary
+        if ( inst->id_gen )
+            ss.rm_beg( 2 ) << "l_" << inst->id_gen << ":";
+
+        //
+        inst->write_cpp( ss, es, this );
+    }
+
+    *ss.stream << end_stream.str();
+}
+
+void CppEmitter::get_ordering( Vec<Instruction *> &ordering, Instruction *inst ) {
+    if ( inst->op_id == Instruction::cur_op_id )
+        return;
+    inst->op_id = Instruction::cur_op_id;
+
+    inst->num_ordering = ordering.size();
+    inst->id_gen = 0;
+
+    ordering << inst;
+
+    for( Transition &t : inst->next )
+        get_ordering( ordering, t.inst );
+}
+
+int CppEmitter::test( const std::vector<Lexer::TestData> &tds ) {
+    test_mode = true;
+
+    std::ofstream fout( "out.cpp" );
+    StreamSepMaker ss( fout );
+    StreamSepMaker ns( fout, "    " );
+    ss << "#define HPIPE_CHECK_ALIVE_BUF";
+    ss << "#define HPIPE_TEST";
+    ss << "";
+    ss << "#include <Hpipe/CbStringPtr.h>";
+    ss << "#include <Hpipe/Print.h>";
+    ss << "#include <iostream>";
+    ss << "#include <sstream>";
+    if ( not sg->cg->includes.empty() ) {
+        ss << "";
+        for( std::string inc : sg->cg->includes )
+            ss << "#include <" << inc << ">";
+    }
+    ss << "";
+    ss << "int Hpipe::Buffer::nb_alive_bufs = 0;";
+    for( buffer_type = 0; buffer_type < 3; ++buffer_type ) {
+        ss << "";
+        ss << "struct Test_" << buffer_type << " {";
+
+        write_constants     ( ns );
+        write_hpipe_data    ( ns );
+        write_parse_function( ns );
+
+        ss << "    int exec( const unsigned char *name, const unsigned char *data, unsigned size, std::string expected ) {";
+        switch ( buffer_type ) {
+        case HPIPE_BUFFER:
+            ss << "        int res = RET_CONT;";
+            ss << "        HpipeData hd;";
+            ss << "        for( unsigned i = 0; i < size; ++i ) {";
+            ss << "            Hpipe::Buffer *buf = Hpipe::Buffer::New( 1 );";
+            ss << "            buf->data[ 0 ] = data[ i ];";
+            ss << "            buf->used = 1;";
+            ss << "            ";
+            ss << "            res = parse( &hd, buf, i + 1 == size );";
+            ss << "            Hpipe::dec_ref( buf );";
+            ss << "            ";
+            ss << "            if ( res != RET_CONT )";
+            ss << "                break;";
+            ss << "        }";
+            ss << "        if ( not size ) {";
+            ss << "            Hpipe::Buffer *buf = Hpipe::Buffer::New( 0 );";
+            ss << "            res = parse( &hd, buf, true );";
+            ss << "            Hpipe::dec_ref( buf );";
+            ss << "        }";
+            ss << "        switch ( res ) {";
+            ss << "        case RET_CONT: if ( os.str().size() ) os << ' '; os << \"status=CNT\"; break;"; //
+            ss << "        case RET_OK  : if ( os.str().size() ) os << ' '; os << \"status=OK\" ; break;";
+            ss << "        case RET_KO  : if ( os.str().size() ) os << ' '; os << \"status=KO\" ; break;";
+            ss << "        }";
+            ss << "        if ( Hpipe::Buffer::nb_alive_bufs ) os << \" nb_remaining_bufs=\" << Hpipe::Buffer::nb_alive_bufs;";
+            break;
+        case BEGEND:
+            ss << "        HpipeData hd;";
+            ss << "        switch ( parse( &hd, data, data + size - 1 ) ) {";
+            ss << "        case RET_CONT: if ( os.str().size() ) os << ' '; os << \"status=CNT\"; break;"; //
+            ss << "        case RET_OK  : if ( os.str().size() ) os << ' '; os << \"status=OK\" ; break;";
+            ss << "        case RET_KO  : if ( os.str().size() ) os << ' '; os << \"status=KO\" ; break;";
+            ss << "        }";
+            break;
+        case C_STR:
+            ss << "        HpipeData hd;";
+            ss << "        switch ( parse( &hd, data ) ) {";
+            ss << "        case RET_CONT: if ( os.str().size() ) os << ' '; os << \"status=CNT\"; break;"; //
+            ss << "        case RET_OK  : if ( os.str().size() ) os << ' '; os << \"status=OK\" ; break;";
+            ss << "        case RET_KO  : if ( os.str().size() ) os << ' '; os << \"status=KO\" ; break;";
+            ss << "        }";
+            break;
+        }
+        ss << "        std::cout << \"  \" << name << \" -> \" << ( os.str() == expected ? \"(OK) \" : \"(BAD) \" ) << os.str() << std::endl;";
+        ss << "        return os.str() != expected;";
+        ss << "    }";
+        ss << "    std::ostringstream os;";
+        ss << "    unsigned cpt = 0;";
+        ss << "};";
+    }
+
+
+    ss << "int main() {";
+    for( const Lexer::TestData &td : tds ) {
+        *ss.stream << "    static unsigned char name_" << &td << "[] = { "; for( char c : td.name ) *ss.stream << (int)c << ","; *ss.stream << " 0 };\n";
+        *ss.stream << "    static unsigned char inp_"  << &td << "[] = { "; for( char c : td.inp  ) *ss.stream << (int)c << ","; *ss.stream << " 0 };\n";
+        *ss.stream << "    static unsigned char out_"  << &td << "[] = { "; for( char c : td.out  ) *ss.stream << (int)c << ","; *ss.stream << " 0 };\n";
+    }
+    ss << "    int res = 0;";
+    for( const Lexer::TestData &td : tds )
+        for( unsigned i = 0; i < 3; ++i)
+            ss << "    res |= Test_" << i << "().exec( name_" << &td << ", inp_" << &td << ", " << td.inp.size() << ", std::string( (const char *)out_" << &td << ", " << td.out.size() << " ) );";
+    ss << "    return res;";
+    ss << "}";
+    fout.close();
+
+    return system( "g++ -g3 -std=c++14 -Isrc/ -o out out.cpp && ./out" );
+}
+
+
+bool _exec( std::string cmd, bool disp = true ) {
+    if ( disp )
+        PRINT( cmd );
+    return system( cmd.c_str() ) == 0;
+}
+
+bool CppEmitter::bench( const std::vector<Lexer::TrainingData> &tds, int type ) {
+    test_mode = true;
+
+    std::ofstream fout( "bench.cpp" );
+    StreamSepMaker ss( fout );
+    StreamSepMaker ns( fout, "    " );
+    ss << "#include <Hpipe/CbStringPtr.h>";
+    ss << "#include <Hpipe/Print.h>";
+    ss << "#include <iostream>";
+    ss << "#include <sstream>";
+    ss << "#include <ctime>";
+    ss << "";
+    // ss << "#define HPIPE_TEST";
+    for( buffer_type = 0; buffer_type < 3; ++buffer_type ) {
+        ss << "";
+        ss << "struct Bench_" << buffer_type << " {";
+
+        write_constants     ( ns );
+        write_hpipe_data    ( ns );
+        write_parse_function( ns );
+
+        ss << "    void exec( const unsigned char *name, const unsigned char *data, unsigned size, const char *display ) {";
+        switch ( buffer_type ) {
+        case HPIPE_BUFFER:
+            ss << "        Hpipe::Buffer *buf = Hpipe::Buffer::New( size );";
+            ss << "        memcpy( buf->data, data, size );";
+            ss << "        buf->used = size;";
+            ss << "        auto t0 = std::clock();";
+            ss << "        for( unsigned var = 0; var < 1000000; ++var ) {";
+            ss << "            HpipeData hd;";
+            ss << "            parse( &hd, buf, true );";
+            ss << "        }";
+            ss << "        auto t1 = std::clock();";
+            ss << "        Hpipe::dec_ref( buf );";
+            break;
+        case BEGEND:
+            ss << "        auto t0 = std::clock();";
+            ss << "        for( unsigned var = 0; var < 1000000; ++var ) {";
+            ss << "            HpipeData hd;";
+            ss << "            parse( &hd, data, data - 1 + size );";
+            ss << "        }";
+            ss << "        auto t1 = std::clock();";
+            break;
+        case C_STR:
+            ss << "        auto t0 = std::clock();";
+            ss << "        for( unsigned var = 0; var < 1000000; ++var ) {";
+            ss << "            HpipeData hd;";
+            ss << "            parse( &hd, data );";
+            ss << "        }";
+            ss << "        auto t1 = std::clock();";
+            break;
+        }
+        ss << "        if ( display )";
+        ss << "            std::cout << name << \", \" << display << \" -> \" << double( t1 - t0 ) / CLOCKS_PER_SEC << std::endl;";
+        ss << "    }";
+        ss << "    std::ostringstream os;";
+        ss << "    unsigned cpt = 0;";
+        ss << "};";
+    }
+
+
+    ss << "int main( int argc, char **argv ) {";
+    for( const Lexer::TrainingData &td : tds ) {
+        *ss.stream << "    static unsigned char name_" << &td << "[] = { "; for( char c : td.name ) *ss.stream << (int)c << ","; *ss.stream << " 0 };\n";
+        *ss.stream << "    static unsigned char inp_"  << &td << "[] = { "; for( char c : td.inp  ) *ss.stream << (int)c << ","; *ss.stream << " 0 };\n";
+        *ss.stream << "    static double freq_"        << &td << " = " << td.freq << ";\n";
+    }
+    for( const Lexer::TrainingData &td : tds )
+        ss << "    Bench_1().exec( name_" << &td << ", inp_" << &td << ", " << td.inp.size() << ", argc > 1 ? argv[ 1 ] : 0 );";
+    ss << "}";
+    fout.close();
+
+    bool clang = false;
+    if ( clang ) {
+        std::string gpp = "clang++ -O3 -march=native -std=c++14 -Isrc/ -o bench bench.cpp";
+        return _exec( gpp ) && _exec( "echo without profile", false ) && _exec( "./bench 'without profile'" ) &&
+               _exec( gpp + " -fprofile-instr-generate" ) && _exec( "./bench -nodisp" ) &&
+               _exec( "llvm-profdata-3.8 merge -output=default.profdata default.profraw" ) &&
+               _exec( gpp + " -fprofile-instr-use"      ) && _exec( "./bench 'with profile'" );
+    }
+
+    std::string gpp = "g++ -O3 -march=native -std=c++14 -Isrc/ -o bench bench.cpp";
+    return _exec( gpp ) && _exec( "./bench 'without profile'" ) &&
+           _exec( gpp + " -fprofile-generate" ) && _exec( "./bench" ) &&
+           _exec( gpp + " -fprofile-use"      ) && _exec( "./bench 'with profile'" ); // -fno-reorder-blocks-and-partition
+}
+
+//void CppEmitter::write_code( StreamSepMaker &ss, std::string str, const std::string &repl ) {
+//    for( auto &p : variables ) {
+//        for( std::string::size_type pos = 0; ; ) {
+//            pos = find_var_in_code( str, p.first, pos );
+//            if ( pos == std::string::npos )
+//                break;
+//            str = str.replace( pos, 0, "sipe_data->" );
+//            pos += 11 + p.first.size();
+//        }
+//    }
+//    if ( repl.size() )
+//        str = repl_data( str, repl );
+
+//    ss << str;
+//}
+
+std::string CppEmitter::repl_data( std::string code, const std::string &repl ) {
+    using T = std::string::size_type;
+
+    for( T pos = 0; ; ) {
+        pos = find_var_in_code( code, "data", pos );
+        if ( pos == std::string::npos )
+            break;
+        code.replace( pos, 4, repl );
+        pos += repl.size();
+    }
+
+    return code;
+}
+
+} // namespace Hpipe

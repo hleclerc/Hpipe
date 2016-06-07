@@ -1,0 +1,308 @@
+read_dec[ num ] =
+    ( digit { num =            *data - '0'; } )
+    ( digit { num = 10 * num + *data - '0'; } )**
+
+read_hex[ num ] =
+    ( digit { num =            *data - '0'; } ) | ( 'A' .. 'F' { num =            *data - 'A'; } ) | ( 'a' .. 'f' { num =            *data - 'a'; } )
+    ( digit { num = 16 * num + *data - '0'; } ) | ( 'A' .. 'F' { num = 16 * num + *data - 'A'; } ) | ( 'a' .. 'f' { num = 16 * num + *data - 'a'; } )**
+
+number_hex =
+    '0x'
+    read_hex[ "num" ]
+    { ast_data.reg( new AstData::Node( AstData::NUMBER, num ), -1 ); }
+
+number_dec =
+    read_dec[ "num" ]
+    { ast_data.reg( new AstData::Node( AstData::NUMBER, num ), -1 ); }
+
+#number_flt =
+#    read_dec[ "nfl" ]
+#    '.' { mul = 1; } ( digit { nfl += ( mul *= 0.1 ) * ( *data - '0' );  } )**
+#    ( 'e' | 'E'
+#        ( '+'? read_dec[ "num" ] { nfl *= std::pow( 10.0,  num ); } ) |
+#        ( '-'  read_dec[ "num" ] { nfl *= std::pow( 10.0, -num ); } )
+#    )??
+#    { os << nfl << " "; }
+
+add = '+' { ast_data.reg( new AstData::Node( AstData::ADD ), AstData::GRP_ADD ); }
+mul = '*' { ast_data.reg( new AstData::Node( AstData::MUL ), AstData::GRP_MUL ); }
+
+main =
+    add_include[ "Hpipe/TypeConfig.h" ]
+    add_include[ "cmath" ]
+    (
+        ( eof -> out ) |
+        number_hex |
+        number_dec |
+        add |
+        mul |
+        any
+    )** <- out
+    { ast_data.make_hierarchy(); os << ast_data.eval(); }
+
+
+beg_methods
+    using ST = Hpipe::SI64;
+
+    struct AstData {
+        // operators
+        enum {
+            NUMBER ,
+
+            ADD_UNA,
+            SUB_UNA,
+            NOT_LOG,
+            NOT_BIN,
+
+            MUL    ,
+            DIV    ,
+            MOD    ,
+
+            ADD    ,
+            SUB    ,
+
+            SHL    ,
+            SHR    ,
+
+            INF    ,
+            INF_EQ ,
+            SUP    ,
+            SUP_EQ ,
+
+            EQU    ,
+            NEQ    ,
+
+            AND_BIN,
+
+            XOR_BIN,
+
+            OR_BIN ,
+
+            AND_LOG,
+
+            OR_LOG ,
+
+            TERNARY,
+        };
+        // groups
+        enum {
+            GRP_ADD_UNA =  0,
+            GRP_SUB_UNA =  0,
+            GRP_NOT_LOG =  0,
+            GRP_NOT_BIN =  0,
+
+            GRP_MUL     =  1,
+            GRP_DIV     =  1,
+            GRP_MOD     =  1,
+
+            GRP_ADD     =  2,
+            GRP_SUB     =  2,
+
+            GRP_SHL     =  3,
+            GRP_SHR     =  3,
+
+            GRP_INF     =  4,
+            GRP_INF_EQ  =  4,
+            GRP_SUP     =  4,
+            GRP_SUP_EQ  =  4,
+
+            GRP_EQU     =  5,
+            GRP_NEQ     =  5,
+
+            GRP_AND_BIN =  6,
+
+            GRP_XOR_BIN =  7,
+
+            GRP_OR_BIN  =  8,
+
+            GRP_AND_LOG =  9,
+
+            GRP_OR_LOG  = 10,
+
+            GRP_TERNARY = 11,
+
+            nb_grp = 12
+        };
+        // behavior
+        enum {
+            need_none = 0, need_larg = 1, need_rarg = 2, need_barg = 3
+        };
+        int behavior( int grp ) {
+            switch ( grp ) {
+            case GRP_ADD_UNA: return need_rarg;
+            case GRP_MUL:     return need_barg;
+            case GRP_ADD:     return need_barg;
+            case GRP_SHL:     return need_barg;
+            case GRP_INF:     return need_barg;
+            case GRP_EQU:     return need_barg;
+            case GRP_AND_BIN: return need_barg;
+            case GRP_XOR_BIN: return need_barg;
+            case GRP_OR_BIN:  return need_barg;
+            case GRP_AND_LOG: return need_barg;
+            case GRP_OR_LOG:  return need_barg;
+            case GRP_TERNARY: return need_barg;
+            }
+            return need_none;
+        }
+        struct Node {
+            Node( int type, ST val = 0 ) : parent{ 0 }, children{ 0, 0 }, prev_grp( 0 ), prev( 0 ), next( 0 ), type( type ), val( val ) {}
+            ST eval() {
+                switch ( type ) {
+                case NUMBER: return val;
+                case ADD:    return children[ 0 ]->eval() + children[ 1 ]->eval();
+                case MUL:    return children[ 0 ]->eval() * children[ 1 ]->eval();
+                }
+                return 0;
+            }
+            void write_to_stream( std::ostream &os ) const {
+                switch ( type ) {
+                case NUMBER: os << val;   break;
+                case ADD:    os << "add"; break;
+                case MUL:    os << "mul"; break;
+                }
+                if ( children[ 0 ] ) {
+                    children[ 0 ]->write_to_stream( os << "(" );
+                    if ( children[ 1 ] )
+                        children[ 1 ]->write_to_stream( os << "," );
+                    os << ")";
+                }
+            }
+            Node *children[ 2 ];
+            Node *prev_grp;
+            Node *parent;
+            Node *prev;
+            Node *next;
+            int   type;
+            ST    val;
+        };
+        AstData() : base( NUMBER, 0 ), last( &base ) {
+            for( int i = 0; i < nb_grp; ++i )
+                by_grp[ i ] = 0;
+        }
+
+        void reg( Node *node, int group ) {
+            if ( last ) {
+                last->next = node;
+                node->prev = last;
+            }
+            last = node;
+
+            if ( group >= 0 ) {
+                node->prev_grp = by_grp[ group ];
+                by_grp[ group ] = node;
+            }
+        }
+
+        bool err( Node *o, const std::string &msg ) {
+            std::cerr << msg << std::endl;
+            return false;
+        }
+
+        bool assemble_barg( Node *o, int need_left, int need_right ) {
+            if ( need_right and not o->next )
+                return err( o, "Operator needs a right expression." );
+            if ( need_left and not o->prev )
+                return err( o, "Operator needs a left expression." );
+            // prev
+            if ( o->prev->parent ) {
+                o->parent = o->prev->parent;
+                if ( o->prev->parent->children[ 0 ] == o->prev )
+                    o->prev->parent->children[ 0 ] = o;
+                else
+                    o->prev->parent->children[ 1 ] = o;
+            }
+            if ( o->prev->prev )
+                o->prev->prev->next = o;
+
+            o->children[ 0 ] = o->prev;
+            o->children[ 0 ]->parent = o;
+            o->prev = o->prev->prev;
+
+            o->children[ 0 ]->next = NULL;
+            o->children[ 0 ]->prev = NULL;
+
+            // next
+            if ( o->next->next )
+                o->next->next->prev = o;
+
+            o->children[ 1 ] = o->next;
+            o->children[ 1 ]->parent = o;
+            o->next = o->next->next;
+
+            o->children[ 1 ]->prev = NULL;
+            o->children[ 1 ]->next = NULL;
+
+            return true;
+        }
+
+        bool assemble_rarg( Node *o ) {
+            if ( not o->next )
+                return err( o, "Operator needs a right expression." );
+            if ( o->next->next )
+                o->next->next->prev = o;
+
+            o->children[ 0 ] = o->next;
+            o->children[ 0 ]->parent = o;
+            o->next = o->next->next;
+
+            o->children[ 0 ]->prev = NULL;
+            o->children[ 0 ]->next = NULL;
+            return true;
+        }
+
+        bool assemble_larg( Node *o ) {
+            if ( not o->prev )
+                return err( o, "Operator needs a left expression." );
+            if ( o->prev->parent ) {
+                o->parent = o->prev->parent;
+                if ( o->prev->parent->children[ 0 ] == o->prev )
+                    o->prev->parent->children[ 0 ] = o;
+                else
+                    o->prev->parent->children[ 1 ] = o;
+            }
+            if ( o->prev->prev )
+                o->prev->prev->next = o;
+
+            o->children[ 0 ] = o->prev;
+            o->children[ 0 ]->parent = o;
+            o->prev = o->prev->prev;
+
+            o->children[ 0 ]->next = NULL;
+            o->children[ 0 ]->prev = NULL;
+            return true;
+        }
+
+        void make_hierarchy() {
+            for( int num_grp = 0; num_grp < nb_grp; ++num_grp ) {
+                for( Node *o = by_grp[ num_grp ]; o; o = o->prev_grp ) {
+                    switch( behavior( num_grp ) ) {
+                    case need_none: break;
+                    case need_larg: assemble_larg( o ); break;
+                    case need_rarg: assemble_rarg( o ); break;
+                    case need_barg: assemble_barg( o, true, true ); break;
+                    }
+                }
+            }
+            // PRINT( *base.next );
+        }
+
+        ST eval() {
+            return base.next ? base.next->eval() : 0;
+        }
+
+        Node  base;
+        Node *last;
+        Node *by_grp[ nb_grp ];
+    };
+
+    Hpipe::SI64 num;
+    double      nfl, mul;
+    AstData     ast_data;
+end_methods
+
+beg_test preproc
+    input
+        17 + 2 * 3
+    output
+        23 status=OK
+end_test

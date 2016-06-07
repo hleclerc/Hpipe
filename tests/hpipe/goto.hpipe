@@ -1,0 +1,15 @@
+com_l  = '//' ( any - lf )**
+com_b  = '/*' any* '*/'
+
+main = '#if' ' '** (
+    # ( com_l -> if_out ) | com_b |
+    ( any - lf add_str[ "res" ] )
+)** <- if_out { os << "(" << res << ")"; } clr_str[ "res" ]
+
+#
+beg_test basic include read
+    input
+        #if pouet
+    output
+        (pouet) status=OK
+end_test

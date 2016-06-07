@@ -1,0 +1,23 @@
+main = ( eof { os << "eof"; } ) | ( 'a' eof { os << "a_eof"; } ) | ( 'a' { os << "a_cnt"; } )
+#main = 'abc'
+
+beg_test 1
+    input
+        a
+    output
+        a_eof status=OK
+end_test
+
+beg_test 2
+    input
+        ab
+    output
+        a_cnt status=OK
+end_test
+
+beg_test 3
+    input
+
+    output
+        eof status=OK
+end_test
