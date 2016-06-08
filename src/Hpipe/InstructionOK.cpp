@@ -18,8 +18,12 @@ void InstructionOK::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitte
             ss << "sipe_data->rw_buf->dec_ref_upto( buf );";
         //
         ss << "goto l_" << cpp_emitter->inst_to_go_if_ok->get_id_gen( cpp_emitter ) << ";";
-    } else
+    } else {
+        ss << "sipe_data->inp_cont = &&c_" << ++cpp_emitter->nb_cont_label << ";";
         ss << "return RET_OK;";
+        es.rm_beg( 2 ) << "c_" << cpp_emitter->nb_cont_label << ":";
+        ss << "return RET_ENDED_OK;";
+    }
 }
 
 

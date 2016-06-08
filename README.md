@@ -52,64 +52,11 @@ e_7:
   goto l_16;
 ```
 
-Syntax
-======
-
-Here are the main operators
-* `"foo"` or `'foo'`: look for the text "foo" in the incoming data. "f" must be the first character of the incoming data (looking for a substring can be expressed as `any* "foo"`).
-* `104` (unsigned char value): look for a byte with specified (unsigned) numeric value. For encoding where characters can use more than one byte (UTFx...), concatenation can be used.
-* `'a' .. 'v'` (range): look for a byte value between 'a' and 'v' inclusive. Range works also with numerical values (e.g. `'a' .. 105`).
-* `A - B` (sub): look for a byte value in `A` but not in `B`.
-* `A B` (concatenation): test for `A`, and if there's a match for machine `A`, advance in the buffer and look for `B`.
-* `{ something in C/C++ }` (execution): execute the code between the `{}` if the previous machines in the lane have a match and _if there is at least one ending path through the following machines_ (which can be guessed or tested). For example, if the machine is `'A' {foo();} 'B'` and the text is 'AC', `foo` won't be executed (`'B'` is not matched). Sometimes, it is not necessary to test the coming machines because there is at least a *sure* path (e.g. with *non mandatory* things like `A*`). If it is necessary to test the coming machines, Hpipe may add a marker to keep the data available until there is an "up to the end" path.
-* `A | B` (priority or): test `A`; if `A` does not work, test `B` with the same input data. Of course, internally it works as a state machine, and while `A` is tested, we keep an eye on `B` to avoid buffering of the incoming data, as much as possible. Nevertheless, sometimes, it can be mandatory, specifically when there are execution machines (`{...}`) which depend on the data and tests to be made (leading to "data dependent" postponed execution).
-* `A*` (loop, not having the priority): test for 0 or any number of successive matches for `A`. If there is a following machine, it will have the priority on `A`. Ex: with `( 'a' 'b' | 'c' {bar();} )* any 'c' {foo();}`, "ababac" will call `foo` two time and `bar` once because `any 'c'` have priority over the machine between the `()`.
-* `A**` (priority loop): test for as much as possible (0 or any number of successive) matches for `A`. `A` has the priority over the eventual following machines. In the preceding example, `foo` would be called three times and `bar` zero.
-* `A+` (one or more, not having the priority): test for 1 or more successive matches for `A`. If there is a following machine, it will have the priority on `A`.
-* `A++` (one or more with priority): test for as much as possible matches for `A`, provided that there is at least one match.
-* `A?`(option, not having the priority): test for zero or one match of `A`.  For example, the `eol` machine is equivalent to `cr? lf` to take into account optional dos end lines. If there is a following machine, the following machine have priority.
-* `A??`(option with priority): test for zero or one match of `A`. If  `A` matches, it has the priority.
-* `-> label ... <- label` (goto): `-> label` means "jump to label". `<- label` is to define the label. It allows notably to exit loops with complex priority patterns. For instance, we can find C strings using
-```
-'"' ( '\\' | '\"' | ( '"' -> out_string ) | any )** <- out_string
-```
-in place of
-```
-'"' ( '\\' | '\"' | any - '"' )** '"' <- out_string
-```
-when the end machine is written twice.
-* `eof`: ok if end of file.
-* `add_str[ "A" ]`: shortcut to write a code that will append the current char value to a string named A (that will be automatically declared in the generated HpipeData structure). `add_str` enables specific optimizations. For instance contiguous `add_str` may be transformed to an "add mark" and a "use mark" instructions, enabling effective zero copy.
-* `clr_str[ "A" ]`: shortcut to write a code that will clear the string named A.
-
-
-How to call and define machines ?
-=================================
-
-```[python]
-# Arguments values are machines. It may have default values.
-my_machine[ val, num = "123", end = digit 'e' | 'E' ] =
-    { res += num; } # substring with argument names are replaced by the values
-    val any* end # variable can be used as normal machines
-#
-other[ foo = eol ] = ...
-
-#
-main =
-    # arguments can be specified using their names
-    my_machine[ any, num = "5" ]
-    # if no argument of default values are available at every position, a machine can be called without []
-    other
-```
-
-Predefined machines
-===================
-
-They are defined in [src/Hpipe/Predef.sipe](https://github.com/hleclerc/Hpipe/blob/master/src/Hpipe/predef.hpipe).
-
 
 Performance
 ===========
+
+Hpipe is made for Performance from the very ground (the facts that it tries to read the data only once, that intermediate storage is avoided due to the exploitation of the program counter, ...). Furthermore, it contains specific optimizations not found in tools like Ragel. Here are some examples:
 
 Training
 --------
@@ -163,6 +110,106 @@ we obtain the following result (g++, Skylake, ...):
 |                  | Without BM       |  With BM       |speedup |
 |------------------|:----------------:|:--------------:|:------:|
 | execution time   |   0.937635       |    0.126285    | 7.42x  |
+
+
+Syntax
+======
+
+Here are the main operators
+* `"foo"` or `'foo'`: look for the text "foo" in the incoming data. "f" must be the first character of the incoming data (looking for a substring can be expressed as `any* "foo"`).
+* `104` (unsigned char value): look for a byte with specified (unsigned) numeric value. For encoding where characters can use more than one byte (UTFx...), concatenation can be used.
+* `'a' .. 'v'` (range): look for a byte value between 'a' and 'v' inclusive. Range works also with numerical values (e.g. `'a' .. 105`).
+* `A - B` (sub): look for a byte value in `A` but not in `B`.
+* `A B` (concatenation): test for `A`, and if there's a match for machine `A`, advance in the buffer and look for `B`.
+* `{ something in C/C++ }` (execution): execute the code between the `{}` if the previous machines in the lane have a match and _if there is at least one ending path through the following machines_ (which can be guessed or tested). For example, if the machine is `'A' {foo();} 'B'` and the text is 'AC', `foo` won't be executed (`'B'` is not matched). Sometimes, it is not necessary to test the coming machines because there is at least a *sure* path (e.g. with *non mandatory* things like `A*`). If it is necessary to test the coming machines, Hpipe may add a marker to keep the data available until there is an "up to the end" path.
+* `A | B` (priority or): test `A`; if `A` does not work, test `B` with the same input data. Of course, internally it works as a state machine, and while `A` is tested, we keep an eye on `B` to avoid buffering of the incoming data, as much as possible. Nevertheless, sometimes, it can be mandatory, specifically when there are execution machines (`{...}`) which depend on the data and tests to be made (leading to "data dependent" postponed execution).
+* `A*` (loop, not having the priority): test for 0 or any number of successive matches for `A`. If there is a following machine, it will have the priority on `A`. Ex: with `( 'a' 'b' | 'c' {bar();} )* any 'c' {foo();}`, "ababac" will call `foo` two time and `bar` once because `any 'c'` have priority over the machine between the `()`.
+* `A**` (priority loop): test for as much as possible (0 or any number of successive) matches for `A`. `A` has the priority over the eventual following machines. In the preceding example, `foo` would be called three times and `bar` zero.
+* `A+` (one or more, not having the priority): test for 1 or more successive matches for `A`. If there is a following machine, it will have the priority on `A`.
+* `A++` (one or more with priority): test for as much as possible matches for `A`, provided that there is at least one match.
+* `A?`(option, not having the priority): test for zero or one match of `A`.  For example, the `eol` machine is equivalent to `cr? lf` to take into account optional dos end lines. If there is a following machine, the following machine have priority.
+* `A??`(option with priority): test for zero or one match of `A`. If  `A` matches, it has the priority.
+* `-> label ... <- label` (goto): `-> label` means "jump to label". `<- label` is to define the label. It allows notably to exit loops with complex priority patterns. For instance, we can find C strings using
+```
+'"' ( '\\' | '\"' | ( '"' -> out_string ) | any )** <- out_string
+```
+in place of
+```
+'"' ( '\\' | '\"' | any - '"' )** '"' <- out_string
+```
+when the end machine is written twice.
+* `eof`: ok if end of file.
+* `add_str[ "A" ]`: shortcut to write a code that will append the current char value to a string named A (that will be automatically declared in the generated HpipeData structure). `add_str` enables specific optimizations. For instance contiguous `add_str` may be transformed to an "add mark" and a "use mark" instructions, enabling effective zero copy.
+* `clr_str[ "A" ]`: shortcut to write a code that will clear the string named A.
+
+Buffer style
+============
+
+By default, hpipe generate a `parse` function with the following signature:
+
+
+```[C++]
+    unsigned parse( HpipeData *hpipe_data, Hpipe::Buffer *buf, bool last_buf = false );
+```
+
+`Hpipe::Buffer` is basically a data chunk with a reference counter and a `next` field for strings made from several data chunks (`Hpipe::CbString` and `Hpipe::CbStringPtr` enable to handle thoses list as more or less regular strings). A standard reading pattern using `Hpipe::Buffer` would be
+
+```[C++]
+Buffer *inp_buff = Buffer::New( Buffer::default_size );
+HpipeData hpipe_data;
+...
+void input_data_event() {
+    while ( true ) {
+        // if not possible to reuse the old buffer, create a new one
+        if ( inp_buff->cpt_use > 0 ) {
+            --inp_buff->cpt_use;
+            inp_buff = Buffer::New( Buffer::default_size );
+        }
+
+        // try to read some data
+        inp_buff->used = recv( fd, inp_buff->data, inp_buff->size, ... );
+        if ( int( inp_buff->used ) <= 0 ) ...;
+
+        // parse
+        parse( &hpipe_data, inp_buff );
+    }
+}
+```
+
+For more conventional buffer styles (actually not enabling interruption in the data), one can use the option `-s BEG_END` which generates a function with the following signature:
+
+```[C++]
+unsigned parse( HpipeData *sipe_data, const unsigned char *data, const unsigned char *end_m1 );
+```
+
+`end_m1` must point to the last char (e.g. for data.size == 0, end_m1 must be equal to data - 1).
+
+It is also possible to use `-s C_STR` which generates a function for zero ended strings.
+
+How to call and define machines ?
+=================================
+
+```[python]
+# Arguments values are machines. It may have default values.
+my_machine[ val, num = "123", end = digit 'e' | 'E' ] =
+    { res += num; } # substring with argument names are replaced by the values
+    val any* end # variable can be used as normal machines
+#
+other[ foo = eol ] = ...
+
+#
+main =
+    # arguments can be specified using their names
+    my_machine[ any, num = "5" ]
+    # if no argument of default values are available at every position, a machine can be called without []
+    other
+```
+
+Predefined machines
+===================
+
+They are defined in [src/Hpipe/Predef.sipe](https://github.com/hleclerc/Hpipe/blob/master/src/Hpipe/predef.hpipe).
+
 
 Operator precedence
 ===================

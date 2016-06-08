@@ -1,6 +1,7 @@
 #include <Hpipe/CppEmitter.h>
 #include <Hpipe/predef.h>
 #include <Hpipe/Pool.h>
+#include <string.h>
 #include <iterator>
 #include <fstream>
 using namespace Hpipe;
@@ -41,6 +42,11 @@ int main( int argc, char **argv ) {
 
     // output
     CppEmitter cp( &sg );
+    
+    if ( strcmp( style, "BUFFER" ) == 0 ) cp.buffer_type = CppEmitter::HPIPE_BUFFER;
+    else if ( strcmp( style, "BEG_END" ) == 0 ) cp.buffer_type = CppEmitter::BEGEND;
+    else if ( strcmp( style, "C_STR"   ) == 0 ) cp.buffer_type = CppEmitter::C_STR;
+    else { std::cerr << "Unknown parse style. Possible values are BUFFER, BEG_END or C_STR" << std::endl; return 1; }
 
     if ( benchmark )
         cp.bench( lexer.training_data(), CppEmitter::BEGEND );
@@ -60,4 +66,6 @@ int main( int argc, char **argv ) {
     cp.write_constants     ( ss );
     cp.write_hpipe_data    ( ss, "HpipeData" );
     cp.write_parse_function( ss, "HpipeData", "parse" );
+    
+    return 0;
 }
