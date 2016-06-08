@@ -114,6 +114,8 @@ Performance
 Training
 --------
 
+Training data is used by hpipe to transform the instruction graph before code generation. In particular, it enables to automatically decompose the tests to minimize the number of conditional branches for the average cases (+ provide some help for the Branch Prediction Units, ...).
+
 Let's consider the following hpipe declaration:
 
 ```[python]
@@ -133,7 +135,7 @@ beg_training
 end_training
 ```
 
-Training data is used by hpipe to transform the instruction graph before code generation. In particular, it enables to automatically decompose the tests to minimize the number of conditional branches for the average cases (+ provide some help for the Branch Prediction Units, ...).
+It leads to
 
 |                            | Without training | With training  |speedup |
 |----------------------------|:----------------:|:--------------:|:------:|
