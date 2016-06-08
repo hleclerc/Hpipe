@@ -20,4 +20,12 @@ inline void dec_ref( const T *ptr ) {
         delete ptr;
 }
 
+template<class T>
+struct AutoDecRef {
+    AutoDecRef( T *ptr ) : ptr( ptr ) {}
+    ~AutoDecRef() { dec_ref( ptr ); }
+    T *operator->() { return ptr; }
+    T *ptr;
+};
+
 }
