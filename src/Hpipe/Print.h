@@ -89,6 +89,22 @@ PointedValues<T> pointed_values( const T &val ) {
     return { val };
 }
 
+template<class T,class F>
+struct MappedValues {
+    void write_to_stream( std::ostream &os ) const {
+        int cpt = 0;
+        for( const auto &v : val )
+            os << ( cpt++ ? "," : "" ) << fun( v );
+    }
+    T val;
+    F fun;
+};
+
+template<class T,class F>
+MappedValues<T,F> mapped_values( const T &val, const F &fun ) {
+    return { val, fun };
+}
+
 template<class T>
 struct Values {
     void write_to_stream( std::ostream &os ) const {

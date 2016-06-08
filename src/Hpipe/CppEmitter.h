@@ -22,7 +22,7 @@ public:
 
     void              write_constants     ( StreamSepMaker &ss );
     void              write_hpipe_data    ( StreamSepMaker &ss, const std::string &name = "HpipeData" );
-    void              write_parse_function( StreamSepMaker &ss, const std::string &hpipe_data_name = "HpipeData", const std::string &func_name = "parse" );
+    void              write_parse_function( StreamSepMaker &ss, const std::string &hpipe_data_name = "HpipeData", const std::string &func_name = "parse", const char *additional_args = 0 );
 
     int               test                ( const std::vector<Lexer::TestData> &tds );
     bool              bench               ( const std::vector<Lexer::TrainingData> &tds, int type = BEGEND );

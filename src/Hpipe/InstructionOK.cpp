@@ -19,10 +19,13 @@ void InstructionOK::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitte
         //
         ss << "goto l_" << cpp_emitter->inst_to_go_if_ok->get_id_gen( cpp_emitter ) << ";";
     } else {
-        ss << "sipe_data->inp_cont = &&c_" << ++cpp_emitter->nb_cont_label << ";";
+        if ( cpp_emitter->interruptible() )
+            ss << "sipe_data->inp_cont = &&c_" << ++cpp_emitter->nb_cont_label << ";";
         ss << "return RET_OK;";
-        es.rm_beg( 2 ) << "c_" << cpp_emitter->nb_cont_label << ":";
-        ss << "return RET_ENDED_OK;";
+        if ( cpp_emitter->interruptible() ) {
+            es.rm_beg( 2 ) << "c_" << cpp_emitter->nb_cont_label << ":";
+            ss << "return RET_ENDED_OK;";
+        }
     }
 }
 

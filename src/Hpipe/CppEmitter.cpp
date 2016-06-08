@@ -63,7 +63,7 @@ void CppEmitter::write_hpipe_data( StreamSepMaker &ss, const std::string &name )
     ss << "};";
 }
 
-void CppEmitter::write_parse_function( StreamSepMaker &ss, const std::string &hpipe_data_name, const std::string &func_name ) {
+void CppEmitter::write_parse_function( StreamSepMaker &ss, const std::string &hpipe_data_name, const std::string &func_name, const char *additional_args ) {
     StreamSepMaker nss( *ss.stream, ss.beg + "    " );
 
     std::string m = sg->methods();
@@ -72,16 +72,16 @@ void CppEmitter::write_parse_function( StreamSepMaker &ss, const std::string &hp
 
     switch ( buffer_type ) {
     case HPIPE_BUFFER:
-        ss << "unsigned " << func_name << "( " << hpipe_data_name << " *sipe_data, Hpipe::Buffer *buf, bool last_buf = false ) {";
+        ss << "unsigned " << func_name << "( " << hpipe_data_name << " *sipe_data, Hpipe::Buffer *buf, bool last_buf" << ( additional_args ? additional_args : "" ) << " ) {";
         nss << "const unsigned char *data = buf->data, *end_m1 = buf->data - 1 + buf->used" << ( max_mark_level > 1 ? ", *rw_ptr[" + to_string( max_mark_level - 1 ) + "]" : "" ) << ";";
         break;
     case BEGEND:
-        ss << "unsigned " << func_name << "( " << hpipe_data_name << " *sipe_data, const unsigned char *data, const unsigned char *end_m1 ) {";
+        ss << "unsigned " << func_name << "( " << hpipe_data_name << " *sipe_data, const unsigned char *data, const unsigned char *end_m1" << ( additional_args ? additional_args : "" ) << " ) {";
         if ( max_mark_level )
             nss << "const unsigned char *rw_ptr[ " << to_string( max_mark_level ) << " ]" << ";";
         break;
     case C_STR:
-        ss << "unsigned " << func_name << "( " << hpipe_data_name << " *sipe_data, const unsigned char *data ) {";
+        ss << "unsigned " << func_name << "( " << hpipe_data_name << " *sipe_data, const unsigned char *data" << ( additional_args ? additional_args : "" ) << " ) {";
         if ( max_mark_level )
             nss << "const unsigned char *rw_ptr[ " << to_string( max_mark_level ) << " ]" << ";";
         break;
