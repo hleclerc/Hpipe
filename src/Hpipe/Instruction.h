@@ -50,6 +50,7 @@ public:
     virtual bool         merge_predecessors ( Instruction **init = 0 );
     virtual bool         same_code          ( const Instruction *that ) const;
     virtual void         boyer_moore_opt    ( PtrPool<Instruction> &inst_pool, Instruction **init = 0 );
+    virtual void         merge_eq_next      ( PtrPool<Instruction> &inst_pool );
 
     Context              cx;
     Vec<double>          freq;         ///< freq by char

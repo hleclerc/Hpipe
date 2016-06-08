@@ -27,5 +27,8 @@ int main() {
     CHECK( ( Cond( 'c' ) | Cond( 'e', 255 )      ).ok_cpp( "v", &not_in_d ), "v >= 'c'" );
     CHECK( ( Cond( 'd' ) | Cond( 'z' )           ).ok_cpp( "v", &not_in_d ), "v == 'z'" );
     CHECK( ( ~ ( Cond( 'd' ) | Cond( 'z' ) )     ).ok_cpp( "v", &not_in_d ), "v != 'z'" );
+
+    CHECK( Cond( 'c' ).ok_cpp( "v", &not_in_d ), "v == 'c'" );
+    CHECK( Cond( 'c', 'e' ).ok_cpp( "v", &not_in_d ), "v >= 'c' and v <= 'e'" );
 }
 

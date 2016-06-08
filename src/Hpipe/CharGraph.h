@@ -66,6 +66,7 @@ protected:
     void                    clone        ( Lexem *&beg, Lexem *&end, const Lexem *&l, const Vec<Arg> &args, const char *stop = 0 );
     void                    clone        ( Lexem *&beg, Lexem *&end, const std::string &name, const Lexem *l, Vec<Arg> cargs, const Vec<Arg> &args );
     static void             repl_all     ( std::string &str, const std::string &src, const std::string &dst );
+    bool                    in_wait_goto ( CharItem *item ) const;
 
 
     Lexer                  &lexer;

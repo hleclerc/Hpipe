@@ -36,6 +36,10 @@ InstructionGraph::InstructionGraph( CharGraph *cg, const std::vector<std::string
     make_rewinds( init );
     disp_if( disp, disp_inst_pred, disp_trans_freq, "mark" );
 
+    // eq trans, eq pred (beware: rcitem becomes wrong)
+    merge_eq_pred();
+    disp_if( disp, disp_inst_pred, disp_trans_freq, "merge", false );
+
     // boyer-moore like optimizations
     if ( not no_boyer_moore )
         boyer_moore();
@@ -339,7 +343,7 @@ void InstructionGraph::optimize_conditions() {
     train();
     
     unsigned nb_conds = 0;
-    init->apply( [&]( Instruction *inst ) {
+    root()->apply( [&]( Instruction *inst ) {
         nb_conds += dynamic_cast<InstructionMultiCond *>( inst ) != 0;
     } );
     std::cout << "Nb conds to optimize: " << nb_conds << std::endl;
@@ -354,6 +358,10 @@ void InstructionGraph::merge_eq_pred() {
         if ( not init->find_rec( [ this ]( Instruction *inst ) { return inst->merge_predecessors( &init ); } ) )
             break;
     }
+
+    root()->apply( [&]( Instruction *inst ) {
+        inst->merge_eq_next( inst_pool );
+    } );
 }
 
 void InstructionGraph::boyer_moore() {
@@ -363,18 +371,21 @@ void InstructionGraph::boyer_moore() {
 
     // the cost can become very high... so we limit the number of added conditions
     unsigned max_conds = std::max( 10 * nb_multi_conds(), 1000u );
-    unsigned max_jump_size = 16;
+    unsigned max_jump_size = 10;
     std::set<InstructionNextChar *> boyer_moored;
     for( unsigned cpt = 0; ; ++cpt ) {
         // look up for the most used InstructionNextChar
         train( true );
+        bool has_code = false;
         InstructionNextChar *next_char = 0;
         root()->apply( [&]( Instruction *inst ) {
             if ( InstructionNextChar *nc = dynamic_cast<InstructionNextChar *>( inst ) )
                 if ( ( next_char == 0 or nc->cum_freq > next_char->cum_freq ) and not boyer_moored.count( nc ) ) 
                     next_char = nc;
+            if ( not has_code )
+                has_code = inst->with_code();
         } );
-        if ( not next_char )
+        if ( not next_char or not has_code )
             break;
         boyer_moored.insert( next_char );
 
@@ -438,6 +449,7 @@ void InstructionGraph::boyer_moore() {
                 front[ num_in_front ].first.emplace_back( 0, 255 );
             }
         }
+        PRINT( front.size(), front[ 0 ].first.size() );
 
         //  if only 1 cond -> nothing to optimize
         if ( front.size() == 0 or front[ 0 ].first.size() <= 1 )

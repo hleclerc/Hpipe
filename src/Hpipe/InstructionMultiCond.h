@@ -15,6 +15,8 @@ public:
     virtual Transition  *train              ( std::string::size_type &s, std::string::size_type &m, const std::string &inp, double freq, bool use_contiguous );
     virtual void         write_cpp          ( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter );
     virtual void         optimize_conditions( PtrPool<Instruction> &inst_pool );
+    virtual void         merge_eq_next      ( PtrPool<Instruction> &inst_pool );
+    virtual bool         can_be_deleted     () const;
 
     Vec<Cond> conds;
     int       off_data;

@@ -92,8 +92,7 @@ void CppEmitter::write_parse_function( StreamSepMaker &ss, const std::string &hp
     if ( buffer_type == HPIPE_BUFFER and max_mark_level > 1 )
         ss << "    Hpipe::Buffer *rw_buf[ " << max_mark_level - 1 << " ];";
     if ( interruptible() ) {
-        ss << "    if ( sipe_data->inp_cont )";
-        ss << "        goto *sipe_data->inp_cont;";
+        ss << "    if ( sipe_data->inp_cont ) goto *sipe_data->inp_cont;";
     }
 
     nb_cont_label = 0;

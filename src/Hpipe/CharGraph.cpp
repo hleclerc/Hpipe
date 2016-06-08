@@ -186,18 +186,15 @@ void CharGraph::read( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> i
             read( l_leaves, l->children[ 1 ], p );
 
             // simplification for single_char | single_char
-            auto single_char = []( const CharItem *item ) {
-                return item->type == CharItem::COND and item->edges.size() == 0;
-            };
-            if ( p->edges.size() == 2 and single_char( p->edges[ 0 ].item ) and single_char( p->edges[ 1 ].item ) ) {
+            Cond c0, c1;
+            if ( p->edges.size() == 2 and get_cond( c0, p->edges[ 0 ].item ) and get_cond( c1, p->edges[ 1 ].item ) ) {
                 CharItem *nxt = ci_pool.New( CharItem::NEXT_CHAR );
                 for( CharItem *input : inputs )
                     input->edges << nxt;
 
-                CharItem *str = ci_pool.New( p->edges[ 0 ].item->cond | p->edges[ 1 ].item->cond );
+                CharItem *str = ci_pool.New( c0 | c1 );
                 nxt->edges << str;
 
-                delete p;
                 return read( leaves, l->next, str );
             }
 
@@ -304,23 +301,23 @@ void CharGraph::read( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> i
         }
 
     if ( l->eq( "-" ) ) {
-            CharItem tmp( CharItem::PIVOT );
-            Vec<CharItem *> l_leaves;
-            read( l_leaves, l->children[ 0 ], &tmp );
-            read( l_leaves, l->children[ 1 ], &tmp );
-            Cond a, b;
-         if ( tmp.edges.size() != 2 or not get_cond( a, tmp.edges[ 0 ].item ) or not get_cond( b, tmp.edges[ 1 ].item ) )
-             lexer.err( l, "'..' must be between two single char conditions" );
+        CharItem tmp( CharItem::PIVOT );
+        Vec<CharItem *> l_leaves;
+        read( l_leaves, l->children[ 0 ], &tmp );
+        read( l_leaves, l->children[ 1 ], &tmp );
+        Cond a, b;
+        if ( tmp.edges.size() != 2 or not get_cond( a, tmp.edges[ 0 ].item ) or not get_cond( b, tmp.edges[ 1 ].item ) )
+            lexer.err( l, "'..' must be between two single char conditions" );
 
-         CharItem *nxt = ci_pool.New( CharItem::NEXT_CHAR );
-         for( CharItem *input : inputs )
-             input->edges << nxt;
+        CharItem *nxt = ci_pool.New( CharItem::NEXT_CHAR );
+        for( CharItem *input : inputs )
+            input->edges << nxt;
 
-         CharItem *str = ci_pool.New( a & ~ b );
-         nxt->edges << str;
+        CharItem *str = ci_pool.New( a & ~ b );
+        nxt->edges << str;
 
-         return read( leaves, l->next, str );
-     }
+        return read( leaves, l->next, str );
+    }
 
      if ( l->eq( "->" ) ) {
          gotos << WaitGoto{ l->children[ 0 ]->str, inputs };
@@ -485,7 +482,7 @@ void CharGraph::apply_rec( CharItem *item, std::function<void (CharItem *)> f ) 
 }
 
 bool CharGraph::get_cond( Cond &cond, CharItem *item ) {
-    if ( item->type != CharItem::NEXT_CHAR or item->edges.size() != 1 or item->edges[ 0 ].item->type != CharItem::COND )
+    if ( item->type != CharItem::NEXT_CHAR or item->edges.size() != 1 or item->edges[ 0 ].item->type != CharItem::COND or item->edges[ 0 ].item->edges.size() or in_wait_goto( item->edges[ 0 ].item ) )
         return false;
     cond = item->edges[ 0 ].item->cond;
     return true;
@@ -673,6 +670,14 @@ void CharGraph::repl_all( std::string &str, const std::string &src, const std::s
         str = str.replace( p, src.size(), dst );
         p += dst.size();
     }
+}
+
+bool CharGraph::in_wait_goto( CharItem *item ) const {
+    for( const WaitGoto &wg : gotos )
+        for( const CharItem *ci : wg.inputs )
+            if ( ci == item )
+                return true;
+    return false;
 }
 
 void CharGraph::Arg::write_to_stream( std::ostream &os ) const {

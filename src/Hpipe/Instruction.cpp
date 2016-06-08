@@ -505,4 +505,7 @@ void Instruction::boyer_moore_opt( PtrPool<Instruction> &inst_pool, Instruction 
         t.inst->boyer_moore_opt( inst_pool, init );
 }
 
+void Instruction::merge_eq_next( PtrPool<Instruction> &inst_pool ) {
+}
+
 } // namespace Hpipe

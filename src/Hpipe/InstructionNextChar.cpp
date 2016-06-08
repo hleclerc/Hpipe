@@ -194,11 +194,11 @@ void InstructionNextChar::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, Cpp
 
     //
     if ( cpp_emitter->interruptible() ) {
-        // add a label if necessary
-        if ( not id_gen ) {
-            id_gen = ++cpp_emitter->nb_id_gen;
-            ss.rm_beg( 2 ) << "l_" << id_gen << ":";
-        }
+        //         // add a label if necessary
+        //         if ( not id_gen ) {
+        //             id_gen = ++cpp_emitter->nb_id_gen;
+        //             ss.rm_beg( 2 ) << "l_" << id_gen << ":";
+        //         }
 
         ss << "if ( data " << ( beg ? ">" : ">=" ) << " end_m1 ) goto c_" << ++cpp_emitter->nb_cont_label << ";"; // this one is good but it won't the case for the next
         if ( not beg )

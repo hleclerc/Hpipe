@@ -6,7 +6,7 @@
 namespace Hpipe {
 
 void BranchSet::Range::write_to_stream( std::ostream &os ) const {
-    os << "[" << beg << "," << end << ",freq=" << freq << "]";
+    os << "[" << beg << "," << end << ",freq=" << freq << ",inst=" << inst << "]";
 }
 
 bool BranchSet::Range::same_dst( const BranchSet::Range &that ) const {

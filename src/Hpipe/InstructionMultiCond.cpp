@@ -1,4 +1,5 @@
 #include "InstructionMultiCond.h"
+#include "InstructionNone.h"
 #include "InstructionCond.h"
 
 namespace Hpipe {
@@ -91,11 +92,29 @@ void InstructionMultiCond::optimize_conditions( PtrPool<Instruction> &inst_pool 
     for( Transition &t : next )
         t.inst->prev.remove_first_checking( [&]( Transition &p ) { return p.inst == this; } );
 
-    // PRINT( ranges, best_bs );
-
     // following conditions
     for( Transition &t : next )
         t.inst->optimize_conditions( inst_pool );
+}
+
+void InstructionMultiCond::merge_eq_next( PtrPool<Instruction> &inst_pool ) {
+    for( unsigned i = 0; i < next.size(); ++i ) {
+        for( unsigned j = i + 1; j < next.size(); ++j ) {
+            if ( next[ i ].inst == next[ j ].inst ) {
+                next[ j ].inst->prev.remove_first_checking( [&]( const Transition &t ) {
+                    return t.inst == this;
+                } );
+                conds[ i ] |= conds[ j ];
+                conds.remove( j );
+                next .remove( j );
+                --j;
+            }
+        }
+    }
+}
+
+bool InstructionMultiCond::can_be_deleted() const {
+    return conds.size() == 1;
 }
 
 } // namespace Hpipe

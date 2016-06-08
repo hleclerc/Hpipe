@@ -114,57 +114,48 @@ Vec<Cond::Range> Cond::ok_ranges() const {
 }
 
 Vec<Cond::Range> Cond::ok_ranges_opt( const Cond *not_in ) const {
-    // extensions with not_in
-    Cond tmp = *this;
-    if ( not_in )
-        tmp &= ~ *not_in;
-    Vec<Range> ra = tmp.ok_ranges();
-
+    Vec<Range> ra;
     if ( not_in ) {
-        // ends
-        for( unsigned i = 0; i < ra.size(); ++i ) {
-            Range &r = ra[ i ];
-            for( int n = r.end + 1; ; ++n ) {
-                if ( n == p_size or not not_in->p[ n ] ) {
-                    if ( n != r.end + 1 ) { // extension is possible ?
-                        // touching intervals ?
-                        if ( i + 1 < ra.size() and ra[ i + 1 ].beg == n ) {
-                            ra[ i ].end = ra[ i + 1 ].end;
-                            ra.remove( i + 1 );
-                            --i; // test again, with the new end
-                            break;
-                        }
-                        // [ ... x - 1 ] | [ x + 1 ... ] if cardinal first interval > 1
-                        if ( i + 1 < ra.size() and r.size() >= 2 and ra[ i + 1 ].beg == n + 1 ) {
-                            ra[ i ].end = n - 1;
-                            break;
-                        }
-                        // open interval
-                        if ( n == p_size )
-                            ra[ i ].end = p_size - 1;
-                    }
-                    break;
-                }
+        for( int i = 0; i < p_size; ++i ) {
+            // beginning if a Range
+            if ( p[ i ] and not (*not_in)[ i ] ) {
+                // leftest beg
+                int beg = i++;
+                while ( beg and (*not_in)[ beg - 1 ] )
+                    --beg;
+                // rightest end
+                while ( i < p_size and ( p[ i ] or (*not_in)[ i ] ) )
+                    ++i;
+                // register the interval
+                ra << Range( beg, i - 1 );
             }
         }
 
-        // begs
-        for( unsigned i = 1; i < ra.size(); ++i ) {
-            Range &r = ra[ i ];
-            for( int n = r.beg - 1; ; --n ) {
-                if ( n < 0 or not not_in->p[ n ] ) {
-                    if ( n != r.beg - 1 ) { // extension is possible ?
-                        // [ ... x - 1 ] | [ x + 1 ... ] if cardinal first interval > 1
-                        if ( ra[ i - 1 ].size() >= 2 and ra[ i - 1 ].end == n - 1 ) {
-                            ra[ i ].beg = n + 1;
-                            break;
-                        }
-                        // open interval
-                        if ( n < 0 )
-                            ra[ i ].beg = 0;
-                    }
+        // reduction of ranges with only 1 not not_in
+        for( Range &r : ra ) {
+            if ( r.size() == 1 )
+                continue;
+            for( int i = r.beg, p = -1; ; ++i ) {
+                if ( i == r.end + 1 ) {
+                    r.beg = p;
+                    r.end = p;
                     break;
                 }
+                if ( not (*not_in)[ i ] ) {
+                    if ( p >= 0 )
+                        break;
+                    p = i;
+                }
+            }
+        }
+    } else {
+        for( int i = 0; i < p_size; ++i ) {
+            // beginning if a Range
+            if ( p[ i ] ) {
+                int beg = i++;
+                while ( i < p_size and p[ i ] )
+                    ++i;
+                ra << Range( beg, i - 1 );
             }
         }
     }
