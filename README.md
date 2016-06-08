@@ -105,7 +105,7 @@ main =
 Predefined machines
 ===================
 
-They are defined in [src/Hpipe/Predef.sipe](https://github.com/hleclerc/Hpipe/blob/master/src/Hpipe/Predef.hpipe).
+They are defined in [src/Hpipe/Predef.sipe](https://github.com/hleclerc/Hpipe/blob/master/src/Hpipe/predef.hpipe).
 
 
 Performance
