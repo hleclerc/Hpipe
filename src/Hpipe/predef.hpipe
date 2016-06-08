@@ -26,7 +26,10 @@ base64    = alnum | '+' | '/' | '='
 backslash = '\'
 end       = { end: inp_cont = &&end; return false; } any** #
 
-
+any_utf8  = ( 0 .. 127 ) |
+            ( 128 .. 223 any ) |
+            ( 224 .. 239 any any ) |
+            ( 240 .. 255 any any any )
 
 # mandatory arg: val (e.g. uint[ content_length ])
 uint[ val, type = 'unsigned long' ] =
