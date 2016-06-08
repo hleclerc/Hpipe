@@ -61,7 +61,7 @@ protected:
 
     void                    read         ( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> inputs );
     void                    apply_rec    ( CharItem *item, std::function<void(CharItem *)> f );
-    static bool             get_cond     ( Cond &cond, CharItem *item );
+    bool                    get_cond     ( Cond &cond, CharItem *item );
     Lexem                  *clone        ( const Lexem *&l, const Vec<Arg> &args, const char *stop = 0 );
     void                    clone        ( Lexem *&beg, Lexem *&end, const Lexem *&l, const Vec<Arg> &args, const char *stop = 0 );
     void                    clone        ( Lexem *&beg, Lexem *&end, const std::string &name, const Lexem *l, Vec<Arg> cargs, const Vec<Arg> &args );
