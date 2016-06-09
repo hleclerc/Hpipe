@@ -529,11 +529,11 @@ void CharGraph::clone( Lexem *&beg, Lexem *&end, const Lexem *&l, const Vec<Arg>
             return l->eq( "add_str" ) or l->eq( "clr_str" ) or l->eq( "add_include" );
         };
 
-        bool avoid_copy_ch_0 = false;
+        bool do_not_clone_ch_0 = false;
         if ( l->eq( Lexem::OPERATOR, "[" ) ) {
-            if ( is_inline( l->children[ 0 ] ) )
-                avoid_copy_ch_0 = true;
-            else {
+            if ( is_inline( l->children[ 0 ] ) ) {
+                do_not_clone_ch_0 = true;
+            } else {
                 // get arguments
                 Vec<Arg> cargs;
                 for( const Lexem *item = l->children[ 1 ]; item; item = item->next ) {
@@ -555,9 +555,7 @@ void CharGraph::clone( Lexem *&beg, Lexem *&end, const Lexem *&l, const Vec<Arg>
                 clone( beg, end, l->children[ 0 ]->str, l->children[ 0 ], cargs, args );
                 continue;
             }
-        } else if ( l->eq( Lexem::OPERATOR, "->" ) or l->eq( Lexem::OPERATOR, "<-" ) )
-            avoid_copy_ch_0 = true;
-
+        }
 
         // default case
         Lexem *res = le_pool.New( l->type, l->source, l->beg, l->str );
@@ -582,9 +580,14 @@ void CharGraph::clone( Lexem *&beg, Lexem *&end, const Lexem *&l, const Vec<Arg>
             break;
         }
 
-        for( unsigned i = 0; i < 2; ++i) {
+        for( unsigned i = 0; i < 2; ++i ) {
             if ( const Lexem *ch = l->children[ i ] ) {
-                res->children[ i ] = avoid_copy_ch_0 and i == 0 ? le_pool.New( ch->type, ch->source, ch->beg, ch->str ) : clone( ch, args );
+                if ( i == 0 and ( l->eq( Lexem::OPERATOR, "->" ) or l->eq( Lexem::OPERATOR, "<-" ) ) )
+                    res->children[ i ] = le_pool.New( ch->type, ch->source, ch->beg, to_string( values( calls ) ) + " " + ch->str );
+                else if ( i == 0 and do_not_clone_ch_0 )
+                    res->children[ i ] = le_pool.New( ch->type, ch->source, ch->beg, ch->str );
+                else
+                    res->children[ i ] = clone( ch, args );
                 res->children[ i ]->parent = res;
             }
         }
@@ -592,7 +595,7 @@ void CharGraph::clone( Lexem *&beg, Lexem *&end, const Lexem *&l, const Vec<Arg>
 }
 
 void CharGraph::clone( Lexem *&beg, Lexem *&end, const std::string &name, const Lexem *l, Vec<Arg> cargs, const Vec<Arg> &args ) {
-    calls.push( name );
+    calls.push_back( name );
     if ( calls.size() > 1000 ) {
         lexer.err( l, "call stack size exceeded" );
         return;
@@ -612,7 +615,7 @@ void CharGraph::clone( Lexem *&beg, Lexem *&end, const std::string &name, const 
             const Lexem *l = arg.val;
             res->children[ 0 ] = clone( l, {} );
             res->children[ 0 ]->parent = res;
-            return calls.pop();
+            return calls.pop_back();
         }
     }
 
@@ -672,10 +675,11 @@ void CharGraph::clone( Lexem *&beg, Lexem *&end, const std::string &name, const 
 
         res->children[ 0 ] = clone( lex, cargs );
         res->children[ 0 ]->parent = res;
-        return calls.pop();
+        return calls.pop_back();
     }
 
     lexer.err( l, "Impossible to find the corresponding machine" );
+    return calls.pop_back();
 }
 
 void CharGraph::repl_all( std::string &str, const std::string &src, const std::string &dst ) {

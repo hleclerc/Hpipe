@@ -76,7 +76,7 @@ protected:
     Vec<Label>              labels;
     Pool<Lexem>             le_pool;
     Pool<CharItem>          ci_pool;
-    std::stack<std::string> calls;
+    Vec<std::string>        calls;
 };
 
 } // namespace Hpipe
