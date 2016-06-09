@@ -1,0 +1,16 @@
+main = (
+    ( '(' { ++nb_par; } ) |
+    ( ')' ( if { --nb_par == 0 } -> out ) | () ) |
+    ( any add_str[ "res" ] )
+)** <- out { os << res; }
+
+beg_methods
+    unsigned nb_par = 0;
+end_methods
+
+beg_test 1
+    input
+        ab (fun( 1, 2 )) cd
+    output
+        fun( 1, 2 ) status=OK
+end_test
