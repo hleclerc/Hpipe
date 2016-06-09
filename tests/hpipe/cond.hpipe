@@ -1,16 +1,24 @@
-main = (
-    ( '(' { ++nb_par; } ) |
-    ( ')' ( if { --nb_par == 0 } -> out ) | () ) |
-    ( any add_str[ "res" ] )
-)** <- out { os << res; }
+# main = (
+#     ( '(' { ++nb_par; } ) |
+#     ( ')' ( if { --nb_par == 0 } -> out ) | () ) |
+#     ( any add_str[ "res" ] )
+# )** <- out { os << res; }
+main = any if { *data == 'a' } any { os << *data; }
 
-beg_methods
-    unsigned nb_par = 0;
-end_methods
+# beg_methods
+#     unsigned nb_par = 0;
+# end_methods
 
 beg_test 1
     input
-        ab (fun( 1, 2 )) cd
+        ab
     output
-        fun( 1, 2 ) status=OK
+        b status=OK
+end_test
+
+beg_test 2
+    input
+        ba
+    output
+        status=KO
 end_test

@@ -26,9 +26,13 @@ If produces code like
 
 ```C++
 l_2:
-  if ( data + 3 > end_m1 ) goto l_1; // as in the Boyer-Moore algorithm, hpipe may decide to test several chars ahead if it leads to reduction of the overall execution time
+  // as in the Boyer-Moore algorithm, hpipe may decide to test several
+  // chars ahead if it leads to reduction of the overall execution time
+  if ( data + 3 > end_m1 ) goto l_1;
   data += 3;
-  if ( data[ 0 ] == 'a' ) goto l_19; // partition and ordering of tests depends on the result of "training" (see the Performance paragraph)
+  // partition and ordering of tests depends on the result of "training"
+  // (see the paragraph on performance)
+  if ( data[ 0 ] == 'a' ) goto l_19;
   if ( data[ 0 ] != 'o' ) goto l_20;
   if ( data[ -1 ] != 'o' ) goto l_21;
   if ( data[ -2 ] != 'f' ) goto l_2;
@@ -44,6 +48,8 @@ l_22:
   if ( data[ 0 ] == 'o' ) goto l_3;
 ...
 c_7:
+  // interruption of the data is fully handled (including in the cases
+  // where one needs to go backward, ...)
   if ( last_buf ) goto l_11;
   sipe_data->inp_cont = &&e_7;
   return RET_CONT;
