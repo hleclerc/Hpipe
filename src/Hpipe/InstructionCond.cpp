@@ -27,8 +27,7 @@ void InstructionCond::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmit
         ss << "if ( " << cond.ok_cpp( "data[ " + to_string( off_data ) + " ]", &not_in ) << " ) goto l_" << next[ 0 ].inst->get_id_gen( cpp_emitter ) << ";";
     } else {
         ss << "if ( " << cond.ko_cpp( "data[ " + to_string( off_data ) + " ]", &not_in ) << " ) goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << ";";
-        if ( next[ 0 ].inst->num_ordering != num_ordering + 1 )
-            ss << "goto l_" << next[ 0 ].inst->get_id_gen( cpp_emitter ) << ";";
+        write_trans( ss, cpp_emitter );
     }
 
     //    // if (the most frequent) transition is for the next inst, or (the most frequent) transition goes to the past

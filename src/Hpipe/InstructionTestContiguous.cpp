@@ -30,7 +30,7 @@ Instruction *InstructionTestContiguous::clone( PtrPool<Instruction> &inst_pool, 
 void InstructionTestContiguous::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
     if ( next.size() == 1 ) {
         ss << "data += " << nb_chars - beg << ";";
-        return write_trans_0( ss, cpp_emitter );
+        return write_trans( ss, cpp_emitter );
     }
     
     if ( cpp_emitter->buffer_type == CppEmitter::C_STR ) {
@@ -39,7 +39,7 @@ void InstructionTestContiguous::write_cpp( StreamSepMaker &ss, StreamSepMaker &e
     } else {
         ss << "if ( data + " << nb_chars - beg << " > end_m1 ) goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << ";";
         ss << "data += " << nb_chars - beg << ";";
-        write_trans_0( ss, cpp_emitter );
+        write_trans( ss, cpp_emitter );
     }
 }
 

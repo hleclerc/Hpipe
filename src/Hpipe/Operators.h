@@ -18,6 +18,7 @@
 
 
 // must be sorted by length (descending order)
+OPERATOR( "if", need_larg, 6 );
 OPERATOR( "->", need_rarg, 6 );
 OPERATOR( "<-", need_rarg, 6 );
 

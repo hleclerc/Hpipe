@@ -300,37 +300,46 @@ void CharGraph::read( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> i
             return read( leaves, l->next, str );
         }
 
-    if ( l->eq( "-" ) ) {
-        CharItem tmp( CharItem::PIVOT );
-        Vec<CharItem *> l_leaves;
-        read( l_leaves, l->children[ 0 ], &tmp );
-        read( l_leaves, l->children[ 1 ], &tmp );
-        Cond a, b;
-        if ( tmp.edges.size() != 2 or not get_cond( a, tmp.edges[ 0 ].item ) or not get_cond( b, tmp.edges[ 1 ].item ) )
-            lexer.err( l, "'..' must be between two single char conditions" );
+        if ( l->eq( "-" ) ) {
+            CharItem tmp( CharItem::PIVOT );
+            Vec<CharItem *> l_leaves;
+            read( l_leaves, l->children[ 0 ], &tmp );
+            read( l_leaves, l->children[ 1 ], &tmp );
+            Cond a, b;
+            if ( tmp.edges.size() != 2 or not get_cond( a, tmp.edges[ 0 ].item ) or not get_cond( b, tmp.edges[ 1 ].item ) )
+                lexer.err( l, "'..' must be between two single char conditions" );
 
-        CharItem *nxt = ci_pool.New( CharItem::NEXT_CHAR );
-        for( CharItem *input : inputs )
-            input->edges << nxt;
+            CharItem *nxt = ci_pool.New( CharItem::NEXT_CHAR );
+            for( CharItem *input : inputs )
+                input->edges << nxt;
 
-        CharItem *str = ci_pool.New( a & ~ b );
-        nxt->edges << str;
+            CharItem *str = ci_pool.New( a & ~ b );
+            nxt->edges << str;
 
-        return read( leaves, l->next, str );
-    }
+            return read( leaves, l->next, str );
+        }
 
-     if ( l->eq( "->" ) ) {
-         gotos << WaitGoto{ l->children[ 0 ]->str, inputs };
-         return;
-     }
+        if ( l->eq( "if" ) ) {
+            if ( l->children[ 0 ]->type != Lexem::CODE )
+                lexer.err( l, "if currently only suport code ({...}) as parameter" );
+            CharItem *nxt = ci_pool.New( CharItem::_IF, l->children[ 0 ]->str.substr( 1, l->children[ 0 ]->str.size() - 2 ) );
+            for( CharItem *input : inputs )
+                input->edges << nxt;
+            return read( leaves, l->next, nxt );
+        }
 
-     if ( l->eq( "<-" ) ) {
-         CharItem *nxt = ci_pool.New( CharItem::LABEL );
-         for( CharItem *input : inputs )
-             input->edges << nxt;
-         labels << Label{ l->children[ 0 ]->str, nxt };
+        if ( l->eq( "->" ) ) {
+            gotos << WaitGoto{ l->children[ 0 ]->str, inputs };
+            return;
+        }
 
-         return read( leaves, l->next, nxt );
+        if ( l->eq( "<-" ) ) {
+            CharItem *nxt = ci_pool.New( CharItem::LABEL );
+            for( CharItem *input : inputs )
+                input->edges << nxt;
+            labels << Label{ l->children[ 0 ]->str, nxt };
+
+            return read( leaves, l->next, nxt );
         }
 
         PRINT( *l );
@@ -378,11 +387,18 @@ CharItem *CharGraph::root() {
 namespace {
 
 void get_next_conds( Vec<const CharItem *> &nitems, const CharItem *item ) {
-    if ( item->type == CharItem::COND or item->type == CharItem::_EOF or item->type == CharItem::OK or item->type == CharItem::KO )
+    switch( item->type ) {
+    case CharItem::COND:
+    case CharItem::_EOF:
+    case CharItem::_IF:
+    case CharItem::OK:
+    case CharItem::KO:
         nitems.push_back_unique( item );
-    else
+        break;
+    default:
         for( const CharEdge &e : item->edges )
             get_next_conds( nitems, e.item );
+    }
 }
 
 bool impossible_ko_rec( const Vec<const CharItem *> &items, std::set<Vec<const CharItem *> > &visited ) {
@@ -395,11 +411,11 @@ bool impossible_ko_rec( const Vec<const CharItem *> &items, std::set<Vec<const C
     for( const CharItem *item : items )
         get_next_conds( nitems, item );
 
-    // ok/ko
+    // ok/ko/if
     for( const CharItem *item : nitems ) {
         if ( item->type == CharItem::OK )
             return true;
-        if ( item->type == CharItem::KO )
+        if ( item->type == CharItem::KO or item->type == CharItem::_IF )
             return false;
     }
 

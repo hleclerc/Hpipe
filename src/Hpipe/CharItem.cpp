@@ -73,6 +73,7 @@ void CharItem::write_to_stream( std::ostream &os ) const {
     case CharItem::COND:      os << cond; break;
     case CharItem::CODE:      os << ( str.size() > 9 ? str.substr( 0, 6 ) + "..." : str ); break;
     case CharItem::_EOF:      os << "EOF"; break;
+    case CharItem::_IF:       os << "IF"; break;
     case CharItem::KO:        os << "KO"; break;
     case CharItem::OK:        os << "OK"; break;
     default:                  os << "?";

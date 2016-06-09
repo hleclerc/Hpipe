@@ -99,7 +99,7 @@ void InstructionRewind::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
             ss << "sipe_data->rw_buf->dec_ref_upto( buf );";
     }
 
-    write_trans_0( ss, cpp_emitter );
+    write_trans( ss, cpp_emitter );
 }
 
 bool InstructionRewind::merge_predecessors( Instruction **init ) {

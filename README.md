@@ -3,7 +3,7 @@ What is Hpipe ?
 
 Hpipe is the acronym of "High Performance Incremental Parser Engine".
 
-It allows to generate optimized lexical parsers, starting from a text description of the patterns to be found. As the data is coming, validated paths can trigger subroutines.
+It enable to generate optimized lexical parsers, starting from a text description of the patterns to be found. As the data is coming, validated paths can trigger subroutines.
 
 *Incremental* means that the crunching of the incoming data can be stopped/restarted at any point. It is a base requisite for data coming from the network or from huge files that do not fit into memory.
 
@@ -11,7 +11,7 @@ In most of the cases, even if some kind of backtracking is required, data has to
 
 The following code is an example of a "machine" that counts the number of foo, bar, and bar with a number.
 
-```[python]
+```python
 main = (
     ( 'bar' '0' .. '9' { bar += *data - '0'; } ) |
     ( 'bar' { bar += 1; } ) |
@@ -20,11 +20,11 @@ main = (
 )**
 ```
 
-If the input is "bar5", `bar += 1` won't be executed: a code is executed only if the belonging path succeed. Furthermore, `|` handles the priority of the left hand side over the right one (if the lhs succeeds, the rhs is discarded... and codes are executed only when the ambiguities have disappeared).
+If the input is "bar5", `bar += 1` won't be executed: a code is executed only if the belonging path succeeds; `|` handles the priority of the left hand side over the right one (if the lhs succeeds, the rhs is discarded... and codes are executed only when the ambiguities have disappeared).
 
 If produces code like
 
-```[C++]
+```C++
 l_2:
   if ( data + 3 > end_m1 ) goto l_1; // as in the Boyer-Moore algorithm, hpipe may decide to test several chars ahead if it leads to reduction of the overall execution time
   data += 3;
@@ -65,7 +65,7 @@ Training data is used by hpipe to transform the instruction graph before code ge
 
 Let's consider the following hpipe declaration:
 
-```[python]
+```python
 a = 'a' { cpt += 'a'; }
 b = 'b' { cpt += 'b'; }
 c = 'c' { cpt += 'c'; }
@@ -98,7 +98,7 @@ Like in the Boyer-Moore algorithm it may be beneficial to test several chars ahe
 
 With
 
-```[python]
+```python
 main = (
     ( 'bcdefghi' { cpt += 1; } ) |
     any
@@ -130,11 +130,11 @@ Here are the main operators
 * `A?`(option, not having the priority): test for zero or one match of `A`.  For example, the `eol` machine is equivalent to `cr? lf` to take into account optional dos end lines. If there is a following machine, the following machine have priority.
 * `A??`(option with priority): test for zero or one match of `A`. If  `A` matches, it has the priority.
 * `-> label ... <- label` (goto): `-> label` means "jump to label". `<- label` is to define the label. It allows notably to exit loops with complex priority patterns. For instance, we can find C strings using
-```
+```python
 '"' ( '\\' | '\"' | ( '"' -> out_string ) | any )** <- out_string
 ```
 in place of
-```
+```python
 '"' ( '\\' | '\"' | any - '"' )** '"' <- out_string
 ```
 when the end machine is written twice.
@@ -148,13 +148,14 @@ Buffer style
 By default, hpipe generate a `parse` function with the following signature:
 
 
-```[C++]
-    unsigned parse( HpipeData *hpipe_data, Hpipe::Buffer *buf, bool last_buf = false );
+```C++
+unsigned parse( HpipeData *hpipe_data, Hpipe::Buffer *buf, bool last_buf = false );
 ```
+
 
 `Hpipe::Buffer` is basically a data chunk with a reference counter and a `next` field for strings made from several data chunks (`Hpipe::CbString` and `Hpipe::CbStringPtr` enable to handle thoses list as more or less regular strings). A standard reading pattern using `Hpipe::Buffer` would be
 
-```[C++]
+```C++
 Buffer *inp_buff = Buffer::New( Buffer::default_size );
 HpipeData hpipe_data;
 ...
@@ -178,7 +179,7 @@ void input_data_event() {
 
 For more conventional buffer styles (actually not enabling interruption in the data), one can use the option `-s BEG_END` which generates a function with the following signature:
 
-```[C++]
+```C++
 unsigned parse( HpipeData *sipe_data, const unsigned char *data, const unsigned char *end_m1 );
 ```
 
@@ -189,7 +190,7 @@ It is also possible to use `-s C_STR` which generates a function for zero ended 
 How to call and define machines ?
 =================================
 
-```[python]
+```python
 # Arguments values are machines. It may have default values.
 my_machine[ val, num = "123", end = digit 'e' | 'E' ] =
     { res += num; } # substring with argument names are replaced by the values

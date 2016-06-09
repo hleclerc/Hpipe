@@ -12,6 +12,7 @@ Instruction::Instruction( Context cx ) : cx( cx ), mark( cx.mark ), display_id( 
     num_ordering = -2;
     id_gen       = 0;
     orig         = nullptr;
+    cum_freq     = 0;
 }
 
 Instruction::~Instruction() {
@@ -300,9 +301,9 @@ int Instruction::get_id_gen( CppEmitter *cpp_emitter ) {
 
 }
 
-void Instruction::write_trans_0( StreamSepMaker &ss, CppEmitter *cpp_emitter ) {
-    if ( next[ 0 ].inst->num_ordering != num_ordering + 1 )
-        ss << "goto l_" << next[ 0 ].inst->get_id_gen( cpp_emitter ) << ";";
+void Instruction::write_trans( StreamSepMaker &ss, CppEmitter *cpp_emitter, unsigned num ) {
+    if ( next[ num ].inst->num_ordering != num_ordering + 1 )
+        ss << "goto l_" << next[ num ].inst->get_id_gen( cpp_emitter ) << ";";
 }
 
 void Instruction::optimize_conditions( PtrPool<Instruction> &inst_pool ) {

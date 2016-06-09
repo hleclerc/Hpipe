@@ -12,6 +12,7 @@
 #include "InstructionCond.h"
 #include "InstructionSave.h"
 #include "InstructionEof.h"
+#include "InstructionIf.h"
 #include "InstructionOK.h"
 #include "InstructionKO.h"
 #include "DotOut.h"
@@ -221,7 +222,7 @@ Instruction *InstructionGraph::make_transitions( Vec<PendingTrans> &pending_tran
         }
     }
 
-    // now we should have only conds, OKs and +1s. -> do the conds
+    // now we should have only conds, ifs, OKs and +1s. -> do the conds
     for( const CharItem *i : cx.pos ) {
         if ( i->type == CharItem::COND ) {
             if ( cx.beg() )
@@ -261,6 +262,16 @@ Instruction *InstructionGraph::make_transitions( Vec<PendingTrans> &pending_tran
                 tra( res, cx.forward( ~covered ) );
                 res->conds << ~covered;
             }
+            return res;
+        }
+    }
+
+    // ifs ?
+    for( const CharItem *item : cx.pos ) {
+        if ( item->type == CharItem::_IF ) {
+            InstructionIf *res = reg( new InstructionIf( cx, item->str, item ) );
+            tra( res, cx.forward( item ) );
+            tra( res, cx.without( item ) );
             return res;
         }
     }
@@ -449,7 +460,6 @@ void InstructionGraph::boyer_moore() {
                 front[ num_in_front ].first.emplace_back( 0, 255 );
             }
         }
-        PRINT( front.size(), front[ 0 ].first.size() );
 
         //  if only 1 cond -> nothing to optimize
         if ( front.size() == 0 or front[ 0 ].first.size() <= 1 )

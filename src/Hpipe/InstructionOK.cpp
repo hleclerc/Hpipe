@@ -24,7 +24,7 @@ void InstructionOK::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitte
         ss << "return RET_OK;";
         if ( cpp_emitter->interruptible() ) {
             es.rm_beg( 2 ) << "c_" << cpp_emitter->nb_cont_label << ":";
-            ss << "return RET_ENDED_OK;";
+            es << "return RET_ENDED_OK;";
         }
     }
 }

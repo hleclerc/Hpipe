@@ -24,6 +24,7 @@ public:
         COND,
         CODE,
         _EOF,
+        _IF,
         KO,
         OK
     };

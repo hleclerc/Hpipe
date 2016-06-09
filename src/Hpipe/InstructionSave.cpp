@@ -21,7 +21,7 @@ int InstructionSave::save_in_loc_reg() const {
 
 void InstructionSave::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
     ss << ( cpp_emitter->rewind_rec_level or not cpp_emitter->interruptible() ? "" : "sipe_data->__" ) << "save[ " << num_save << " ] = *data;";
-    write_trans_0( ss, cpp_emitter );
+    write_trans( ss, cpp_emitter );
 }
 
 

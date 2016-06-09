@@ -41,7 +41,7 @@ void InstructionCode::write_code( StreamSepMaker &ss, CppEmitter *cpp_emitter, s
 
 void InstructionCode::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
     write_code( ss, cpp_emitter, code );
-    write_trans_0( ss, cpp_emitter );
+    write_trans( ss, cpp_emitter );
 }
 
 void InstructionCode::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {

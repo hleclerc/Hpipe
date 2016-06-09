@@ -38,6 +38,7 @@ add_executable( hpipe
     src/Hpipe/InstructionRewind.cpp
     src/Hpipe/InstructionSave.cpp
     src/Hpipe/InstructionSkip.cpp
+    src/Hpipe/InstructionIf.cpp
     src/Hpipe/InstructionTestContiguous.cpp
     src/Hpipe/InstructionWithCode.cpp
     src/Hpipe/Lexem.cpp
@@ -88,8 +89,8 @@ install (
 include( CTest )
 
 macro( test_hpipe_file filename )
-  add_test( test_hpipe_file_${filename} hpipe -t ${CMAKE_SOURCE_DIR}/${filename} )
-  set_tests_properties( test_hpipe_file_${filename} PROPERTIES FAIL_REGULAR_EXPRESSION "(BAD)" )
+  add_test( test_hpipe_file_${filename} ${CMAKE_BINARY_DIR}/hpipe -t ${CMAKE_SOURCE_DIR}/${filename} )
+  set_tests_properties( test_hpipe_file_${filename} PROPERTIES FAIL_REGULAR_EXPRESSION "(BAD)" PASS_REGULAR_EXPRESSION "(OK)" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} )
 endmacro( test_hpipe_file )
  
 test_hpipe_file( tests/hpipe/simple_loop.hpipe      )
@@ -121,8 +122,8 @@ add_custom_target( bench_training        COMMAND hpipe -b                  ${CMA
 
 # generated file
 add_executable(
-    txt_to_cpp
-    src/txt_to_cpp.cpp
+  txt_to_cpp
+  src/txt_to_cpp.cpp
 )
 set_property( TARGET txt_to_cpp PROPERTY CXX_STANDARD 14 )
 

@@ -17,7 +17,7 @@ void InstructionKO::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitte
     ss << "return RET_KO;";
     if ( cpp_emitter->interruptible() ) {
         es.rm_beg( 2 ) << "c_" << cpp_emitter->nb_cont_label << ":";
-        ss << "return RET_ENDED_KO;";
+        es << "return RET_ENDED_KO;";
     }
 }
 

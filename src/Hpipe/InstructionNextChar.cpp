@@ -189,7 +189,7 @@ void InstructionNextChar::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, Cpp
         } else if ( not beg )
             ss << "++data;";
 
-        return write_trans_0( ss, cpp_emitter );
+        return write_trans( ss, cpp_emitter );
     }
 
     //
@@ -240,7 +240,7 @@ void InstructionNextChar::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, Cpp
             ss << "++data;";
     }
 
-    write_trans_0( ss, cpp_emitter );
+    write_trans( ss, cpp_emitter );
 }
 
 } // namespace Hpipe

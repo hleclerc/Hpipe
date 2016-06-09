@@ -39,7 +39,7 @@ public:
     virtual void         reg_var            ( std::function<void( std::string type, std::string name )> f );
     virtual void         write_cpp          ( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter );
     int                  get_id_gen         ( CppEmitter *cpp_emitter );
-    void                 write_trans_0      ( StreamSepMaker &ss, CppEmitter *cpp_emitter );
+    void                 write_trans        ( StreamSepMaker &ss, CppEmitter *cpp_emitter, unsigned num = 0 );
     virtual void         optimize_conditions( PtrPool<Instruction> &inst_pool );
     virtual void         find_cond_leaves   ( std::map<Instruction *, Cond> &leaves, const Cond &in, Instruction *orig );
     virtual bool         with_code          () const;

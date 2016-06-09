@@ -10,8 +10,8 @@ static inline bool lower ( const char *a ) { return *a >= 'a' and *a <= 'z'; }
 static inline bool upper ( const char *a ) { return *a >= 'A' and *a <= 'Z'; }
 static inline bool number( const char *a ) { return *a >= '0' and *a <= '9'; }
 static inline bool letter( const char *a ) { return lower ( a ) or upper ( a ); }
-static inline bool begvar( const char *a ) { return letter( a ) or *a == '_'  ; }
-static inline bool cntvar( const char *a ) { return begvar( a ) or number( a ); }
+static inline bool beg_var( const char *a ) { return letter( a ) or *a == '_'  ; }
+static inline bool cnt_var( const char *a ) { return beg_var( a ) or number( a ); }
 
 static const char *starts_with( const char *beg, const char *str ) {
     for( ; ; ++beg, ++str ) {
@@ -131,37 +131,29 @@ int Lexer::read_tok( Source *source, const char *cur ) {
     const char *beg = cur;
 
     // variable
-    if ( begvar( beg ) ) {
-        while ( cntvar( ++cur ) );
+    if ( beg_var( beg ) ) {
+        while ( cnt_var( ++cur ) );
 
-        // beg_test ?
-        if ( std::string( beg, cur ) == "beg_test" ) {
-            cur += 8;
-            while ( *cur and strncmp( cur, "\nend_test", 9 ) != 0 )
-                ++cur;
-            if ( *cur )
-                cur += 9;
-            return push_tok( source, beg, cur, Lexem::TEST );
-        }
+        // beg_..., end_... ?
+        #define BEG_END( TXT, TYPE ) \
+            if ( cur - beg == sizeof( "beg_" TXT ) - 1 and strncmp( beg, "beg_" TXT, sizeof( "beg_" TXT ) - 1 ) == 0 ) { \
+                cur += 3 + sizeof( TXT ); \
+                while ( *cur and strncmp( cur, "\nend_" TXT, 4 + sizeof( TXT ) ) != 0 ) \
+                    ++cur; \
+                if ( *cur ) \
+                    cur += 4 + sizeof( TXT ); \
+                return push_tok( source, beg, cur, TYPE ); \
+            }
+        BEG_END( "test"    , Lexem::TEST     );
+        BEG_END( "training", Lexem::TRAINING );
+        BEG_END( "methods" , Lexem::METHODS  );
+        #undef BEG_END
 
-        // beg_training ?
-        if ( std::string( beg, cur ) == "beg_training" ) {
-            cur += 12;
-            while ( *cur and strncmp( cur, "\nend_training", 13 ) != 0 )
-                ++cur;
-            if ( *cur )
-                cur += 13;
-            return push_tok( source, beg, cur, Lexem::TRAINING );
-        }
+        // if ...
+        if ( cur - beg == 2 and strncmp( beg, "if", 2 ) == 0 )
+            return push_tok( source, beg, cur, Lexem::OPERATOR, 6 );
 
-        // beg_methods ?
-        if ( std::string( beg, cur ) == "beg_methods" ) {
-            cur += 11;
-            while ( *cur and strncmp( cur, "\nend_methods", 12 ) != 0 )
-                ++cur;
-            return push_tok( source, beg + 11, cur + 1, Lexem::METHODS ) + 11 + 11;
-        }
-
+        // else, generic variable
         return push_tok( source, beg, cur, Lexem::VARIABLE );
     }
 
@@ -366,7 +358,7 @@ std::string Lexer::methods() const {
         if ( item->type == Lexem::METHODS ) {
             if ( res.size() )
                 res += '\n';
-            res += item->str;
+            res += std::string( item->str.begin() + sizeof( "beg_methods" ) - 1, item->str.end() - sizeof( "end_methods" ) );
         }
     }
     return res;
