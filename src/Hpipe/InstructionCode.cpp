@@ -25,6 +25,7 @@ bool InstructionCode::same_code( const Instruction *_that ) const {
 }
 
 void InstructionCode::write_code( StreamSepMaker &ss, CppEmitter *cpp_emitter, std::string str, const std::string &repl ) {
+    // variables
     for( auto &p : cpp_emitter->variables ) {
         for( std::string::size_type pos = 0; ; ) {
             pos = find_var_in_code( str, p.first, pos );
@@ -34,6 +35,19 @@ void InstructionCode::write_code( StreamSepMaker &ss, CppEmitter *cpp_emitter, s
             pos += 11 + p.first.size();
         }
     }
+
+    // RETURN_CONT
+    for( std::string::size_type pos = 0; ; ) {
+        pos = find_var_in_code( str, "RETURN_STOP_CONT", pos );
+        if ( pos == std::string::npos )
+            break;
+        ++cpp_emitter->nb_cont_label;
+        std::ostringstream val; val << "sipe_data->inp_cont = &&c_" << cpp_emitter->nb_cont_label << "; return RET_STOP_CONT; c_" << cpp_emitter->nb_cont_label << ":;";
+        str = str.replace( pos, 16, val.str() );
+        pos += val.str().size();
+    }
+
+    //
     if ( repl.size() )
         str = cpp_emitter->repl_data( str, repl );
     ss << str;

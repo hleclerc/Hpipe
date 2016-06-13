@@ -38,11 +38,12 @@ CppEmitter::CppEmitter( InstructionGraph *sg ) : root( sg->root() ), sg( sg ) {
 
 void CppEmitter::write_constants( StreamSepMaker &ss ) {
     ss << "// constants";
-    ss << "static const unsigned RET_CONT     = 0;";
-    ss << "static const unsigned RET_OK       = 1;";
-    ss << "static const unsigned RET_KO       = 2;";
-    ss << "static const unsigned RET_ENDED_OK = 3;";
-    ss << "static const unsigned RET_ENDED_KO = 4;";
+    ss << "static const unsigned RET_CONT      = 0;";
+    ss << "static const unsigned RET_OK        = 1;";
+    ss << "static const unsigned RET_KO        = 2;";
+    ss << "static const unsigned RET_ENDED_OK  = 3;";
+    ss << "static const unsigned RET_ENDED_KO  = 4;";
+    ss << "static const unsigned RET_STOP_CONT = 5;";
 }
 
 void CppEmitter::write_hpipe_data( StreamSepMaker &ss, const std::string &name ) {
