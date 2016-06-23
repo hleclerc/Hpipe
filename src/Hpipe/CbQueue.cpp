@@ -177,7 +177,7 @@ void CbQueue::add_buff( IKnowWhatIDo, Buffer *buff, unsigned offset_in_buff ) {
 
 void CbQueue::insert_some( PT pos, const void *data, PT size ) {
     if ( off or pos ) {
-        IMPORTANT_TODO;
+        HPIPE_IMPORTANT_TODO;
     }
     // simple case: we want to insert stuff at the beginning of the first block
     Buffer *b = Buffer::New( size );

@@ -173,7 +173,7 @@ Instruction *InstructionNextChar::make_boyer_moore_rec( PtrPool<Instruction> &in
 }
 
 void InstructionNextChar::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
-    // ASSERT( transitions.size() == 2, "..." );
+    // HPIPE_ASSERT( transitions.size() == 2, "..." );
     if ( cpp_emitter->rewind_rec_level ) {
         if ( cpp_emitter->interruptible() ) {
             ss << "if ( data " << ( beg ? ">" : ">=" ) << " end_m1 ) goto c_" << ++cpp_emitter->nb_cont_label << ";";

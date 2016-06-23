@@ -182,7 +182,7 @@ void Instruction::apply_rec_rewind_l( std::function<void (Instruction *, unsigne
 Transition *Instruction::train( std::string::size_type &s, std::string::size_type &m, const std::string &inp, double freq, bool use_contiguous ) {
     if ( next.empty() )
         return 0;
-    ASSERT( next.size() == 1, "" );
+    HPIPE_ASSERT( next.size() == 1, "" );
     return &next[ 0 ];
 }
 
@@ -214,7 +214,7 @@ int Instruction::save_in_loc_reg() const {
 
 void Instruction::remove( bool update_rcitem ) {
     for( Transition &p : prev ) {
-        ASSERT( p.inst != this, "..." );
+        HPIPE_ASSERT( p.inst != this, "..." );
 
         unsigned ind = p.inst->next.index_first_checking( [&]( Transition &t ) {
                 return t.inst == this;
@@ -233,7 +233,7 @@ void Instruction::remove( bool update_rcitem ) {
     }
 
     for( Transition &t : next ) {
-        ASSERT( t.inst != this, "..." );
+        HPIPE_ASSERT( t.inst != this, "..." );
 
         unsigned ind = t.inst->prev.index_first_checking( [&]( Transition &p ) {
             return p.inst == this;
@@ -427,7 +427,7 @@ void Instruction::update_in_a_cycle() {
 
 void Instruction::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
     PRINTL( "save_seq", *this );
-    TODO;
+    HPIPE_TODO;
 }
 
 static bool can_be_merged( const Instruction *a, const Instruction *b ) {
@@ -507,6 +507,10 @@ void Instruction::boyer_moore_opt( PtrPool<Instruction> &inst_pool, Instruction 
 }
 
 void Instruction::merge_eq_next( PtrPool<Instruction> &inst_pool ) {
+}
+
+bool Instruction::has_ret_cont() const {
+    return false;
 }
 
 } // namespace Hpipe

@@ -17,8 +17,8 @@
 */
 
 #include "Assert.h"
+#include "Print.h"
 #include "Cond.h"
-
 #include <sstream>
 
 namespace Hpipe {

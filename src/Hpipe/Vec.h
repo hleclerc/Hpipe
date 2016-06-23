@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Assert.h"
-#include "Print.h"
+#include <iostream>
 #include <vector>
 
 namespace Hpipe {
@@ -49,8 +49,8 @@ struct Vec : std::vector<T> {
 
     bool     all_eq               () const { for( unsigned i = 1; i < this->size(); ++i ) if ( this->operator[]( i ) != this->operator[]( 0 ) ) return false; return true; }
 
-    const T &operator[]           ( unsigned index ) const { ASSERT_IF_DEBUG( index < this->size() ); return std::vector<T>::operator[]( index ); }
-    T       &operator[]           ( unsigned index ) { ASSERT_IF_DEBUG( index < this->size() ); return std::vector<T>::operator[]( index ); }
+    const T &operator[]           ( unsigned index ) const { HPIPE_ASSERT_IF_DEBUG( index < this->size() ); return std::vector<T>::operator[]( index ); }
+    T       &operator[]           ( unsigned index ) { HPIPE_ASSERT_IF_DEBUG( index < this->size() ); return std::vector<T>::operator[]( index ); }
 
     bool     contains             ( const T & val ) const { for( unsigned i = 0; i < this->size(); ++i ) if ( this->operator[]( i ) == val ) return true; return false; }
 

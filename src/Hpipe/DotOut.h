@@ -19,6 +19,7 @@
 #pragma once
 
 #include "Stream.h"
+#include "Print.h"
 #include <sstream>
 #include <fstream>
 

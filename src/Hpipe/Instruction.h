@@ -44,6 +44,7 @@ public:
     virtual void         find_cond_leaves   ( std::map<Instruction *, Cond> &leaves, const Cond &in, Instruction *orig );
     virtual bool         with_code          () const;
     virtual bool         data_code          () const;
+    virtual bool         has_ret_cont       () const;
     void                 update_in_a_cycle  ();
     // void              get_boyer_moore_seq( Vec<std::pair<Vec<Cond>, Instruction *> > &front );
     virtual void         write_cpp_code_seq ( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter );

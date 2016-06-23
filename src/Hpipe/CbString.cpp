@@ -71,7 +71,7 @@ CbString::CbString( const CbStringPtr &bs ) : beg( bs.beg ), off( bs.off ), end(
 }
 
 CbString::CbString( CbString &&bs, PT off, PT len ) {
-    TODO;
+    HPIPE_TODO;
 }
 
 CbString::CbString( const CbQueue &bs, PT s_off, PT s_len ) : beg( bs.beg ), off( bs.off + s_off ), end( bs.off + std::min( bs.size(), s_off + s_len ) ) {
@@ -94,7 +94,7 @@ CbString::CbString( const CbQueue &bs, PT s_off, PT s_len ) : beg( bs.beg ), off
 }
 
 CbString::CbString( CbQueue &&bs, PT off, PT len ) {
-    TODO;
+    HPIPE_TODO;
 }
 
 CbString::CbString( const CbQueue &bs ) : beg( bs.beg ), off( bs.off ), end( off + bs.size() ) {
@@ -105,7 +105,7 @@ CbString::CbString( const CbQueue &bs ) : beg( bs.beg ), off( bs.off ), end( off
 }
 
 CbString::CbString( IKnowWhatIDo, Buffer *buff, PT off, PT len ) : beg( buff ), off( off ), end( off + len ) {
-    ASSERT_IF_DEBUG( buff->next == 0 );
+    HPIPE_ASSERT_IF_DEBUG( buff->next == 0 );
     if ( len )
         inc_ref( buff );
 }

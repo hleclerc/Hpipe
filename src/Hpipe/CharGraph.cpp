@@ -46,7 +46,7 @@ CharGraph::CharGraph( Lexer &lexer, const Lexem *lexem ) : lexer( lexer ), base(
         for( unsigned num_edge = 0; num_edge < item->edges.size(); ) {
             CharItem *next = item->edges[ num_edge ].item;
             if ( next->type == CharItem::PIVOT ) {
-                ASSERT( next->edges.size() >= 1, "" );
+                HPIPE_ASSERT( next->edges.size() >= 1, "" );
                 item->edges[ num_edge ].item = next->edges[ 0 ].item;
                 for( unsigned ind = 1; ind < next->edges.size(); ++ind )
                     item->edges.insert( item->edges.begin() + num_edge + 1, 1, next->edges[ ind ].item );
@@ -71,7 +71,7 @@ void CharGraph::read( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> i
         }
 
         //
-        ERROR( "should not happen at this point (variables are normally removed by clone)" );
+        HPIPE_ERROR( "should not happen at this point (variables are normally removed by clone)" );
     }
 
     if ( l->type == Lexem::STRING ) {
@@ -281,7 +281,7 @@ void CharGraph::read( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> i
                 }
             }
 
-            ERROR( "Should be resolved by clone" );
+            HPIPE_ERROR( "Should be resolved by clone" );
         }
 
         if ( l->eq( ".." ) ) {
@@ -343,7 +343,7 @@ void CharGraph::read( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> i
         }
 
         PRINT( *l );
-        ERROR( "Uknown operator type" );
+        HPIPE_ERROR( "Uknown operator type" );
         return;
     }
 
@@ -359,7 +359,7 @@ void CharGraph::read( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> i
     if ( l->type == Lexem::TRAINING or l->type == Lexem::METHODS )
         return read( leaves, l->next, inputs );
 
-    ERROR( "Unmanaged type %i", l->type );
+    HPIPE_ERROR( "Unmanaged type %i", l->type );
 }
 
 int CharGraph::display_dot( const char *f, const char *prg ) const {
@@ -433,7 +433,7 @@ bool impossible_ko_rec( const Vec<const CharItem *> &items, std::set<Vec<const C
             eofs << item;
             continue;
         }
-        ASSERT( item->type == CharItem::COND, "..." );
+        HPIPE_ASSERT( item->type == CharItem::COND, "..." );
         covered |= item->cond;
     }
     if ( not covered.always_checked() )

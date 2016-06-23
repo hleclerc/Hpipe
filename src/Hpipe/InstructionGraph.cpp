@@ -210,7 +210,7 @@ Instruction *InstructionGraph::make_transitions( Vec<PendingTrans> &pending_tran
             case CharItem::CODE:    res = reg( new InstructionCode  ( cx, item->str, item ) ); break;
             case CharItem::ADD_STR: res = reg( new InstructionAddStr( cx, item->str, item ) ); break;
             case CharItem::CLR_STR: res = reg( new InstructionClrStr( cx, item->str, item ) ); break;
-            default: TODO;
+            default: HPIPE_TODO;
             }
 
             //
@@ -230,7 +230,7 @@ Instruction *InstructionGraph::make_transitions( Vec<PendingTrans> &pending_tran
             Cond covered;
             Vec<Cond> conds;
             for( const CharItem *item : cx.pos ) {
-                ASSERT( item->type == CharItem::COND or item->type == CharItem::NEXT_CHAR or item->type == CharItem::OK, "" );
+                HPIPE_ASSERT( item->type == CharItem::COND or item->type == CharItem::NEXT_CHAR or item->type == CharItem::OK, "" );
                 if ( item->type != CharItem::COND )
                     continue;
                 covered |= item->cond;
@@ -278,7 +278,7 @@ Instruction *InstructionGraph::make_transitions( Vec<PendingTrans> &pending_tran
 
     // at this point, we should have only OKs and +1s
     for( const CharItem *item : cx.pos )
-        ASSERT( item->type == CharItem::OK or item->type == CharItem::NEXT_CHAR, "" );
+        HPIPE_ASSERT( item->type == CharItem::OK or item->type == CharItem::NEXT_CHAR, "" );
 
     int first_impossible_ko = -1;
     if ( cx.only_has( CharItem::NEXT_CHAR ) ) {

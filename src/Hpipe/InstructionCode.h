@@ -15,9 +15,10 @@ public:
     virtual bool         data_code         () const;
     virtual Instruction *clone             ( PtrPool<Instruction> &inst_pool, const Context &ncx, const Vec<unsigned> &keep_ind );
     virtual bool         same_code         ( const Instruction *that ) const;
+    virtual bool         has_ret_cont      () const;
     static void          write_code        ( StreamSepMaker &ss, CppEmitter *cpp_emitter, std::string str, const std::string &repl = {} );
 
-    std::string code;
+    std::string          code;
 };
 
 } // namespace Hpipe
