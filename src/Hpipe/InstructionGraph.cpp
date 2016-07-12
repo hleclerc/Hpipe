@@ -580,26 +580,27 @@ Instruction *InstructionGraph::make_rewind_inst( Vec<PendingRewindTrans> &pendin
                 ind_keeped_instr << ind;
 
         res = orig->clone( inst_pool, cx, ind_keeped_instr );
-    }
 
-    if ( InstructionWithCode *code = dynamic_cast<InstructionWithCode *>( res ) ) {
-        if ( cx.pos.size() > 1 and not pt.rewind_mark ) {
-            InstructionMark *mark = inst_pool << new InstructionMark( cx, cx.pos.index_first( code->active_ci ) );
-            instruction_map.insert( iter, { RewindContext{ orig, pt.rewind_mark }, mark } );
-            mark->orig = pt.inst->orig;
+        // need a mark ?
+        if ( InstructionWithCode *code = dynamic_cast<InstructionWithCode *>( res ) ) {
+            if ( cx.pos.size() > 1 and not pt.rewind_mark ) {
+                InstructionMark *mark = inst_pool << new InstructionMark( cx, cx.pos.index_first( code->active_ci ) );
+                instruction_map.insert( iter, { RewindContext{ orig, pt.rewind_mark }, mark } );
+                mark->orig = pt.inst->orig;
 
-            pending_trans.emplace_back( mark, pt.num_trans, mark, nullptr, true );
-            return mark;
+                pending_trans.emplace_back( mark, pt.num_trans, mark, nullptr, true );
+                return mark;
+            }
         }
+
+        // next instructions
+        for( unsigned ind = 0; ind < orig->next.size(); ++ind )
+            if ( possible_inst.count( orig->next[ ind ].inst ) )
+                pending_trans.emplace_back( res, ind, pt.rewind_mark );
     }
 
     instruction_map.insert( iter, { RewindContext{ orig, pt.rewind_mark }, res } );
     res->orig = orig;
-
-    for( unsigned ind = 0; ind < orig->next.size(); ++ind )
-        if ( possible_inst.count( orig->next[ ind ].inst ) )
-            pending_trans.emplace_back( res, ind, pt.rewind_mark );
-
     return res;
 }
 
@@ -821,10 +822,11 @@ void InstructionGraph::make_rewinds( Instruction *root ) {
             // information needed for simplifications
             rewind->exec->update_in_a_cycle();
 
-            //            has_code = true;
-            //            has_code_in_a_cycle = true;
-            //            rewind->has_code = true;
-            //            rewind->has_code_in_a_cycle = true;
+            //#warning ...
+            //                        has_code = true;
+            //                        has_code_in_a_cycle = true;
+            //                        rewind->has_code = true;
+            //                        rewind->has_code_in_a_cycle = true;
 
             rewind->exec->apply( [&]( Instruction *inst ) {
                 if ( InstructionWithCode *code = dynamic_cast<InstructionWithCode *>( inst ) ) {
