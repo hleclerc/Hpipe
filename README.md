@@ -3,19 +3,19 @@ What is Hpipe ?
 
 Hpipe is the acronym of "High Performance Incremental Parser Engine".
 
-It enable to generate optimized lexical parsers, starting from a text description of the patterns to be found. As the data is coming, validated paths can trigger subroutines.
+It enable to generate optimized code for regular expressions with actions, starting from a text description of the patterns to be found.
 
 *Incremental* means that the crunching of the incoming data can be stopped/restarted at any point. It is a base requisite for data coming from the network or from huge files that do not fit into memory.
 
-In most of the cases, even if some kind of backtracking is required, data has to be read only once (meaning for instance that in most of the cases, data has not to be saved). For specific cases where data has to be read again after a first pass (i.e. if not yet *validated* subroutines depend on data), Hpipe generate the code to handle the buffers in an optimal way.
+In most of the cases, even if some kind of rewinds are required, data has to be read only once (zero copy). For specific cases where data has to be read again after a first pass (i.e. if not yet *validated* subroutines depend on data), Hpipe generate the code to handle the buffers in an optimized way.
 
-The following code is an example of a "machine" that counts the number of foo, bar, and bar with a number.
+The following code is an example of a "machine" that sums the last digits of 'bar[0-9]', and that count the number of 'bar' not followed by a digit (which can be EOF or the beginning of something else...) and 'foo'.
 
 ```python
 main = (
-    ( 'bar' '0' .. '9' { bar += *data - '0'; } ) |
-    ( 'bar' { bar += 1; } ) |
-    ( 'foo' { foo += 1; } ) |
+    ( 'bar' '0' .. '9' { a += *data - '0'; } ) |
+    ( 'bar' { b += 1; } ) |
+    ( 'foo' { c += 1; } ) |
     any_utf8
 )**
 ```
@@ -27,7 +27,7 @@ If produces code like
 ```C++
 l_2:
   // as in the Boyer-Moore algorithm, hpipe may decide to test several
-  // chars ahead if it leads to reduction of the overall execution time
+  // chars ahead if it leads on average to reduction of the overall execution time
   if ( data + 3 > end_m1 ) goto l_1;
   data += 3;
   // partition and ordering of tests depends on the result of "training"
@@ -37,7 +37,7 @@ l_2:
   if ( data[ -1 ] != 'o' ) goto l_21;
   if ( data[ -2 ] != 'f' ) goto l_2;
 l_3:
-  { foo += 1; }
+  { c += 1; }
   goto l_2;
 l_21:
   if ( data[ -1 ] != 'f' ) goto l_2;
@@ -58,18 +58,37 @@ e_7:
   goto l_16;
 ```
 
+Here is another example, to display floating point numbers:
+
+```python
+read_dec[ res ] = # res is a function argument
+    ( digit { res =            *data - '0'; } )
+    ( digit { res = 10 * res + *data - '0'; } )**
+
+number_flt =
+    read_dec[ "nfl" ]
+    # in this example, '.' is mandatory for floating point numbers
+    '.' { mul = 1; } ( digit { nfl += ( mul *= 0.1 ) * ( *data - '0' );  } )**
+    # 'e' and 'E' are optional
+    ( 'e' | 'E'
+        ( '+'? read_dec[ "num" ] { nfl *= std::pow( 10.0,  num ); } ) |
+        ( '-'  read_dec[ "num" ] { nfl *= std::pow( 10.0, -num ); } )
+    )??
+    { os << nfl << " "; }
+```
+
 
 Performance
 ===========
 
-Hpipe is made for Performance from the very ground (the facts that it tries to read the data only once, that intermediate storage is avoided due to the exploitation of the program counter, ...). Furthermore, it contains specific optimizations not found in tools like Ragel. Here are some examples:
+Hpipe is made from the ground for performance. Here are some specific optimizations:
 
 Training
 --------
 
-Training data is used by hpipe to transform the instruction graph before code generation. In particular, it enables to automatically decompose the tests to minimize the number of conditional branches for the average cases (+ provide some help for the Branch Prediction Units, ...).
+Training data is used by hpipe to transform the instruction graph before code generation. In particular, it enables to automatically decompose the tests to minimize the number of conditional branches for the average cases (+ provide some help for the Branch Prediction Units and so on).
 
-Let's consider the following hpipe declaration:
+Let's consider the following declaration:
 
 ```python
 a = 'a' { cpt += 'a'; }
@@ -78,8 +97,10 @@ c = 'c' { cpt += 'c'; }
 d = 'd' { cpt += 'd'; }
 e = lf  { cpt +=  10; }
 
+# we simply test for some given chars
 main = ( a | b | c | d | e )**
 
+# some training data
 beg_training
     input
         aaaacdacaabda... (a majority of 'a')
@@ -88,21 +109,21 @@ beg_training
 end_training
 ```
 
-It leads to
+Launched on (very long) data similar to the training one, execution times are
 
-|                            | Without training | With training  |speedup |
-|----------------------------|:----------------:|:--------------:|:------:|
-| exec time w/o profile opt  |     2.33148      |    1.1844      | 1.97x  |
-| exec time with profile opt |     1.81193      |    0.806927    | 2.24x  |
+|                  | Without training | With training  |speedup |
+|------------------|:----------------:|:--------------:|:------:|
+| w/o profile opt  |     2.33148s     |    1.1844s     | 1.97x  |
+| with profile opt |     1.81193s     |    0.806927s   | 2.24x  |
 
-(profile opt means use of `-fprofile-instr-generate` with g++)
+("profile opt" means use of `g++ -fprofile-instr-generate` -- clang gives the same kind of results with or without profile optimizations)
 
 Boyer-Moore like optimizations
 ------------------------------
 
-Like in the Boyer-Moore algorithm it may be beneficial to test several chars ahead, in particular if the test leads most of the time to path where it is of no use to test the chars before.
+Like in the Boyer-Moore algorithm it may be beneficial to test several chars ahead, in particular if the test leads most of the time to paths where it is of no use to test the chars before.
 
-With
+For instance. with
 
 ```python
 main = (
@@ -111,11 +132,11 @@ main = (
 )**
 ```
 
-we obtain the following result (g++, Skylake, ...):
+we obtain (on a very long random data set) the following result:
 
 |                  | Without BM       |  With BM       |speedup |
 |------------------|:----------------:|:--------------:|:------:|
-| execution time   |   0.937635       |    0.126285    | 7.42x  |
+| execution time   |   0.937635s      |    0.126285s   | 7.42x  |
 
 
 Syntax
@@ -155,11 +176,11 @@ By default, hpipe generate a `parse` function with the following signature:
 
 
 ```C++
-unsigned parse( HpipeData *hpipe_data, Hpipe::Buffer *buf, bool last_buf = false );
+unsigned parse( HpipeData* hpipe_data, Hpipe::Buffer* buf, bool last_buf = false )
 ```
 
 
-`Hpipe::Buffer` is basically a data chunk with a reference counter and a `next` field for strings made from several data chunks (`Hpipe::CbString` and `Hpipe::CbStringPtr` enable to handle thoses list as more or less regular strings). A standard reading pattern using `Hpipe::Buffer` would be
+`Hpipe::Buffer` is basically a data chunk with a reference counter and a `next` field for strings made from several data chunks (`Hpipe::CbString` and `Hpipe::CbStringPtr` enable to handle those lists as more or less regular strings). A standard reading pattern using `Hpipe::Buffer` would be
 
 ```C++
 Buffer *inp_buff = Buffer::New( Buffer::default_size );
@@ -186,7 +207,7 @@ void input_data_event() {
 For more conventional buffer styles (actually not enabling interruption in the data), one can use the option `-s BEG_END` which generates a function with the following signature:
 
 ```C++
-unsigned parse( HpipeData *sipe_data, const unsigned char *data, const unsigned char *end_m1 );
+unsigned parse( HpipeData* sipe_data, const unsigned char* data, const unsigned char* end_m1 );
 ```
 
 `end_m1` must point to the last char (e.g. for data.size == 0, end_m1 must be equal to data - 1).
@@ -231,15 +252,3 @@ Operator precedence
 | 5                |    `|`                     |
 | 6                |    `,`                     |
 | 7                |      `=`                   |
-
-
-Why another parse engine ?
-==========================
-
-There is already a bunch of tool to generate code that perform pattern-matching on text (e.g. [Flex](http://flex.sourceforge.net/manual/index.html), [Ragel](http://www.complang.org/ragel)...).
-
-To generate incremental parsers, Ragel may be a great help, at some point, but not if several paths with actions are possible (in this case ragel executes all the actions). It is counter-intuitive and leads to complex definitions: lot of work are left to the user.
-
-Definition and use of priority enable hpipe definition to be more concise and less error prone than e.g. standard regular expressions.
-
-Furthermore, hpipe has been designed to generate *fast* code, with specific optimizations that lead to significant speedups.
