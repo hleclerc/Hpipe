@@ -182,7 +182,9 @@ void Instruction::apply_rec_rewind_l( std::function<void (Instruction *, unsigne
 Transition *Instruction::train( std::string::size_type &s, std::string::size_type &m, const std::string &inp, double freq, bool use_contiguous ) {
     if ( next.empty() )
         return 0;
-    HPIPE_ASSERT( next.size() == 1, "" );
+    if ( next.size() != 1 )
+        PRINTL( *this ); // need a surdef
+    //     HPIPE_ASSERT( next.size() == 1, "" );
     return &next[ 0 ];
 }
 
