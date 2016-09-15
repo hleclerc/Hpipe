@@ -6,7 +6,7 @@ namespace Hpipe {
 InstructionCond::InstructionCond( const Context &cx, const Cond &cond, int off_data, const Cond &not_in ) : Instruction( cx ), cond( cond ), not_in( not_in ), off_data( off_data ) {
 }
 
-void InstructionCond::write_dot( std::ostream &os ) const {
+void InstructionCond::write_dot( std::ostream &os, std::vector<std::string> *edge_labels ) const {
     os << cond; // << " not_in " << not_in;
     if ( off_data )
         os << " O(" << off_data << ")";

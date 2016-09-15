@@ -1,4 +1,4 @@
-#include "Instruction.h"
+#include "InstructionNextChar.h"
 #include "CppEmitter.h"
 #include "DotOut.h"
 #include "Assert.h"
@@ -45,7 +45,8 @@ void Instruction::write_dot_rec( std::ostream &os, bool disp_inst_pred, bool dis
         ss << "] ";
     }
 
-    write_dot( ss );
+    std::vector<std::string> edge_labels;
+    write_dot( ss, &edge_labels );
 
     // ss << "in=" << cx.in << " ";
 
@@ -67,27 +68,23 @@ void Instruction::write_dot_rec( std::ostream &os, bool disp_inst_pred, bool dis
 
         std::ostringstream label;
         int cpt = 0;
-        //        if ( type == Instruction::COND ) {
-        //            if ( t.eof )
-        //                label << ( cpt++ ? "\n" : "" ) << "EOF";
-        //            if ( not t.cond.never_checked() or t.eof == false )
-        //                label << ( cpt++ ? "\n" : "" ) << t.cond;
-        //            label << ( cpt++ ? "\n" : "" ) << t.freq;
-        //        }
-
-        //if ( t.rcitem.size() > 1 or ( t.rcitem.size() == 1 and t.rcitem[] ) )
         if ( disp_rc_item )
             label << ( cpt++ ? "\n" : "" ) << t.rcitem;
         if ( disp_trans_freq and t.freq >= 0 )
             label << ( cpt++ ? "\n" : "" ) << "f=" << t.freq;
+        if ( nt < edge_labels.size() )
+            label << ( cpt++ ? "\n" : "" ) << edge_labels[ nt ];
 
         dot_out( os << "  node_" << this << " -> node_" << t.inst << " [label=\"", label.str() ) << "\"";
 
-        switch ( nt ) {
-        case 0:  break;
-        case 1:  os << ",style=dashed"; break;
-        default: os << ",style=dotted"; break;
-        }
+        //        switch ( nt ) {
+        //        case 0:  break;
+        //        case 1:  os << ",style=dashed"; break;
+        //        default: os << ",style=dotted"; break;
+        //        }
+
+        if ( nt and dynamic_cast<const InstructionNextChar *>( this ) )
+            os << ",color=lightgray";
 
         os << "];\n";
     }

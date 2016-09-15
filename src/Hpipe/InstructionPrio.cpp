@@ -2,7 +2,7 @@
 
 namespace Hpipe {
 
-void InstructionPrio::write_dot( std::ostream &os ) const {
+void InstructionPrio::write_dot( std::ostream &os, std::vector<std::string> *edge_labels ) const {
     os << "PR";
 }
 

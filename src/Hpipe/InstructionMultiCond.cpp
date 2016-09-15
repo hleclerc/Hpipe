@@ -7,12 +7,17 @@ namespace Hpipe {
 InstructionMultiCond::InstructionMultiCond( const Context &cx, const Vec<Cond> &conds, int off_data ) : Instruction( cx ), conds( conds ), off_data( off_data ) {
 }
 
-void InstructionMultiCond::write_dot( std::ostream &os ) const {
+void InstructionMultiCond::write_dot( std::ostream &os, std::vector<std::string> *edge_labels ) const {
     os << "MC";
-    for( unsigned i = 0; i < conds.size() - 1; ++i )
-        os << " " << conds[ i ];
+    if ( edge_labels )
+        for( unsigned i = 0; i < conds.size(); ++i )
+            edge_labels->emplace_back( to_string( conds[ i ] ) );
+    else
+        for( unsigned i = 0; i < conds.size() - 1; ++i )
+            os << " " << conds[ i ];
     if ( off_data )
         os << " O(" << off_data << ")";
+
 }
 
 Instruction *InstructionMultiCond::clone( PtrPool<Instruction> &inst_pool, const Context &ncx, const Vec<unsigned> &keep_ind ) {

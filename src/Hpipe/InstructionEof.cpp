@@ -7,7 +7,7 @@ namespace Hpipe {
 InstructionEof::InstructionEof( const Context &cx, bool beg ) : Instruction( cx ), beg( beg ) {
 }
 
-void InstructionEof::write_dot( std::ostream &os ) const {
+void InstructionEof::write_dot( std::ostream &os, std::vector<std::string> *edge_labels ) const {
     os << "EOF";
     if ( beg )
         os << "(B)";

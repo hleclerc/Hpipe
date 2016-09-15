@@ -7,7 +7,7 @@ InstructionSave::InstructionSave( const Context &cx, unsigned num_save ) : Instr
 
 }
 
-void InstructionSave::write_dot( std::ostream &os ) const {
+void InstructionSave::write_dot( std::ostream &os, std::vector<std::string> *edge_labels ) const {
     os << "S(" << num_save << ")";
 }
 

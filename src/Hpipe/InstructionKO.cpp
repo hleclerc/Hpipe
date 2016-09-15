@@ -3,7 +3,7 @@
 
 namespace Hpipe {
 
-void InstructionKO::write_dot( std::ostream &os ) const {
+void InstructionKO::write_dot( std::ostream &os, std::vector<std::string> *edge_labels ) const {
     os << "KO";
 }
 

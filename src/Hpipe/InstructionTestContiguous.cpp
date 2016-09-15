@@ -7,7 +7,7 @@ namespace Hpipe {
 InstructionTestContiguous::InstructionTestContiguous(const Context &cx, bool beg, unsigned nb_chars ) : Instruction( cx ), beg( beg ), nb_chars( nb_chars ) {
 }
 
-void InstructionTestContiguous::write_dot( std::ostream &os ) const {
+void InstructionTestContiguous::write_dot( std::ostream &os, std::vector<std::string> *edge_labels ) const {
     os << "+" << nb_chars << "?";
     if ( beg )
         os << "(B)";

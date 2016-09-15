@@ -18,7 +18,7 @@ public:
     virtual ~Instruction();
 
     virtual void         write_to_stream    ( std::ostream &os ) const;
-    virtual void         write_dot          ( std::ostream &os ) const = 0;
+    virtual void         write_dot          ( std::ostream &os, std::vector<std::string> *edge_labels = 0 ) const = 0;
     virtual void         write_dot_add      ( std::ostream &os, bool disp_inst_pred, bool disp_trans_freq, bool disp_rc_item ) const;
     void                 write_dot_rec      ( std::ostream &os, bool disp_inst_pred, bool disp_trans_freq, bool disp_rc_item ) const;
     virtual Instruction *clone              ( PtrPool<Instruction> &inst_pool, const Context &ncx, const Vec<unsigned> &keep_ind ) = 0;

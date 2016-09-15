@@ -9,7 +9,7 @@ namespace Hpipe {
 InstructionIf::InstructionIf( const Context &cx, const std::string &cond, const CharItem *active_ci ) : InstructionWithCode( cx, active_ci ), cond( cond ) {
 }
 
-void InstructionIf::write_dot( std::ostream &os ) const {
+void InstructionIf::write_dot( std::ostream &os, std::vector<std::string> *edge_labels ) const {
     os << "IF(" << cond << ")";
 }
 

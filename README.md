@@ -118,6 +118,8 @@ Launched on (very long) data similar to the training one, execution times are
 
 ("profile opt" means use of `g++ -fprofile-instr-generate` -- clang gives the same kind of results with or without profile optimizations)
 
+On some real-world cases (e.g. in a C++ parser...), the speedup can reach an order of magnitude.
+
 Boyer-Moore like optimizations
 ------------------------------
 
@@ -132,7 +134,7 @@ main = (
 )**
 ```
 
-we obtain (on a very long random data set) the following result:
+we obtain (on a very long random data set) the following result (using `--boyer-more` flag or not):
 
 |                  | Without BM       |  With BM       |speedup |
 |------------------|:----------------:|:--------------:|:------:|

@@ -2,7 +2,7 @@
 
 namespace Hpipe {
 
-void InstructionNone::write_dot( std::ostream &os ) const {
+void InstructionNone::write_dot( std::ostream &os, std::vector<std::string> *edge_labels ) const {
     os << "NONE";
 }
 

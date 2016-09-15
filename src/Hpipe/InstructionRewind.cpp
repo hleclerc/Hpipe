@@ -7,7 +7,7 @@ namespace Hpipe {
 InstructionRewind::InstructionRewind( const Context &cx ) : Instruction( cx ), exec( 0 ) {
 }
 
-void InstructionRewind::write_dot( std::ostream &os ) const {
+void InstructionRewind::write_dot( std::ostream &os, std::vector<std::string> *edge_labels ) const {
     if ( use_exec() ) {
         os << "RW_" << get_display_id();
     } else if ( use_code_seq() ) {

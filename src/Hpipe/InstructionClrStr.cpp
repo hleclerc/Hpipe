@@ -6,7 +6,7 @@ namespace Hpipe {
 InstructionClrStr::InstructionClrStr( const Context &cx, const std::string &var, const CharItem *active_ci ) : InstructionWithCode( cx, active_ci ), var( var ) {
 }
 
-void InstructionClrStr::write_dot( std::ostream &os ) const {
+void InstructionClrStr::write_dot( std::ostream &os, std::vector<std::string> *edge_labels ) const {
     os << "CS(" << var << ")";
 }
 

@@ -9,7 +9,7 @@ namespace Hpipe {
 InstructionCode::InstructionCode( const Context &cx, const std::string &code, const CharItem *active_ci ) : InstructionWithCode( cx, active_ci ), code( code ) {
 }
 
-void InstructionCode::write_dot( std::ostream &os ) const {
+void InstructionCode::write_dot( std::ostream &os, std::vector<std::string> *edge_labels ) const {
     os << ( code.size() > 12 ? code.substr( 0, 9 ) + "..." : code );
 }
 

@@ -7,7 +7,7 @@ InstructionMark::InstructionMark( const Context &cx, unsigned num_active_item ) 
     mark = this;
 }
 
-void InstructionMark::write_dot( std::ostream &os ) const {
+void InstructionMark::write_dot( std::ostream &os, std::vector<std::string> *edge_labels ) const {
     os << "MARK";
 }
 

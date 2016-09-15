@@ -12,7 +12,7 @@ class InstructionCond : public Instruction {
 public:
     InstructionCond( const Context &cx, const Cond &cond, int off_data = 0, const Cond &not_in = {} );
 
-    virtual void         write_dot          ( std::ostream &os ) const;
+    virtual void         write_dot          ( std::ostream &os, std::vector<std::string> *edge_labels = 0 ) const;
     virtual Instruction *clone              ( PtrPool<Instruction> &inst_pool, const Context &ncx, const Vec<unsigned> &keep_ind );
     virtual Transition  *train              ( std::string::size_type &s, std::string::size_type &m, const std::string &inp, double freq, bool use_contiguous );
     virtual void         write_cpp          ( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter );

@@ -8,7 +8,7 @@ namespace Hpipe {
 InstructionAddStr::InstructionAddStr( const Context &cx, const std::string &var, const CharItem *active_ci ) : InstructionWithCode( cx, active_ci ), var( var ) {
 }
 
-void InstructionAddStr::write_dot( std::ostream &os ) const {
+void InstructionAddStr::write_dot( std::ostream &os, std::vector<std::string> *edge_labels ) const {
     os << "AS(" << var << ")";
 }
 

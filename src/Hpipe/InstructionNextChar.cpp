@@ -15,7 +15,7 @@ namespace Hpipe {
 InstructionNextChar::InstructionNextChar( const Context &cx, bool beg, bool assume_not_eof ) : Instruction( cx ), beg( beg ), assume_not_eof( assume_not_eof ) {
 }
 
-void InstructionNextChar::write_dot( std::ostream &os ) const {
+void InstructionNextChar::write_dot( std::ostream &os, std::vector<std::string> *edge_labels ) const {
     os << "+1";
     if ( beg )
         os << "(B)";

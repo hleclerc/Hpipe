@@ -12,7 +12,7 @@ class InstructionRewind : public Instruction {
 public:
     InstructionRewind( const Context &cx );
 
-    virtual void               write_dot          ( std::ostream &os ) const;
+    virtual void               write_dot          ( std::ostream &os, std::vector<std::string> *edge_labels = 0 ) const;
     virtual void               write_dot_add      ( std::ostream &os, bool disp_inst_pred, bool disp_trans_freq, bool disp_rc_item ) const;
     virtual Instruction       *clone              ( PtrPool<Instruction> &inst_pool, const Context &ncx, const Vec<unsigned> &keep_ind );
     virtual void               apply_rec          ( std::function<void(Instruction *)> f, bool subgraphs = false );
