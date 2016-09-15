@@ -31,5 +31,8 @@ void InstructionEof::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitt
         ss << "goto l_" << next[ 0 ].inst->get_id_gen( cpp_emitter ) << ";";
 }
 
+Transition *InstructionEof::train( std::string::size_type &s, std::string::size_type &m, const std::string &inp, double freq, bool use_contiguous ) {
+    return &next[ s == inp.size() ];
+}
 
 } // namespace Hpipe

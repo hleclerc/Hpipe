@@ -110,6 +110,7 @@ test_hpipe_file( tests/hpipe/number.hpipe           )
 test_hpipe_file( tests/hpipe/opt_beg_end.hpipe      )
 test_hpipe_file( tests/hpipe/ast.hpipe              )
 test_hpipe_file( tests/hpipe/cpp_char.hpipe         )
+test_hpipe_file( tests/hpipe/c_comment.hpipe        )
 
 # benchmarks
 # test_hpipe_file( tests/hpipe/boyer_moore.hpipe      )

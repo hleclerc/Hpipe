@@ -38,7 +38,7 @@ int main( int argc, char **argv ) {
 
     // instruction (language independant)
     std::istringstream iss( disp_inst_graph );
-    InstructionGraph sg( &cg, { std::istream_iterator<std::string>{ iss }, std::istream_iterator<std::string>{} }, disp_inst_pred, disp_trans_freq, no_boyer_moore );
+    InstructionGraph sg( &cg, { std::istream_iterator<std::string>{ iss }, std::istream_iterator<std::string>{} }, disp_inst_pred, disp_trans_freq, boyer_moore );
 
     // output
     CppEmitter cp( &sg );

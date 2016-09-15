@@ -183,7 +183,7 @@ Transition *Instruction::train( std::string::size_type &s, std::string::size_typ
     if ( next.empty() )
         return 0;
     if ( next.size() != 1 )
-        PRINT( *this );
+        PRINTL( *this ); // need a surdef
     //     HPIPE_ASSERT( next.size() == 1, "" );
     return &next[ 0 ];
 }
