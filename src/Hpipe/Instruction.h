@@ -56,13 +56,13 @@ public:
     Context              cx;
     Vec<double>          freq;         ///< freq by char
     double               cum_freq;     ///< tot freq
-    Vec<Transition>      next;  ///< transitions to other states
-    Vec<Transition>      prev; ///< transitions to other states
+    Vec<Transition>      next;         ///< transitions to other states
+    Vec<Transition>      prev;         ///< transitions to other states
 
     // helpers for mark/rewind
     int                  num_in_dfs_stack;
     bool                 in_a_cycle;
-    InstructionMark     *mark;   ///< true if between a mark and a rewind
+    InstructionMark     *mark;         ///< true if between a mark and a rewind
     Instruction         *orig;         ///< if is a clone (for a rewind)
 
     // for code generation
