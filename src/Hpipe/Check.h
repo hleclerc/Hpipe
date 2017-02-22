@@ -13,8 +13,8 @@ void test( std::string str, const T &out, const E &exp, const char *file, int li
     std::ostringstream ss, se;
     ss << out;
     se << exp;
-    std::cout << file << ":" << line << ( ss.str() == se.str() ? ": (OK) " : ": (BAD) " ) << str << " -> " << ss.str();
-    std::cout << std::endl;
+    std::cerr << file << ":" << line << ( ss.str() == se.str() ? ": (OK) " : ": (BAD) " ) << str << " -> " << ss.str();
+    std::cerr << std::endl;
 
 }
 

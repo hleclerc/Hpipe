@@ -6,7 +6,7 @@
 #include <fstream>
 using namespace Hpipe;
 
-#define PREPARG_FILE <args.h>
+#define PREPARG_FILE <Hpipe/args.h>
 #include <PrepArg/usage.h>
 
 int main( int argc, char **argv ) {
@@ -63,9 +63,16 @@ int main( int argc, char **argv ) {
         fout.open( output );
         ss.stream = &fout;
     }
-    cp.write_constants     ( ss );
-    cp.write_hpipe_data    ( ss, "HpipeData" );
-    cp.write_parse_function( ss, "HpipeData", "parse", args );
+    if ( only_struct ) {
+        cp.write_constants     ( ss );
+        cp.write_hpipe_data    ( ss, "HpipeData" );
+    } else if ( only_parse ) {
+        cp.write_parse_function( ss, "HpipeData", "parse", args, class_name );
+    } else {
+        cp.write_constants     ( ss );
+        cp.write_hpipe_data    ( ss, "HpipeData" );
+        cp.write_parse_function( ss, "HpipeData", "parse", args, class_name );
+    }
     
     return 0;
 }

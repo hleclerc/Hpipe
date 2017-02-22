@@ -4,7 +4,7 @@ project( hpipe )
 include_directories( src ext/PrepArg/src )
 
 add_executable( hpipe
-    src/hpipe.cpp
+    src/Hpipe/main.cpp
     src/Hpipe/Assert.cpp
     src/Hpipe/BranchSet.cpp
     src/Hpipe/CbQueue.cpp

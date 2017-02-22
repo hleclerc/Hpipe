@@ -64,7 +64,7 @@ void CppEmitter::write_hpipe_data( StreamSepMaker &ss, const std::string &name )
     ss << "};";
 }
 
-void CppEmitter::write_parse_function( StreamSepMaker &ss, const std::string &hpipe_data_name, const std::string &func_name, const char *additional_args ) {
+void CppEmitter::write_parse_function( StreamSepMaker &ss, const std::string &hpipe_data_name, const std::string &func_name, const char *additional_args, const char *class_name ) {
     StreamSepMaker nss( *ss.stream, ss.beg + "    " );
 
     std::string m = sg->methods();
@@ -73,7 +73,7 @@ void CppEmitter::write_parse_function( StreamSepMaker &ss, const std::string &hp
 
     switch ( buffer_type ) {
     case HPIPE_BUFFER:
-        ss << "unsigned " << func_name << "( " << hpipe_data_name << " *sipe_data, Hpipe::Buffer *buf, bool last_buf" << ( additional_args ? additional_args : "" ) << ", const unsigned char *data = 0, const unsigned char *end_m1 = 0 ) {";
+        ss << "unsigned " << ( class_name ? class_name + std::string( "::" ) : "" ) << func_name << "( " << hpipe_data_name << " *sipe_data, Hpipe::Buffer *buf, bool last_buf" << ( additional_args ? additional_args : "" ) << ", const unsigned char *data = 0, const unsigned char *end_m1 = 0 ) {";
         nss << "if ( ! data ) data = buf->data;";
         nss << "if ( ! end_m1 ) end_m1 = buf->data - 1 + buf->used;";
         if ( max_mark_level > 1 )
@@ -255,7 +255,7 @@ int CppEmitter::test( const std::vector<Lexer::TestData> &tds ) {
 
 bool _exec( std::string cmd, bool disp = true ) {
     if ( disp )
-        PRINT( cmd );
+        PRINTE( cmd );
     return system( cmd.c_str() ) == 0;
 }
 

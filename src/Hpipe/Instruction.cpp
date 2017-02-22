@@ -180,7 +180,7 @@ Transition *Instruction::train( std::string::size_type &s, std::string::size_typ
     if ( next.empty() )
         return 0;
     if ( next.size() != 1 )
-        PRINTL( *this ); // need a surdef
+        PRINTLE( *this ); // need a surdef
     //     HPIPE_ASSERT( next.size() == 1, "" );
     return &next[ 0 ];
 }
@@ -289,7 +289,7 @@ void Instruction::reg_var( std::function<void (std::string, std::string)> f ) {
 
 void Instruction::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
     ss << "TODO; // " << *this;
-    PRINTL( "write_cpp", *this );
+    PRINTLE( "write_cpp", *this );
     //TODO;
 }
 
@@ -425,7 +425,7 @@ void Instruction::update_in_a_cycle() {
 //}
 
 void Instruction::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
-    PRINTL( "save_seq", *this );
+    PRINTLE( "save_seq", *this );
     HPIPE_TODO;
 }
 

@@ -342,7 +342,7 @@ void CharGraph::read( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> i
             return read( leaves, l->next, nxt );
         }
 
-        PRINT( *l );
+        PRINTE( *l );
         HPIPE_ERROR( "Uknown operator type" );
         return;
     }

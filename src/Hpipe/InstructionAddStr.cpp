@@ -34,7 +34,7 @@ void InstructionAddStr::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
 
 void InstructionAddStr::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
     if ( not save ) {
-        PRINTL( "bing" );
+        PRINTLE( "bing" );
         return;
     }
     if ( cpp_emitter->interruptible() )

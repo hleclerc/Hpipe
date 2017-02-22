@@ -100,8 +100,8 @@ src/Hpipe/Transition.h
 src/Hpipe/TypeConfig.h
 src/Hpipe/Vec.h
 src/Hpipe/WriteAs.h
-src/args.h
-src/hpipe.cpp
+src/Hpipe/args.h
+src/Hpipe/main.cpp
 src/txt_to_cpp.cpp
 tests/cpp/test_BranchSet.cpp
 tests/cpp/test_Combinatorial.cpp

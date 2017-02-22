@@ -1,0 +1,14 @@
+c_comment = '>' clr_str[ "res" ] ( any add_str[ "res" ] )* '*/' { os << res; }
+
+main = (
+    c_comment |
+    any
+)**
+
+#
+beg_test 1
+    input
+        >f*o*/
+    output
+        f*o status=OK
+end_test

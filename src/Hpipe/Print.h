@@ -41,6 +41,8 @@ template<class OS,class T0,class... Args> void __my_print( OS &os, const T0 &t0,
         Hpipe::__my_print( std::cout << #__VA_ARGS__ " ->\n", __VA_ARGS__ );
     #define PRINTL( ... ) \
         Hpipe::__my_print( std::cout << __FILE__ << ":" << __LINE__ << ": " << #__VA_ARGS__ " -> ", __VA_ARGS__ );
+    #define PRINTLE( ... ) \
+        Hpipe::__my_print( std::cerr << __FILE__ << ":" << __LINE__ << ": " << #__VA_ARGS__ " -> ", __VA_ARGS__ );
     #define PRINTF( ... ) \
         Hpipe::__my_print( std::cout << __PRETTY_FUNCTION__ << ": " << #__VA_ARGS__ " -> ", __VA_ARGS__ );
 #endif

@@ -357,7 +357,7 @@ void InstructionGraph::optimize_conditions() {
     root()->apply( [&]( Instruction *inst ) {
         nb_conds += dynamic_cast<InstructionMultiCond *>( inst ) != 0;
     } );
-    std::cout << "Nb conds to optimize: " << nb_conds << std::endl;
+    std::cerr << "Nb conds to optimize: " << nb_conds << std::endl;
 
     ++Instruction::cur_op_id;
     init->optimize_conditions( inst_pool );
@@ -449,7 +449,7 @@ void InstructionGraph::boyer_moore() {
             if ( has_code )
                 break;
             if ( front[ 0 ].first.size() >= max_jump_size ) {
-                std::cout << "Information: boyer-moore optimization has been stopped due to max_jump_size." << std::endl;
+                std::cerr << "Information: boyer-moore optimization has been stopped due to max_jump_size." << std::endl;
                 break;
             }
 
@@ -474,7 +474,7 @@ void InstructionGraph::boyer_moore() {
         next_char->insert_before_this( test, init );
 
         if ( nb_multi_conds() >= max_conds ) {
-            std::cout << "Information: boyer-moore optimization has been stopped after " << cpt << " iterations." << std::endl;
+            std::cerr << "Information: boyer-moore optimization has been stopped after " << cpt << " iterations." << std::endl;
             break;
         }
     }

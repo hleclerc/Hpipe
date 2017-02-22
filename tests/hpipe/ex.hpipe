@@ -1,0 +1,47 @@
+read_dec[ res = "num" ] =
+    ( digit { res =            *data - '0'; } )
+    ( digit { res = 10 * res + *data - '0'; } )**
+
+number_dec =
+    ( digit { num =            *data - '0'; } )
+    ( digit { num = 10 * num + *data - '0'; } )**
+    { sum += num; }
+
+number_hex = '0x'
+    ( digit { num =            *data - '0'; } ) | ( 'A' .. 'F' { num =            *data - 'A'; } ) | ( 'a' .. 'f' { num =            *data - 'a'; } )
+    ( digit { num = 16 * num + *data - '0'; } ) | ( 'A' .. 'F' { num = 16 * num + *data - 'A'; } ) | ( 'a' .. 'f' { num = 16 * num + *data - 'a'; } )**
+    { os << num << " "; }
+
+number_flt =
+    read_dec[ "nfl" ]
+    '.' { mul = 1; } ( digit { nfl += ( mul *= 0.1 ) * ( *data - '0' );  } )**
+    ( 'e' | 'E'
+        ( '+'? read_dec[ "num" ] { nfl *= std::pow( 10.0,  num ); } ) |
+        ( '-'  read_dec[ "num" ] { nfl *= std::pow( 10.0, -num ); } )
+    )??
+    { os << nfl << " "; }
+
+main = (
+    ( 'foo'  { foo += 1; } ) |
+    ( 'bar' '0' .. '9' { bar += *data - '0'; } ) |
+    ( 'bar'  { bar += 1; } ) |
+    any
+)**
+
+beg_test 1
+    input
+        bar foo foo bars bar
+    output
+        27 status=OK
+end_test
+
+beg_methods
+    unsigned foo = 0, bar = 0;
+end_methods
+
+beg_training
+    input
+         bar foo foo bars bar
+    freq
+        1
+end_training
