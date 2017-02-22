@@ -64,28 +64,48 @@ void CppEmitter::write_hpipe_data( StreamSepMaker &ss, const std::string &name )
     ss << "};";
 }
 
-void CppEmitter::write_parse_function( StreamSepMaker &ss, const std::string &hpipe_data_name, const std::string &func_name, const char *additional_args, const char *class_name ) {
-    StreamSepMaker nss( *ss.stream, ss.beg + "    " );
-
+void CppEmitter::write_parse_decl( StreamSepMaker &ss, const std::string &hpipe_data_name, const std::__cxx11::string &func_name, const char *additional_args ) {
     std::string m = sg->methods();
     if ( m.size() )
         ss << m;
 
     switch ( buffer_type ) {
     case HPIPE_BUFFER:
-        ss << "unsigned " << ( class_name ? class_name + std::string( "::" ) : "" ) << func_name << "( " << hpipe_data_name << " *sipe_data, Hpipe::Buffer *buf, bool last_buf" << ( additional_args ? additional_args : "" ) << ", const unsigned char *data = 0, const unsigned char *end_m1 = 0 ) {";
+        ss << "#ifndef HPIPE_BUFFER";
+        ss << "#define HPIPE_BUFFER Hpipe::Buffer";
+        ss << "#endif";
+        ss << "unsigned " << func_name << "( " << hpipe_data_name << " *sipe_data, HPIPE_BUFFER *buf, bool last_buf" << ( additional_args ? additional_args : "" ) << ", const unsigned char *data = 0, const unsigned char *end_m1 = 0 );";
+        break;
+    case BEGEND:
+        ss << "unsigned " << func_name << "( " << hpipe_data_name << " *sipe_data, const unsigned char *data, const unsigned char *end_m1" << ( additional_args ? additional_args : "" ) << " );";
+        break;
+    case C_STR:
+        ss << "unsigned " << func_name << "( " << hpipe_data_name << " *sipe_data, const unsigned char *data" << ( additional_args ? additional_args : "" ) << " );";
+        break;
+    }
+}
+
+void CppEmitter::write_parse_def( StreamSepMaker &ss, const std::string &hpipe_data_name, const std::string &func_name, const char *additional_args ) {
+    StreamSepMaker nss( *ss.stream, ss.beg + "    " );
+
+    switch ( buffer_type ) {
+    case HPIPE_BUFFER:
+        ss << "#ifndef HPIPE_METHOD_PREFIX";
+        ss << "#define HPIPE_METHOD_PREFIX";
+        ss << "#endif";
+        ss << "unsigned HPIPE_METHOD_PREFIX " << func_name << "( " << hpipe_data_name << " *sipe_data, HPIPE_BUFFER *buf, bool last_buf" << ( additional_args ? additional_args : "" ) << ", const unsigned char *data, const unsigned char *end_m1 ) {";
         nss << "if ( ! data ) data = buf->data;";
         nss << "if ( ! end_m1 ) end_m1 = buf->data - 1 + buf->used;";
         if ( max_mark_level > 1 )
             nss << "const unsigned char *rw_ptr[" + to_string( max_mark_level - 1 ) + "];";
         break;
     case BEGEND:
-        ss << "unsigned " << func_name << "( " << hpipe_data_name << " *sipe_data, const unsigned char *data, const unsigned char *end_m1" << ( additional_args ? additional_args : "" ) << " ) {";
+        ss << "unsigned HPIPE_METHOD_PREFIX " << func_name << "( " << hpipe_data_name << " *sipe_data, const unsigned char *data, const unsigned char *end_m1" << ( additional_args ? additional_args : "" ) << " ) {";
         if ( max_mark_level )
             nss << "const unsigned char *rw_ptr[ " << to_string( max_mark_level ) << " ];";
         break;
     case C_STR:
-        ss << "unsigned " << func_name << "( " << hpipe_data_name << " *sipe_data, const unsigned char *data" << ( additional_args ? additional_args : "" ) << " ) {";
+        ss << "unsigned HPIPE_METHOD_PREFIX " << func_name << "( " << hpipe_data_name << " *sipe_data, const unsigned char *data" << ( additional_args ? additional_args : "" ) << " ) {";
         if ( max_mark_level )
             nss << "const unsigned char *rw_ptr[ " << to_string( max_mark_level ) << " ];";
         break;
@@ -177,9 +197,9 @@ int CppEmitter::test( const std::vector<Lexer::TestData> &tds ) {
         ss << "";
         ss << "struct Test_" << buffer_type << " {";
 
-        write_constants     ( ns );
-        write_hpipe_data    ( ns );
-        write_parse_function( ns );
+        write_constants ( ns );
+        write_hpipe_data( ns );
+        write_parse_decl( ns );
 
         ss << "    int exec( const unsigned char *name, const unsigned char *data, unsigned size, std::string expected ) {";
         switch ( buffer_type ) {
@@ -232,6 +252,9 @@ int CppEmitter::test( const std::vector<Lexer::TestData> &tds ) {
         ss << "    std::ostringstream os;";
         ss << "    unsigned cpt = 0;";
         ss << "};";
+        ss << "#define HPIPE_METHOD_PREFIX Test_" << buffer_type << "::";
+        write_parse_def( ss );
+        ss << "#undef HPIPE_METHOD_PREFIX";
     }
 
 
@@ -278,7 +301,7 @@ bool CppEmitter::bench( const std::vector<Lexer::TrainingData> &tds, int type ) 
 
         write_constants     ( ns );
         write_hpipe_data    ( ns );
-        write_parse_function( ns );
+        write_parse_def( ns );
 
         ss << "    void exec( const unsigned char *name, const unsigned char *data, unsigned size, const char *display ) {";
         switch ( buffer_type ) {

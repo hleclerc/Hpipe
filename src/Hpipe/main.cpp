@@ -43,7 +43,7 @@ int main( int argc, char **argv ) {
     // output
     CppEmitter cp( &sg );
     
-    if ( strcmp( style, "BUFFER" ) == 0 ) cp.buffer_type = CppEmitter::HPIPE_BUFFER;
+    if      ( strcmp( style, "BUFFER"  ) == 0 ) cp.buffer_type = CppEmitter::HPIPE_BUFFER;
     else if ( strcmp( style, "BEG_END" ) == 0 ) cp.buffer_type = CppEmitter::BEGEND;
     else if ( strcmp( style, "C_STR"   ) == 0 ) cp.buffer_type = CppEmitter::C_STR;
     else { std::cerr << "Unknown parse style ( " << style << " ). Possible values are BUFFER, BEG_END or C_STR" << std::endl; return 1; }
@@ -63,16 +63,15 @@ int main( int argc, char **argv ) {
         fout.open( output );
         ss.stream = &fout;
     }
-    if ( only_struct ) {
-        cp.write_constants     ( ss );
-        cp.write_hpipe_data    ( ss, "HpipeData" );
-    } else if ( only_parse ) {
-        cp.write_parse_function( ss, "HpipeData", "parse", args, class_name );
-    } else {
-        cp.write_constants     ( ss );
-        cp.write_hpipe_data    ( ss, "HpipeData" );
-        cp.write_parse_function( ss, "HpipeData", "parse", args, class_name );
-    }
+    ss << "#ifndef HPIPE_NO_DECL";
+    cp.write_constants ( ss );
+    cp.write_hpipe_data( ss, "HpipeData" );
+    cp.write_parse_decl( ss, "HpipeData", "parse", args );
+    ss << "#endif // HPIPE_NO_DECL";
+    ss << "";
+    ss << "#ifndef HPIPE_NO_DEF";
+    cp.write_parse_def ( ss, "HpipeData", "parse", args );
+    ss << "#endif // HPIPE_NO_DEF";
     
     return 0;
 }
