@@ -32,6 +32,8 @@ public:
 
     CharItem                *char_item_ok;
     std::set<std::string>    includes;
+    Vec<std::string>         attributes;
+    Vec<std::string>         preliminaries;
 
 protected:
     struct Variable {
@@ -39,24 +41,25 @@ protected:
     };
     struct Scope {
         Scope( int id, Scope *parent ) : id( id ), parent( parent ) {}
+        using TM = std::unordered_map<std::string,Variable>;
 
-        int                                      id;
-        Scope                                   *parent;
-        std::unordered_map<std::string,Variable> variables;
+        int                 id;
+        Scope              *parent;
+        TM                  variables;
     };
     struct WaitGoto {
-        std::string     name;
-        Vec<CharItem *> inputs;
+        std::string         name;
+        Vec<CharItem *>     inputs;
     };
     struct Label {
-        std::string name;
-        CharItem   *pivot;
+        std::string         name;
+        CharItem           *pivot;
     };
     struct Arg {
         void write_to_stream( std::ostream &os ) const;
 
-        std::string  name;
-        const Lexem *val;
+        std::string         name;
+        const Lexem        *val;
     };
 
     void                    read         ( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> inputs );

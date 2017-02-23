@@ -136,3 +136,4 @@ CMakeLists.txt
 LICENSE
 README.md
 TODO.md
+src/Hpipe/Stream.cpp

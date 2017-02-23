@@ -22,15 +22,16 @@
 
 #include "StreamSep.h"
 
-#ifdef METIL_COMP_DIRECTIVE
-#pragma cpp_flag -Wreorder
-#endif // METIL_COMP_DIRECTIVE
+namespace Hpipe {
 
-extern Hpipe::StreamSepMaker coutn;
-extern Hpipe::StreamSepMaker cerrn;
+extern StreamSepMaker coutn;
+extern StreamSepMaker cerrn;
 
-#define P( A ) coutn << #A << " -> " << ( A )
+typedef std::string String; // HUM
 
-typedef std::string String;
+#define P( A ) Hpipe::coutn << #A << " -> " << ( A )
+#define PE( A ) Hpipe::cerrn << #A << " -> " << ( A )
+
+}
 
 #endif // STREAM_H

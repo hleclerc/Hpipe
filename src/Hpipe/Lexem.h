@@ -19,7 +19,7 @@ public:
         NUMBER,
         TEST,
         CODE,
-        NONE
+        NONE,
     } Type;
 
     Lexem( Type type, Source *source, const char *beg, const std::string str );

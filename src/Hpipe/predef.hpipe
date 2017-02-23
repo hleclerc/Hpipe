@@ -39,41 +39,52 @@ uint[ val, type = 'unsigned long' ] =
 
 # print a char
 p[ msg = '' ] =
-    add_prel[ '#ifdef SIPE_MAIN' ]
-    add_prel[ '#include <iostream>' ]
-    add_prel[ '#endif // SIPE_MAIN' ]
+    add_prel[ '
+        #ifdef SIPE_MAIN
+        #include <iostream>
+        #endif // SIPE_MAIN
+    ' ]
     { std::cout << "msg" << std::endl; }
 
 # print "val -> $sipe_data->val"
 i[ val ] =
-    add_prel[ '#ifdef SIPE_MAIN' ]
-    add_prel[ '#include <iostream>' ]
-    add_prel[ '#endif // SIPE_MAIN' ]
+    add_prel[ '
+        #ifdef SIPE_MAIN
+        #include <iostream>
+        #endif // SIPE_MAIN
+    ' ]
     { std::cout << "val -> '" << sipe_data->val << "'" << std::endl; }
 
 # print a value (by default, print current char)
 d[ __val__ ] =
-    add_prel[ '#ifdef SIPE_MAIN' ]
-    add_prel[ '#include <iostream>' ]
-    add_prel[ '#endif // SIPE_MAIN' ]
+    add_prel[ '
+        #ifdef SIPE_MAIN
+        #include <iostream>
+        #endif // SIPE_MAIN
+    ' ]
     { std::cout << sipe_data->__val__; }
 
 # print a value (by default, print current char)
 c =
-    add_prel[ '#ifdef SIPE_MAIN' ]
-    add_prel[ '#include <iostream>' ]
-    add_prel[ '#endif // SIPE_MAIN' ]
+    add_prel[ '
+        #ifdef SIPE_MAIN
+        #include <iostream>
+        #endif // SIPE_MAIN
+    ' ]
     { std::cout << *data; }
 
-# should be followed by a stoping condition (e.g. ' ')
-word[ __var__ ] =
-    add_prel[ '#ifdef SIPE_MAIN' ]
-    add_prel[ '#include <string>' ]
-    add_prel[ '#endif // SIPE_MAIN' ]
-    add_attr[ 'std::string __var__;' ]
+# get a word stored in var should be followed by a stoping condition (e.g. ' ')
+word[ __var__, __type__ = 'std::string' ] =
+    add_prel[ '
+        #ifdef SIPE_MAIN
+        #include <string>
+        #endif // SIPE_MAIN
+    ' ]
+    add_attr[ '__type__ __var__;' ]
     { sipe_data->__var__.clear(); }
     ( any { sipe_data->__var__ += *data; } )*
 
+# a word, without __end__ char (no need for any stop condition).
 eword[ __var__, __end__ ] =
     add_attr[ 'std::string __var__;' ]
     { sipe_data->__var__.clear(); }
@@ -123,7 +134,7 @@ int64_bin_le[ __val__, __type__ = 'qint64' ] =
     any { sipe_data->__val__ += (__type__)*reinterpret_cast<const unsigned char *>( data ) << 48; }
     any { sipe_data->__val__ += (__type__)*reinterpret_cast<const unsigned char *>( data ) << 56; }
 
-# read a string (char *)
+# read a string (in __val__) of fixed length __len__
 str_sized[ __val__, __len__, __type__ = "std::string" ] =
     add_attr[ '__type__ __val__;' ]
     add_attr[ 'int __val___rem;' ]
@@ -145,7 +156,7 @@ str_sized[ __val__, __len__, __type__ = "std::string" ] =
     end_rd___val__$$$uid$$$: ;
     }
 
-# size 32 bits then data
+# read size 32 bits then data
 str_32[ __len__ = 'len', __str__ = 'str' ] =
     uint32_bin_le[ '__len__' ]
     str_sized[ __str__, 'sipe_data->__len__' ]

@@ -45,6 +45,7 @@ add_executable( hpipe
     src/Hpipe/Lexer.cpp
     src/Hpipe/Source.cpp
     src/Hpipe/Transition.cpp
+    src/Hpipe/Stream.cpp
     src/Hpipe/predef.h
 )
 

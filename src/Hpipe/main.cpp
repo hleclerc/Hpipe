@@ -1,6 +1,7 @@
-#include <Hpipe/CppEmitter.h>
-#include <Hpipe/predef.h>
-#include <Hpipe/Pool.h>
+//// nsmake alias predef.h (#txt_to_cpp.cpp predef.hpipe 'predef')
+#include "CppEmitter.h"
+#include "predef.h"
+#include "Pool.h"
 #include <string.h>
 #include <iterator>
 #include <fstream>
@@ -43,9 +44,10 @@ int main( int argc, char **argv ) {
     // output
     CppEmitter cp( &sg );
     
-    if      ( strcmp( style, "BUFFER"  ) == 0 ) cp.buffer_type = CppEmitter::HPIPE_BUFFER;
-    else if ( strcmp( style, "BEG_END" ) == 0 ) cp.buffer_type = CppEmitter::BEGEND;
-    else if ( strcmp( style, "C_STR"   ) == 0 ) cp.buffer_type = CppEmitter::C_STR;
+    if      ( strcmp( style, "BUFFER_IN_CLASS" ) == 0 ) { cp.buffer_type = CppEmitter::HPIPE_BUFFER; cp.in_class = true; }
+    else if ( strcmp( style, "BUFFER"          ) == 0 ) { cp.buffer_type = CppEmitter::HPIPE_BUFFER; }
+    else if ( strcmp( style, "BEG_END"         ) == 0 ) { cp.buffer_type = CppEmitter::BEGEND; }
+    else if ( strcmp( style, "C_STR"           ) == 0 ) { cp.buffer_type = CppEmitter::C_STR; }
     else { std::cerr << "Unknown parse style ( " << style << " ). Possible values are BUFFER, BEG_END or C_STR" << std::endl; return 1; }
 
     if ( benchmark )
@@ -63,15 +65,22 @@ int main( int argc, char **argv ) {
         fout.open( output );
         ss.stream = &fout;
     }
-    ss << "#ifndef HPIPE_NO_DECL";
+
+    ss << "#ifdef HPIPE_PRELIMINARIES";
+    cp.write_preliminaries( ss );
+    ss << "#endif // HPIPE_PRELIMINARIES";
+    ss << "";
+
+    ss << "#ifdef HPIPE_DECLARATIONS";
     cp.write_constants ( ss );
     cp.write_hpipe_data( ss, "HpipeData" );
     cp.write_parse_decl( ss, "HpipeData", "parse", args );
-    ss << "#endif // HPIPE_NO_DECL";
+    ss << "#endif // HPIPE_DECLARATIONS";
     ss << "";
-    ss << "#ifndef HPIPE_NO_DEF";
+
+    ss << "#ifdef HPIPE_DEFINITIONS";
     cp.write_parse_def ( ss, "HpipeData", "parse", args );
-    ss << "#endif // HPIPE_NO_DEF";
+    ss << "#endif // HPIPE_DEFINITIONS";
     
     return 0;
 }

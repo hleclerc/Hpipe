@@ -60,6 +60,22 @@ public:
         }
     }
 
+    const PI8 *begin() const {
+        return data;
+    }
+
+    PI8 *begin() {
+        return data;
+    }
+
+    const PI8 *end() const {
+        return data + used;
+    }
+
+    PI8 *end() {
+        return data + used;
+    }
+
     // attributes
     mutable int cpt_use;   ///< destroyed if < 0
     unsigned    used;      ///< nb items stored in data

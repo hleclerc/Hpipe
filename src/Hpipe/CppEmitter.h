@@ -20,6 +20,7 @@ public:
 
     CppEmitter( InstructionGraph *sg );
 
+    void              write_preliminaries ( StreamSepMaker &ss );
     void              write_constants     ( StreamSepMaker &ss );
     void              write_hpipe_data    ( StreamSepMaker &ss, const std::string &name = "HpipeData" );
     void              write_parse_decl    ( StreamSepMaker &ss, const std::string &hpipe_data_name = "HpipeData", const std::string &func_name = "parse", const char *additional_args = 0 );
@@ -44,6 +45,7 @@ public:
     int               end_char;       ///< used if type == C_STR
     bool              test_mode;      ///<
     int               buffer_type;    ///< BUFFER, ...
+    bool              in_class;       ///<
 
     // contextual variables
     unsigned          nb_id_gen;

@@ -5,6 +5,33 @@
 
 namespace Hpipe {
 
+namespace {
+
+/// remove min nb spaces spaces at the left
+std::string left_shifted( const std::string &str ) {
+    std::string::size_type min_pos = 1e6;
+    std::istringstream ss( str );
+    std::string line;
+    while( std::getline( ss, line ) ) {
+        auto pos = line.find_first_not_of( ' ' );
+        if ( pos != std::string::npos )
+            min_pos = std::min( min_pos, pos );
+    }
+    if ( min_pos == 1e6 )
+        return str;
+
+    ss.clear();
+    ss.seekg( 0 );
+    std::string res;
+    while( std::getline( ss, line ) ) {
+        if ( line.find_first_not_of( ' ' ) != std::string::npos )
+            res += ( res.size() ? "\n" : "" ) + line.substr( min_pos );
+    }
+    return res;
+}
+
+}
+
 CharGraph::CharGraph( Lexer &lexer, const Lexem *lexem ) : lexer( lexer ), base( CharItem::BEGIN ) {
     // make a clone of the lexems, with subsituted variables
     Lexem *lexem_cl = clone( lexem, {} );
@@ -675,6 +702,14 @@ void CharGraph::clone( Lexem *&beg, Lexem *&end, const std::string &name, const 
 
         res->children[ 0 ] = clone( lex, cargs );
         res->children[ 0 ]->parent = res;
+        return calls.pop_back();
+    }
+
+    // predefined machine
+    if ( name == "add_prel" || name == "add_attr" ) {
+        if ( cargs.size() != 1 ) lexer.err( l, "function expects exactly 1 argument" );
+        else if ( name == "add_prel" ) preliminaries.push_back_unique( left_shifted( cargs[ 0 ].val->str ) );
+        else if ( name == "add_attr" ) attributes   .push_back_unique( cargs[ 0 ].val->str );
         return calls.pop_back();
     }
 
