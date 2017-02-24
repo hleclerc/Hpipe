@@ -69,24 +69,6 @@ CharGraph::CharGraph( Lexer &lexer, const Lexem *lexem ) : lexer( lexer ), base(
         } );
     } );
 
-    // remove pivots
-    apply( []( CharItem *item ) {
-        for( unsigned num_edge = 0; num_edge < item->edges.size(); ) {
-            CharItem *next = item->edges[ num_edge ].item;
-            if ( next->type == CharItem::PIVOT ) {
-                HPIPE_ASSERT( next->edges.size() >= 1, "" );
-                // replace item->edge[ { num_edge } ] by pivot->edges[ ... ]
-                item->edges[ num_edge ].item = next->edges[ 0 ].item;
-                for( unsigned ind = 1; ind < next->edges.size(); ++ind )
-                    item->edges.insert( item->edges.begin() + num_edge + ind, 1, next->edges[ ind ].item );
-                // pivot will point only to item
-                next->edges[ 0 ].item = item;
-                next->edges.resize( 1 );
-            } else
-                ++num_edge;
-        }
-    } );
-
     // remove non advancing cycles (like '()**')
     std::map<CharItem *,Vec<unsigned>> edges_to_remove;
     get_cycles( [&]( Vec<ItemNum> vi ) {
@@ -107,6 +89,21 @@ CharGraph::CharGraph( Lexer &lexer, const Lexem *lexem ) : lexer( lexer ), base(
                 throw "Item is going nowhere";
         }
     }
+
+    // remove pivots
+    apply( []( CharItem *item ) {
+        for( unsigned num_edge = 0; num_edge < item->edges.size(); ) {
+            CharItem *next = item->edges[ num_edge ].item;
+            if ( next->type == CharItem::PIVOT ) {
+                HPIPE_ASSERT( next->edges.size() >= 1, "" );
+                // replace item->edge[ { num_edge } ] by pivot->edges[ ... ]
+                item->edges[ num_edge ].item = next->edges[ 0 ].item;
+                for( unsigned ind = 1; ind < next->edges.size(); ++ind )
+                    item->edges.insert( item->edges.begin() + num_edge + ind, 1, next->edges[ ind ].item );
+            } else
+                ++num_edge;
+        }
+    } );
 }
 
 void CharGraph::read( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> inputs ) {
@@ -557,7 +554,8 @@ void CharGraph::apply_rec( CharItem *item, std::function<void (CharItem *)> f ) 
 
 void CharGraph::get_cycles_rec( CharItem *item, std::function<void(Vec<ItemNum>)> f, Vec<ItemNum> vi ) {
     if ( item->op_id == CharItem::cur_op_id ) {
-        f( { vi.begin() + item->op_mp, vi.end() } );
+        if ( item->op_mp >= 0 )
+            f( { vi.begin() + item->op_mp, vi.end() } );
         return;
     }
     item->op_id = CharItem::cur_op_id;
@@ -568,6 +566,8 @@ void CharGraph::get_cycles_rec( CharItem *item, std::function<void(Vec<ItemNum>)
         vi.back().num = num_edge;
         get_cycles_rec( item->edges[ num_edge ].item, f, vi );
     }
+
+    item->op_mp = -1;
 }
 
 bool CharGraph::get_cond( Cond &cond, CharItem *item ) {

@@ -46,7 +46,7 @@ public:
     Cond              cond;       ///< used if type==COND
     std::string       str;        ///< if type==CODE, str = the code. if ADD_STR, CLR_STR, ...
     mutable unsigned  op_id;
-    mutable unsigned  op_mp;
+    mutable int       op_mp;
     static unsigned   cur_op_id;
     unsigned          display_id;
 };
