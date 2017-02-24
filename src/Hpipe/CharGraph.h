@@ -16,9 +16,12 @@ namespace Hpipe {
 */
 class CharGraph {
 public:
+    struct ItemNum { CharItem *item; unsigned num; };
+
     CharGraph( Lexer &lexer, const Lexem *lexem );
 
     int                      display_dot  ( const char *f = ".char.dot", const char *prg = 0 ) const;
+    void                     get_cycles   ( std::function<void(Vec<ItemNum>)> f );
     void                     apply        ( std::function<void(CharItem *)> f );
     CharItem                *root         ();
 
@@ -62,14 +65,15 @@ protected:
         const Lexem        *val;
     };
 
-    void                    read         ( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> inputs );
-    void                    apply_rec    ( CharItem *item, std::function<void(CharItem *)> f );
-    bool                    get_cond     ( Cond &cond, CharItem *item );
-    Lexem                  *clone        ( const Lexem *&l, const Vec<Arg> &args, const char *stop = 0 );
-    void                    clone        ( Lexem *&beg, Lexem *&end, const Lexem *&l, const Vec<Arg> &args, const char *stop = 0 );
-    void                    clone        ( Lexem *&beg, Lexem *&end, const std::string &name, const Lexem *l, Vec<Arg> cargs, const Vec<Arg> &args );
-    static void             repl_all     ( std::string &str, const std::string &src, const std::string &dst );
-    bool                    in_wait_goto ( CharItem *item ) const;
+    void                    read          ( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> inputs );
+    void                    apply_rec     ( CharItem *item, std::function<void(CharItem *)> f );
+    void                    get_cycles_rec( CharItem *item, std::function<void(Vec<ItemNum>)> f, Vec<ItemNum> vi );
+    bool                    get_cond      ( Cond &cond, CharItem *item );
+    Lexem                  *clone         ( const Lexem *&l, const Vec<Arg> &args, const char *stop = 0 );
+    void                    clone         ( Lexem *&beg, Lexem *&end, const Lexem *&l, const Vec<Arg> &args, const char *stop = 0 );
+    void                    clone         ( Lexem *&beg, Lexem *&end, const std::string &name, const Lexem *l, Vec<Arg> cargs, const Vec<Arg> &args );
+    static void             repl_all      ( std::string &str, const std::string &src, const std::string &dst );
+    bool                    in_wait_goto  ( CharItem *item ) const;
 
 
     Lexer                  &lexer;

@@ -39,12 +39,14 @@ public:
     std::string       compact_repr      () const;
     void              write_dot_rec     ( std::ostream &os ) const;
     bool              code_like         () const;
+    bool              advancer          () const;
 
     int               type;
     Vec<CharEdge>     edges;
     Cond              cond;       ///< used if type==COND
     std::string       str;        ///< if type==CODE, str = the code. if ADD_STR, CLR_STR, ...
     mutable unsigned  op_id;
+    mutable unsigned  op_mp;
     static unsigned   cur_op_id;
     unsigned          display_id;
 };

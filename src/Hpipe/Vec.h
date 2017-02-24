@@ -8,9 +8,12 @@ namespace Hpipe {
 
 template<class T>
 struct Vec : std::vector<T> {
+    using const_iterator = typename std::vector<T>::const_iterator;
+
     Vec() {}
     Vec( T a ) { push_back( a ); }
     Vec( T a, T b ) { push_back( a ); push_back( b ); }
+    Vec( const_iterator a, const_iterator b ) : std::vector<T>( a, b ) {}
 
     void     write_to_stream      ( std::ostream &os ) const;
 

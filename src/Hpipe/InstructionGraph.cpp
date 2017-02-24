@@ -656,7 +656,6 @@ Instruction *InstructionGraph::make_boyer_moore_rec(const Vec<std::pair<Vec<Cond
         res->next << next;
         next->prev << res;
     }
-    // PRINT( conds );
 
     return res;
 

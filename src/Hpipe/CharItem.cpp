@@ -126,4 +126,8 @@ bool CharItem::code_like() const {
     return type == CODE or type == ADD_STR or type == CLR_STR;
 }
 
+bool CharItem::advancer() const {
+    return type == NEXT_CHAR;
+}
+
 } // namespace Hpipe

@@ -2,6 +2,7 @@
 #include "Assert.h"
 #include "DotOut.h"
 #include <algorithm>
+#include <map>
 
 namespace Hpipe {
 
@@ -68,19 +69,44 @@ CharGraph::CharGraph( Lexer &lexer, const Lexem *lexem ) : lexer( lexer ), base(
         } );
     } );
 
-    // simplifications: remove pivots
+    // remove pivots
     apply( []( CharItem *item ) {
         for( unsigned num_edge = 0; num_edge < item->edges.size(); ) {
             CharItem *next = item->edges[ num_edge ].item;
             if ( next->type == CharItem::PIVOT ) {
                 HPIPE_ASSERT( next->edges.size() >= 1, "" );
+                // replace item->edge[ { num_edge } ] by pivot->edges[ ... ]
                 item->edges[ num_edge ].item = next->edges[ 0 ].item;
                 for( unsigned ind = 1; ind < next->edges.size(); ++ind )
-                    item->edges.insert( item->edges.begin() + num_edge + 1, 1, next->edges[ ind ].item );
+                    item->edges.insert( item->edges.begin() + num_edge + ind, 1, next->edges[ ind ].item );
+                // pivot will point only to item
+                next->edges[ 0 ].item = item;
+                next->edges.resize( 1 );
             } else
                 ++num_edge;
         }
     } );
+
+    // remove non advancing cycles (like '()**')
+    std::map<CharItem *,Vec<unsigned>> edges_to_remove;
+    get_cycles( [&]( Vec<ItemNum> vi ) {
+        for( unsigned i = 0; ; ++i ) {
+            if ( i == vi.size() ) {
+                edges_to_remove[ vi[ 0 ].item ] << vi[ 0 ].num;
+                break;
+            }
+            if ( vi[ i ].item->advancer() )
+                break;
+        }
+    } );
+
+    for( const auto &p : edges_to_remove ) {
+        for( unsigned i = p.second.size(); i--; ) {
+            p.first->edges.erase( p.first->edges.begin() + p.second[ i ] );
+            if ( p.first->edges.empty() )
+                throw "Item is going nowhere";
+        }
+    }
 }
 
 void CharGraph::read( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> inputs ) {
@@ -402,6 +428,11 @@ int CharGraph::display_dot( const char *f, const char *prg ) const {
     return exec_dot( f, prg );
 }
 
+void CharGraph::get_cycles(std::function<void(Vec<ItemNum>)> f) {
+    ++CharItem::cur_op_id;
+    get_cycles_rec( &base, f, {} );
+}
+
 void CharGraph::apply( std::function<void (CharItem *)> f ) {
     ++CharItem::cur_op_id;
     apply_rec( &base, f );
@@ -522,6 +553,21 @@ void CharGraph::apply_rec( CharItem *item, std::function<void (CharItem *)> f ) 
 
     for( const CharEdge &t : item->edges )
         apply_rec( t.item, f );
+}
+
+void CharGraph::get_cycles_rec( CharItem *item, std::function<void(Vec<ItemNum>)> f, Vec<ItemNum> vi ) {
+    if ( item->op_id == CharItem::cur_op_id ) {
+        f( { vi.begin() + item->op_mp, vi.end() } );
+        return;
+    }
+    item->op_id = CharItem::cur_op_id;
+    item->op_mp = vi.size();
+    vi << ItemNum{ item, 0 };
+
+    for( unsigned num_edge = 0; num_edge < item->edges.size(); ++num_edge ) {
+        vi.back().num = num_edge;
+        get_cycles_rec( item->edges[ num_edge ].item, f, vi );
+    }
 }
 
 bool CharGraph::get_cond( Cond &cond, CharItem *item ) {
