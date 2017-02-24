@@ -1,5 +1,6 @@
 #include "InstructionWithCode.h"
 #include "InstructionRewind.h"
+#include "InstructionSave.h"
 #include "CppEmitter.h"
 
 namespace Hpipe {
@@ -11,9 +12,9 @@ void InstructionRewind::write_dot( std::ostream &os, std::vector<std::string> *e
     if ( use_exec() ) {
         os << "RW_" << get_display_id();
     } else if ( use_code_seq() ) {
-        os << "RS";
+        os << "RW_SEQ";
         for( InstructionWithCode *inst : code_seq )
-            inst->write_dot( os << "\n" );
+            inst->write_dot( os << " S" << inst->save->num_save << "\n" );
     } else
         os << "FM";
 }

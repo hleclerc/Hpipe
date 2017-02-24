@@ -42,7 +42,17 @@ void Instruction::write_dot_rec( std::ostream &os, bool disp_inst_pred, bool dis
         ss << "[";
         for( unsigned i = 0; i < cx.pos.size(); ++i )
             ss << ( i ? "," : "" ) << cx.pos[ i ]->compact_repr();
-        ss << "] ";
+        ss << "]";
+        if ( cx.flags ) {
+            ss << "(";
+            if ( cx.flags & cx.BEG     ) ss << "B";
+            if ( cx.flags & cx.ON_EOF  ) ss << "O";
+            if ( cx.flags & cx.NOT_EOF ) ss << "N";
+            ss << ")";
+        }
+        if ( cx.num_path )
+            ss << "~" << cx.num_path;
+        ss << " ";
     }
 
     std::vector<std::string> edge_labels;

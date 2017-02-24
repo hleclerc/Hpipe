@@ -10,19 +10,18 @@
 
 namespace Hpipe {
 
-Context::Context( InstructionMark *mark, int flags ) : mark( mark ), flags( flags ) {
+Context::Context( InstructionMark *mark, int flags ) : mark( mark ), flags( flags ), num_path( 0 ) {
 }
 
-Context::Context( const CharItem *item, int flags ) : flags( flags ) {
+Context::Context( const CharItem *item, int flags ) : mark( 0 ), flags( flags ), num_path( 0 ) {
     pos << item;
-    mark = 0;
 }
 
-Context::Context() : mark( 0 ), flags( 0 ) {
+Context::Context() : mark( 0 ), flags( 0 ), num_path( 0 ) {
 }
 
 bool Context::operator<( const Context &that ) const {
-    return std::tie( pos, mark, flags ) < std::tie( that.pos, that.mark, that.flags );
+    return std::tie( pos, mark, num_path, flags ) < std::tie( that.pos, that.mark, that.num_path, that.flags );
 }
 
 void Context::write_to_stream( std::ostream &os ) const {
@@ -35,6 +34,8 @@ void Context::write_to_stream( std::ostream &os ) const {
         os << " EOF";
     if ( not_eof() )
         os << " NOT_EOF";
+    if ( num_path )
+        os << " " << num_path;
 }
 
 Context::PC Context::forward( const CharItem *fip ) const {
@@ -206,6 +207,13 @@ Context Context::without_eof() const {
 
 Context Context::without_not_eof() const {
     Context res( mark, flags & ~ NOT_EOF );
+    res.pos = pos;
+    return res;
+}
+
+Context Context::with_new_num_path() const {
+    Context res( mark, flags );
+    res.num_path = num_path + 1;
     res.pos = pos;
     return res;
 }
