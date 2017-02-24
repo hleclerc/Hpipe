@@ -1,0 +1,20 @@
+# main = (
+#     # ( eol eol -> end_get ) |
+#     ( any* { os << *data; } eol ) |
+#     any
+# ) # <- end_get
+main = '1' any* { os << *data; } 'A'? 'B'
+
+beg_test basic include read
+    input
+        123AB...AB
+    output
+        3 status=OK
+end_test
+
+beg_test basic include read
+    input
+        123B...
+    output
+        3 status=OK
+end_test
