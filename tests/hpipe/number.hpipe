@@ -24,12 +24,12 @@ main =
     add_include[ "Hpipe/TypeConfig.h" ]
     add_include[ "cmath" ]
     (
-        ( eof -> out ) |
+        # ( eof -> out ) |
         number_hex |
         number_flt |
         number_dec |
         any
-    )** <- out
+    )** # <- out
 
 
 beg_methods

@@ -15,25 +15,40 @@
 #  => il est effectivement impossible d'arriver jusqu'au bout (=> ça serait bien d'avoir un message)
 #  => si OK 
 # prop: boucle ou amène sur OK, en excluant les +1. Pb: 
-main = 's' any* 'B'
+
+# comments
+com_b  = '<' any* '>'
+s_com  = hspace | com_b
+
+preproc_word =
+    ( 'AB' { os << *data; } )
+
+preproc = '#' s_com** preproc_word??
+
+main = (
+    # char    |
+    # string  |
+    preproc |
+    any
+)**
 
 beg_test basic include read
     input
-        123AB...AB
+        #<...>AB #AB
     output
-        3 status=OK
+        BB status=OK
 end_test
 
-beg_test basic include read
-    input
-        123AAAB
-    output
-        3 status=OK
-end_test
+# beg_test basic include read
+#     input
+#         123AAAB
+#     output
+#         3 status=OK
+# end_test
 
-beg_test basic include read
-    input
-        1AA
-    output
-        3 status=OK
-end_test
+# beg_test basic include read
+#     input
+#         1AA
+#     output
+#         3 status=OK
+# end_test

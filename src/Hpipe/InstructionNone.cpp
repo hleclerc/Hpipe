@@ -10,6 +10,10 @@ Instruction *InstructionNone::clone( PtrPool<Instruction> &inst_pool, const Cont
     return inst_pool << new InstructionNone( ncx );
 }
 
+void InstructionNone::get_code_repr( std::ostream &os ) {
+    os << "NONE";
+}
+
 bool InstructionNone::can_be_deleted() const {
     return true;
 }

@@ -52,7 +52,7 @@ protected:
     using TCacheRewind = std::map<Context::PC,Instruction *>;
 
     void                            make_init            ();
-    Instruction                    *make_transitions     ( Vec<PendingTrans> &pending_trans, const Context &cx, bool avoid_cycles );
+    Instruction                    *make_transitions     ( Vec<PendingTrans> &pending_trans, const Context &cx, bool avoid_cycles, PendingTrans pt );
     // bool                            leads_to_ok        ( const Vec<const CharItem *> &items );
     // bool                            leads_to_ok_rec    ( const Vec<const CharItem *> &items, std::set<Vec<const CharItem *>> &visited );
     void                            train                ( bool only_cont = false );
@@ -67,6 +67,7 @@ protected:
     Instruction                    *make_rewind_inst     ( Vec<PendingRewindTrans> &loc_pending_trans, std::map<RewindContext,Instruction *> &instruction_map, std::unordered_map<Instruction *,Vec<unsigned>> possible_inst, InstructionRewind *rewind, Instruction *orig, const PendingRewindTrans &pt ); ///< rewind_mark is a mark in the rewind context
     unsigned                        nb_multi_conds       ();
     Instruction                    *make_boyer_moore_rec ( const Vec<std::pair<Vec<Cond>, Instruction *> > &front, InstructionNextChar *next_char, int orig_front_size );
+    bool                            can_make_a_rewind    ( std::set<std::pair<Instruction *,unsigned>> &possible_instructions, InstructionMark *mark, Instruction *inst, Vec<unsigned> rcitem );
 
     Instruction                    *init;
     Instruction                    *ok;

@@ -22,11 +22,10 @@ public:
     bool                       use_code_seq       () const;
     virtual bool               with_code          () const;
     virtual void               write_cpp          ( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter );
-    virtual bool               merge_predecessors ( Instruction **init );
-    virtual bool               same_code          ( const Instruction *that ) const;
     virtual void               optimize_conditions( PtrPool<Instruction> &inst_pool );
     virtual Transition        *train              ( std::string::size_type &s, std::string::size_type &m, const std::string &inp, double freq, bool use_contiguous );
     virtual void               reg_var            ( std::function<void (std::string, std::string)> f );
+    virtual void               get_code_repr      ( std::ostream &os ) override;
 
 
     Instruction               *exec;

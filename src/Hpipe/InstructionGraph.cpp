@@ -102,7 +102,7 @@ void InstructionGraph::make_init() {
 
         // get instruction and pending transitions
         Vec<PendingTrans> loc_pending_trans;
-        Instruction *inst = pt.res ? pt.res : make_transitions( loc_pending_trans, pt.cx, avoid_cycles );
+        Instruction *inst = pt.res ? pt.res : make_transitions( loc_pending_trans, pt.cx, avoid_cycles, pt );
         if ( avoid_cycles && ! inst ) {
             pending_cycle_trans.emplace( pt );
             pending_trans.pop();
@@ -121,22 +121,10 @@ void InstructionGraph::make_init() {
         // for each transition to be completed, look it it can cancel the mark (in which case we may modify the pending marks)
         if ( inst->mark ) {
             for( PendingTrans &npt : loc_pending_trans ) {
-                // SHOULD BE LEAD TO OK
-                // ou plutôt, tester si l'instruction qui a généré la marque
                 if ( CharGraph::leads_to_ok( npt.cx.pos ) ) {
-                    // check that the ambiguity has disappeared at least on the first instruction after the mark
                     std::set<std::pair<Instruction *,unsigned>> possible_instructions;
-                    for( unsigned ind : npt.rcitem )
-                        get_possible_inst_rec( possible_instructions, inst, ind, inst->mark );
-
-                    bool has_active = false;
-                    bool has_inactive = false;
-                    for( unsigned ind = 0; ind < inst->mark->cx.pos.size(); ++ind )
-                        if ( possible_instructions.count( { inst->mark, ind } ) )
-                            ( ind == inst->mark->num_active_item ? has_active : has_inactive ) = true;
-
-                    if ( npt.rcitem.empty() || ( has_active ^ has_inactive ) ) {
-                        // forbid new branching to inst of the paths between mark and rewind
+                    if ( can_make_a_rewind( possible_instructions, inst->mark, inst, npt.rcitem ) ) {
+                        // forbid branching to instructions of the paths between mark and rewind
                         for( const auto &p : possible_instructions )
                             if ( p.first != inst->mark )
                                 forbiden_branching.insert( p.first->cx );
@@ -167,13 +155,43 @@ void InstructionGraph::make_init() {
     }
 }
 
-Instruction *InstructionGraph::make_transitions( Vec<PendingTrans> &pending_trans, const Context &cx, bool avoid_cycles ) {
+Instruction *InstructionGraph::make_transitions( Vec<PendingTrans> &pending_trans, const Context &cx, bool avoid_cycles, PendingTrans pt ) {
     std::map<Context,Instruction *>::iterator iter = cache.find( cx );
     if ( iter != cache.end() ) {
-        if ( forbiden_branching.count( cx ) && cx.num_path < 2 )
-            return make_transitions( pending_trans, cx.with_new_num_path(), avoid_cycles );
+        // not a "cycles" phase (we first try to make straight paths, in order to avoid missing possible rewinds)
         if ( avoid_cycles )
             return 0;
+        //
+        if ( forbiden_branching.count( cx ) ) {
+            // adding of a temporary link
+            Instruction *inst = iter->second;
+            if ( pt.inst->next.size() <= pt.num_edge )
+                pt.inst->next.resize( pt.num_edge + 1 );
+            pt.inst->next[ pt.num_edge ] = { inst, pt.rcitem };
+            inst->prev.emplace_back( pt.inst, pt.rcitem );
+
+            // test if rewinds are still valid
+            std::set<Context> tmp_forbiden_branching;
+            for( InstructionRewind *rewind : inst->mark->rewinds ) {
+                std::set<std::pair<Instruction *,unsigned>> possible_instructions;
+                if ( ! can_make_a_rewind( possible_instructions, inst->mark, rewind, range_vec<unsigned>( rewind->cx.pos.size() ) ) ) {
+                    for( const auto &p : possible_instructions )
+                        if ( p.first != inst->mark )
+                            tmp_forbiden_branching.insert( p.first->cx );
+
+                    // remove the temporary link
+                    inst->prev.pop_back();
+                    return make_transitions( pending_trans, cx.with_new_num_path(), avoid_cycles, pt );
+                }
+            }
+
+            // forbid branching to instructions of the (new) paths between mark and rewind
+            for( const auto &cx : tmp_forbiden_branching )
+                forbiden_branching.insert( cx );
+
+            // remove the temporary link
+            inst->prev.pop_back();
+        }
         return iter->second;
     }
 
@@ -380,23 +398,33 @@ void InstructionGraph::optimize_conditions() {
 }
 
 void InstructionGraph::merge_eq_pred( Instruction *&root ) {
+    // get sub graphs
+    Vec<InstructionRewind *> rewinds;
+    root->apply( [&]( Instruction *inst ) {
+        if ( InstructionRewind *rw = dynamic_cast<InstructionRewind *>( inst ) )
+            rewinds << rw;
+    } );
+
+    // merge_eq_pred in sub graphs
+    for( InstructionRewind *rw : rewinds )
+        if ( rw->exec )
+            merge_eq_pred( rw->exec );
+
+    // set inst->_cache_code_repr to avoid ++Instruction::cur_op_id inside the find_rec
+    root->apply( []( Instruction *inst ) {
+        inst->code_repr();
+    } );
+
+    //
     while ( true ) {
         ++Instruction::cur_op_id;
         if ( not root->find_rec( [ &root ]( Instruction *inst ) { return inst->merge_predecessors( &root ); } ) )
             break;
     }
 
-    Vec<InstructionRewind *> rewinds;
     root->apply( [&]( Instruction *inst ) {
-        if ( InstructionRewind *rw = dynamic_cast<InstructionRewind *>( inst ) )
-            rewinds << rw;
         inst->merge_eq_next( inst_pool );
     } );
-
-    // merge_eq_pred in rewinds
-    for( InstructionRewind *rw : rewinds )
-        if ( rw->exec )
-            merge_eq_pred( rw->exec );
 }
 
 void InstructionGraph::boyer_moore() {
@@ -683,6 +711,23 @@ Instruction *InstructionGraph::make_boyer_moore_rec(const Vec<std::pair<Vec<Cond
 
     return res;
 
+}
+
+bool InstructionGraph::can_make_a_rewind( std::set<std::pair<Instruction *,unsigned>> &possible_instructions, InstructionMark *mark, Instruction *inst, Vec<unsigned> rcitem ) {
+    if ( rcitem.empty() )
+        return true;
+
+    // check that the ambiguity has disappeared at least on the first instruction after the mark
+    for( unsigned ind : rcitem )
+        get_possible_inst_rec( possible_instructions, inst, ind, mark );
+
+    bool has_active = false;
+    bool has_inactive = false;
+    for( unsigned ind = 0; ind < mark->cx.pos.size(); ++ind )
+        if ( possible_instructions.count( { mark, ind } ) )
+            ( ind == mark->num_active_item ? has_active : has_inactive ) = true;
+
+    return has_active ^ has_inactive;
 }
 
 

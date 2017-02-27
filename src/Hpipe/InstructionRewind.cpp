@@ -14,7 +14,8 @@ void InstructionRewind::write_dot( std::ostream &os, std::vector<std::string> *e
     } else if ( use_code_seq() ) {
         os << "RW_SEQ";
         for( InstructionWithCode *inst : code_seq )
-            inst->write_dot( os << " S" << inst->save->num_save << "\n" );
+            if ( inst->save)
+                inst->write_dot( os << " S" << inst->save->num_save << "\n" );
     } else
         os << "FM";
 }
@@ -103,30 +104,6 @@ void InstructionRewind::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
     write_trans( ss, cpp_emitter );
 }
 
-bool InstructionRewind::merge_predecessors( Instruction **init ) {
-    return Instruction::merge_predecessors( init ) or (
-                use_exec() and
-                exec->find_rec( [ this ]( Instruction *inst ) { return inst->merge_predecessors(); } ) );
-}
-
-bool InstructionRewind::same_code( const Instruction *_that ) const {
-    const InstructionRewind *that = dynamic_cast<const InstructionRewind *>( _that );
-    if ( that == 0 or bool( mark ) != bool( that->mark ) or has_code_in_a_cycle != that->has_code_in_a_cycle or use_exec() != that->use_exec() )
-        return false;
-    // case 1: exec
-    if ( use_exec() ) {
-        // TODO
-        return false;
-    }
-    // case 2: code_seq
-    if ( code_seq.size() != that->code_seq.size() )
-        return false;
-    for( unsigned i = 0; i < code_seq.size(); ++i)
-        if ( not code_seq[ i ]->same_code( that->code_seq[ i ] ) or code_seq[ i ]->save != that->code_seq[ i ]->save )
-            return false;
-    return true;
-}
-
 void InstructionRewind::optimize_conditions( PtrPool<Instruction> &inst_pool ) {
     if ( op_id == Instruction::cur_op_id )
         return;
@@ -152,6 +129,38 @@ void InstructionRewind::reg_var( std::function<void(std::string, std::string)> f
     if ( not use_exec() )
         for( InstructionWithCode *inst : code_seq )
             inst->reg_var( f );
+}
+
+void InstructionRewind::get_code_repr( std::ostream &os ) {
+    if ( use_exec() ) {
+        os << "RW_EXEC";
+        // get instructions in the graph
+        Vec<Instruction *> insts;
+        exec->apply( [&]( Instruction *inst ) {
+            inst->op_mp = insts.size();
+            insts << inst;
+        } );
+        os << " " << insts.size();
+        // for each inst, write code repr + links
+        for( Instruction *inst : insts ) {
+            std::string ss = inst->code_repr();
+            os << " " << ss.size() << " " << ss << " " << inst->next.size();
+            for( Transition &trans : inst->next )
+                os << " " << trans.inst->op_mp;
+        }
+    } else if ( use_code_seq() ) {
+        os << "RW_SEQ " << code_seq.size();
+        for( InstructionWithCode *inst : code_seq ) {
+            if ( inst->save )
+                os << " S" << inst->save->num_save;
+            else
+                os << " N";
+
+            std::string ss = inst->code_repr();
+            os << " " << ss.size() << " " << ss;
+        }
+    } else
+        os << "FM";
 }
 
 void InstructionRewind::write_dot_add( std::ostream &os, bool disp_inst_pred, bool disp_trans_freq, bool disp_rc_item ) const {

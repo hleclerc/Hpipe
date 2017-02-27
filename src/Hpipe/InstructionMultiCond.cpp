@@ -1,6 +1,7 @@
 #include "InstructionMultiCond.h"
 #include "InstructionNone.h"
 #include "InstructionCond.h"
+#include <sstream>
 
 namespace Hpipe {
 
@@ -120,6 +121,15 @@ void InstructionMultiCond::merge_eq_next( PtrPool<Instruction> &inst_pool ) {
 
 bool InstructionMultiCond::can_be_deleted() const {
     return conds.size() == 1;
+}
+
+void InstructionMultiCond::get_code_repr( std::ostream &os ) {
+    os << "MC " << off_data << " " << conds.size();
+    for( const Cond &cond: conds ) {
+        std::ostringstream ss;
+        ss << cond;
+        os << " " << ss.str().size() << " " << ss.str();
+    }
 }
 
 } // namespace Hpipe

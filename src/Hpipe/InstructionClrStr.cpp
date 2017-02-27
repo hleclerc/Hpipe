@@ -16,9 +16,8 @@ Instruction *InstructionClrStr::clone( PtrPool<Instruction> &inst_pool, const Co
     return inst_pool << new InstructionClrStr( ncx, var, active_ci );
 }
 
-bool InstructionClrStr::same_code( const Instruction *_that ) const {
-    const InstructionClrStr *that = dynamic_cast<const InstructionClrStr *>( _that );
-    return that and var == that->var;
+void InstructionClrStr::get_code_repr( std::ostream &os ) {
+    os << "CLR_STR " << var.size() << " " << var;
 }
 
 void InstructionClrStr::reg_var( std::function<void (std::string, std::string)> f ) {

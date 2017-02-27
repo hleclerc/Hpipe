@@ -24,5 +24,9 @@ void InstructionSave::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmit
     write_trans( ss, cpp_emitter );
 }
 
+void InstructionSave::get_code_repr( std::ostream &os ) {
+    os << "SAVE " << num_save;
+}
+
 
 } // namespace Hpipe

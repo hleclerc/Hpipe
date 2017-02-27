@@ -172,6 +172,10 @@ Instruction *InstructionNextChar::make_boyer_moore_rec( PtrPool<Instruction> &in
 
 }
 
+void InstructionNextChar::get_code_repr( std::ostream &os ) {
+    os << "NEXT_CHAR " << beg << " " << assume_not_eof;
+}
+
 void InstructionNextChar::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
     // HPIPE_ASSERT( transitions.size() == 2, "..." );
     if ( cpp_emitter->rewind_rec_level ) {

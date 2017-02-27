@@ -19,13 +19,12 @@ Instruction *InstructionIf::clone( PtrPool<Instruction> &inst_pool, const Contex
     return inst_pool << new InstructionIf( ncx, cond, active_ci );
 }
 
-bool InstructionIf::same_code( const Instruction *_that ) const {
-    const InstructionIf *that = dynamic_cast<const InstructionIf *>( _that );
-    return that and cond == that->cond;
-}
-
 bool InstructionIf::can_be_deleted() const {
     return false;
+}
+
+void InstructionIf::get_code_repr( std::ostream &os ) {
+    os << "IF " << cond;
 }
 
 void InstructionIf::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {

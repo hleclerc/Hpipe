@@ -448,7 +448,7 @@ static bool can_be_merged( const Instruction *a, const Instruction *b ) {
             return false;
 
     // check instruction
-    return a->same_code( b );
+    return const_cast<Instruction *>( a )->code_repr() == const_cast<Instruction *>( b )->code_repr();
 }
 
 
@@ -502,8 +502,13 @@ bool Instruction::merge_predecessors( Instruction **init ) {
     return false;
 }
 
-bool Instruction::same_code( const Instruction *that ) const {
-    return this == that;
+std::string Instruction::code_repr() {
+    if ( _cache_code_repr.empty() ) {
+        std::ostringstream ss;
+        get_code_repr( ss );
+        _cache_code_repr = ss.str();
+    }
+    return _cache_code_repr;
 }
 
 void Instruction::boyer_moore_opt( PtrPool<Instruction> &inst_pool, Instruction **init ) {

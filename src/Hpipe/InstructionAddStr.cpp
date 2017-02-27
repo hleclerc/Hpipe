@@ -18,9 +18,8 @@ Instruction *InstructionAddStr::clone( PtrPool<Instruction> &inst_pool, const Co
     return inst_pool << new InstructionAddStr( ncx, var, active_ci );
 }
 
-bool InstructionAddStr::same_code( const Instruction *_that ) const {
-    const InstructionAddStr *that = dynamic_cast<const InstructionAddStr *>( _that );
-    return that and var == that->var;
+void InstructionAddStr::get_code_repr( std::ostream &os ) {
+    os << "ADD_STR " << var.size() << " " << var;
 }
 
 void InstructionAddStr::reg_var( std::function<void (std::string, std::string)> f ) {

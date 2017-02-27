@@ -14,6 +14,7 @@ public:
     virtual Instruction *clone          ( PtrPool<Instruction> &inst_pool, const Context &ncx, const Vec<unsigned> &keep_ind );
     virtual int          save_in_loc_reg() const;
     virtual void         write_cpp      ( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter );
+    virtual void         get_code_repr  ( std::ostream &os ) override;
 
     unsigned             num_save;
 };

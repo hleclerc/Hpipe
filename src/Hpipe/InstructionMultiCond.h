@@ -17,6 +17,7 @@ public:
     virtual void         optimize_conditions( PtrPool<Instruction> &inst_pool );
     virtual void         merge_eq_next      ( PtrPool<Instruction> &inst_pool );
     virtual bool         can_be_deleted     () const;
+    virtual void         get_code_repr      ( std::ostream &os ) override;
 
     Vec<Cond> conds;
     int       off_data;

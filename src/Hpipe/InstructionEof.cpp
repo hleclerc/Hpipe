@@ -35,4 +35,8 @@ Transition *InstructionEof::train( std::string::size_type &s, std::string::size_
     return &next[ s == inp.size() ];
 }
 
+void InstructionEof::get_code_repr( std::ostream &os ) {
+    os << "EOF " << beg;
+}
+
 } // namespace Hpipe

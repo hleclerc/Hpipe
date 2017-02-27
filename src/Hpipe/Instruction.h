@@ -49,7 +49,8 @@ public:
     // void              get_boyer_moore_seq( Vec<std::pair<Vec<Cond>, Instruction *> > &front );
     virtual void         write_cpp_code_seq ( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter );
     virtual bool         merge_predecessors ( Instruction **init = 0 );
-    virtual bool         same_code          ( const Instruction *that ) const;
+    virtual std::string  code_repr          ();
+    virtual void         get_code_repr      ( std::ostream &os ) = 0;
     virtual void         boyer_moore_opt    ( PtrPool<Instruction> &inst_pool, Instruction **init = 0 );
     virtual void         merge_eq_next      ( PtrPool<Instruction> &inst_pool );
 
@@ -70,8 +71,10 @@ public:
     unsigned             id_gen;
 
     // display and graph stuff
+    std::string          _cache_code_repr;
     mutable unsigned     display_id;
     mutable unsigned     op_id;
+    mutable unsigned     op_mp;
     static unsigned      cur_op_id;
 };
 

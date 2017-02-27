@@ -148,9 +148,9 @@ void InstructionCond::find_cond_leaves( std::map<Instruction *,Cond> &leaves, co
     next[ 1 ].inst->find_cond_leaves( leaves, in & ~cond, this );
 }
 
-bool InstructionCond::same_code( const Instruction *_that ) const {
-    const InstructionCond *that = dynamic_cast<const InstructionCond *>( _that );
-    return that and cond.ok_cpp( "data", &not_in ) == that->cond.ok_cpp( "data", &that->not_in ) and off_data == that->off_data;
+void InstructionCond::get_code_repr( std::ostream &os ) {
+    std::string code = cond.ok_cpp( "d", &not_in );
+    os << "COND " << off_data << " " << code.size() << " " << code;
 }
 
 

@@ -19,11 +19,6 @@ Instruction *InstructionCode::clone( PtrPool<Instruction> &inst_pool, const Cont
     return inst_pool << new InstructionCode( ncx, code, active_ci );
 }
 
-bool InstructionCode::same_code( const Instruction *_that ) const {
-    const InstructionCode *that = dynamic_cast<const InstructionCode *>( _that );
-    return that and code == that->code;
-}
-
 bool InstructionCode::has_ret_cont() const {
     return find_var_in_code( code, "RETURN_STOP_CONT", 0 ) != std::string::npos;
 }
@@ -68,6 +63,10 @@ void InstructionCode::write_code( StreamSepMaker &ss, CppEmitter *cpp_emitter, s
     }
 
     ss << str;
+}
+
+void InstructionCode::get_code_repr( std::ostream &os ) {
+    os << "CODE " << code.size() << " " << code;
 }
 
 void InstructionCode::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {

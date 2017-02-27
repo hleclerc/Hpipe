@@ -18,7 +18,7 @@ public:
     virtual void         write_cpp          ( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter );
     virtual void         optimize_conditions( PtrPool<Instruction> &inst_pool );
     virtual void         find_cond_leaves   ( std::map<Instruction *,Cond> &leaves, const Cond &in, Instruction *orig );
-    virtual bool         same_code          ( const Instruction *that ) const;
+    virtual void         get_code_repr      ( std::ostream &os ) override;
 
     static Instruction  *make_cond          ( const BranchSet::Node *node, PtrPool<Instruction> &inst_pool, const Cond &not_in, bool in_a_cycle, InstructionMark *mark, int off_data );
 

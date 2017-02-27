@@ -43,5 +43,9 @@ void InstructionTestContiguous::write_cpp( StreamSepMaker &ss, StreamSepMaker &e
     }
 }
 
+void InstructionTestContiguous::get_code_repr( std::ostream &os ) {
+    os << "TEST_CONTIGUOUS " << beg << " " << nb_chars;
+}
+
 
 } // namespace Hpipe

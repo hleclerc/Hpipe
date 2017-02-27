@@ -10,6 +10,10 @@ Instruction *InstructionSkip::clone( PtrPool<Instruction> &inst_pool, const Cont
     return inst_pool << new InstructionSkip( ncx );
 }
 
+void InstructionSkip::get_code_repr( std::ostream &os ) {
+    os << "SKIP";
+}
+
 bool InstructionSkip::can_be_deleted() const {
     return true;
 }

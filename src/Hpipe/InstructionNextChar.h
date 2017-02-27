@@ -16,6 +16,7 @@ public:
     virtual Instruction *clone               ( PtrPool<Instruction> &inst_pool, const Context &ncx, const Vec<unsigned> &keep_ind );
     virtual void         boyer_moore_opt     ( PtrPool<Instruction> &inst_pool, Instruction **init );
     Instruction         *make_boyer_moore_rec( PtrPool<Instruction> &inst_pool, const Vec<std::pair<Vec<Cond>,Instruction *>> &front, InstructionNextChar *next_char, int orig_front_size );
+    virtual void         get_code_repr       ( std::ostream &os ) override;
 
     bool                 beg;
     bool                 assume_not_eof;

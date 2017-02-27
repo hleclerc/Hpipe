@@ -10,6 +10,10 @@ Instruction *InstructionPrio::clone( PtrPool<Instruction> &inst_pool, const Cont
     return inst_pool << new InstructionPrio( ncx );
 }
 
+void InstructionPrio::get_code_repr( std::ostream &os ) {
+    os << "PRIO";
+}
+
 bool InstructionPrio::can_be_deleted() const {
     return true;
 }
