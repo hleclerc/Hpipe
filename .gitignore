@@ -4,3 +4,8 @@ CMakeScripts
 Makefile
 cmake_install.cmake
 install_manifest.txt
+*.dot
+*.pdf
+*.user
+build
+out.cpp

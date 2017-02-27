@@ -49,14 +49,14 @@ Context::PC Context::forward( const CharItem *fip ) const {
                 if ( not res.pos.contains( e.item ) ) {
                     res.pos << e.item;
                     rcitem << i;
-                    if ( CharGraph::impossible_ko( res.pos ) )
+                    if ( CharGraph::leads_to_ok( res.pos ) )
                         return { res, rcitem };
                 }
             }
         } else if ( not res.pos.contains( item ) ) {
             res.pos << item;
             rcitem << i;
-            if ( CharGraph::impossible_ko( res.pos ) )
+            if ( CharGraph::leads_to_ok( res.pos ) )
                 return { res, rcitem };
         }
     }
@@ -74,7 +74,7 @@ Context::PC Context::forward( const Cond &c ) const {
             if ( not res.pos.contains( item ) ) {
                 res.pos << item;
                 rcitem << i;
-                if ( CharGraph::impossible_ko( res.pos ) )
+                if ( CharGraph::leads_to_ok( res.pos ) )
                     return { res, rcitem };
             }
         } else if ( c & item->cond ) {
@@ -82,7 +82,7 @@ Context::PC Context::forward( const Cond &c ) const {
                 if ( not res.pos.contains( e.item ) ) {
                     res.pos << e.item;
                     rcitem << i;
-                    if ( CharGraph::impossible_ko( res.pos ) )
+                    if ( CharGraph::leads_to_ok( res.pos ) )
                         return { res, rcitem };
                 }
             }
@@ -103,14 +103,14 @@ Context::PC Context::forward( int type ) const {
                 if ( not res.pos.contains( e.item ) ) {
                     res.pos << e.item;
                     rcitem << i;
-                    if ( CharGraph::impossible_ko( res.pos ) )
+                    if ( CharGraph::leads_to_ok( res.pos ) )
                         return { res, rcitem };
                 }
             }
         } else if ( not res.pos.contains( item ) ) {
             res.pos << item;
             rcitem << i;
-            if ( CharGraph::impossible_ko( res.pos ) )
+            if ( CharGraph::leads_to_ok( res.pos ) )
                 return { res, rcitem };
         }
     }

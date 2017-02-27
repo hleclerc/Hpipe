@@ -73,10 +73,10 @@ int exec_dot( const char *f, const char *viewer, bool launch_viewer, bool par ) 
             ss << t[ i ] << " " << f << ".pdf";
             if ( par )
                 ss << " 2> /dev/null &";
-            // PRINT( ss.str() );
             if ( system( ss.str().c_str() ) == 0 )
                 return 0;
         }
+        std::cerr << "Impossible to find a pdf viewer" << std::endl;
     }
 
     return 0;

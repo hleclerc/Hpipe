@@ -107,7 +107,7 @@ void CharItem::write_dot_rec( std::ostream &os ) const {
     os << "  node_" << this << " [label=\"";
     dot_out( os, *this );
     os << "\"";
-    //if ( impossible_ko )
+    //if ( leads_to_ok )
     //    os << ",style=dotted";
     os << "];\n";
 

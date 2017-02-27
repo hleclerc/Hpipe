@@ -25,7 +25,7 @@ public:
     void                     apply        ( std::function<void(CharItem *)> f );
     CharItem                *root         ();
 
-    static bool              impossible_ko( const Vec<const CharItem *> &items );
+    static bool              leads_to_ok  ( const Vec<const CharItem *> &items );
 
     Vec<Lexer::TrainingData> training_data() const { return lexer.training_data(); }
 
@@ -74,7 +74,6 @@ protected:
     void                    clone         ( Lexem *&beg, Lexem *&end, const std::string &name, const Lexem *l, Vec<Arg> cargs, const Vec<Arg> &args );
     static void             repl_all      ( std::string &str, const std::string &src, const std::string &dst );
     bool                    in_wait_goto  ( CharItem *item ) const;
-
 
     Lexer                  &lexer;
     CharItem                base;
