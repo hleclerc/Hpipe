@@ -28,8 +28,9 @@ public:
     CharGraph                      *cg;
 protected:
     struct PendingTrans {
-        PendingTrans( Instruction *inst, const Context &cx, const Vec<unsigned> &rcitem = {} ) : inst( inst ), cx( cx ), rcitem( rcitem ), res( 0 ) {}
+        PendingTrans( Instruction *inst, unsigned num_edge, const Context &cx, const Vec<unsigned> &rcitem = {} ) : inst( inst ), num_edge( num_edge ), cx( cx ), rcitem( rcitem ), res( 0 ) {}
         Instruction  *inst;
+        unsigned      num_edge;
         Context       cx;
         Vec<unsigned> rcitem;
         Instruction  *res;
@@ -51,9 +52,9 @@ protected:
     using TCacheRewind = std::map<Context::PC,Instruction *>;
 
     void                            make_init            ();
-    Instruction                    *make_transitions     ( Vec<PendingTrans> &pending_trans, const Context &cx );
-    bool                            impossible_ko        ( const Vec<const CharItem *> &items );
-    bool                            impossible_ko_rec    ( const Vec<const CharItem *> &items, std::set<Vec<const CharItem *>> &visited );
+    Instruction                    *make_transitions     ( Vec<PendingTrans> &pending_trans, const Context &cx, bool avoid_cycles );
+    // bool                            leads_to_ok        ( const Vec<const CharItem *> &items );
+    // bool                            leads_to_ok_rec    ( const Vec<const CharItem *> &items, std::set<Vec<const CharItem *>> &visited );
     void                            train                ( bool only_cont = false );
     void                            remove_unused        ();
     void                            optimize_conditions  ();
@@ -61,7 +62,7 @@ protected:
     void                            make_rewind_exec     ( InstructionMark *mark, InstructionRewind *rewind );
     void                            get_possible_inst_rec( std::set<std::pair<Instruction *,unsigned>> &possible_instructions, Instruction *inst, unsigned pos, const InstructionMark *mark );
     void                            disp_if              ( const std::vector<std::string> &disp, bool disp_inst_pred, bool disp_trans_freq, const std::string &name, bool disp_rcitem = true );
-    void                            merge_eq_pred        ();
+    void                            merge_eq_pred        ( Instruction *&root );
     void                            boyer_moore          ();
     Instruction                    *make_rewind_inst     ( Vec<PendingRewindTrans> &loc_pending_trans, std::map<RewindContext,Instruction *> &instruction_map, std::unordered_map<Instruction *,Vec<unsigned>> possible_inst, InstructionRewind *rewind, Instruction *orig, const PendingRewindTrans &pt ); ///< rewind_mark is a mark in the rewind context
     unsigned                        nb_multi_conds       ();

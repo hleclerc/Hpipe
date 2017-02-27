@@ -441,7 +441,7 @@ CharItem *CharGraph::root() {
 
 namespace {
 
-void get_next_conds( Vec<const CharItem *> &nitems, const CharItem *item ) {
+void get_next_ltor( Vec<const CharItem *> &nitems, const CharItem *item ) {
     switch( item->type ) {
     case CharItem::COND:
     case CharItem::_EOF:
@@ -450,23 +450,31 @@ void get_next_conds( Vec<const CharItem *> &nitems, const CharItem *item ) {
     case CharItem::KO:
         nitems.push_back_unique( item );
         break;
+    case CharItem::NEXT_CHAR:
+        break;
     default:
         for( const CharEdge &e : item->edges )
-            get_next_conds( nitems, e.item );
+            get_next_ltor( nitems, e.item );
     }
 }
 
-bool impossible_ko_rec( const Vec<const CharItem *> &items, std::set<Vec<const CharItem *> > &visited ) {
+bool leads_to_ok_rec( const Vec<const CharItem *> &items, std::set<Vec<const CharItem *> > &visited ) {
     // dead end...
     if ( items.empty() )
         return false;
 
-    // get to conds or OK
+    // get next items that are COND, OK, KO, _IF, or _EOF, stopping if CharItem::NEXT
     Vec<const CharItem *> nitems;
     for( const CharItem *item : items )
-        get_next_conds( nitems, item );
+        get_next_ltor( nitems, item );
 
-    // ok/ko/if
+    // we have already seen this case ?
+    std::sort( nitems.begin(), nitems.end() );
+    if ( visited.count( nitems ) )
+        return true;
+    visited.insert( nitems );
+
+    // directly a ok, a ko or an if ?
     for( const CharItem *item : nitems ) {
         if ( item->type == CharItem::OK )
             return true;
@@ -474,13 +482,7 @@ bool impossible_ko_rec( const Vec<const CharItem *> &items, std::set<Vec<const C
             return false;
     }
 
-    // loop means OK: we're not going to find a KO this way
-    std::sort( nitems.begin(), nitems.end() );
-    if ( visited.count( nitems ) )
-        return true;
-    visited.insert( nitems );
-
-    // we (normally) have only conds and eof. => make the list of conds
+    // we (normally) have only conds and eof. => make the list of conds or eofs
     Cond covered;
     Vec<const CharItem *> eofs;
     for( const CharItem *item : nitems ) {
@@ -492,11 +494,12 @@ bool impossible_ko_rec( const Vec<const CharItem *> &items, std::set<Vec<const C
         covered |= item->cond;
     }
     if ( not covered.always_checked() )
+        return false; // possible to stop this path
+
+    if ( eofs.size() && ! leads_to_ok_rec( eofs, visited ) )
         return false;
 
-    if ( eofs.size() and not impossible_ko_rec( eofs, visited ) )
-        return false;
-
+    // get char sets
     Vec<Cond> conds;
     for( const CharItem *item : nitems ) {
         if ( item->type == CharItem::_EOF )
@@ -515,6 +518,7 @@ bool impossible_ko_rec( const Vec<const CharItem *> &items, std::set<Vec<const C
             conds << t;
     }
 
+    // test that all the path lead to ok
     for( const Cond &c : conds ) {
         Vec<const CharItem *> citems;
         citems.reserve( nitems.size() );
@@ -522,19 +526,17 @@ bool impossible_ko_rec( const Vec<const CharItem *> &items, std::set<Vec<const C
             if ( item->type == CharItem::COND and ( c & item->cond ) )
                 for( const CharEdge &e : item->edges )
                     citems.push_back_unique( e.item );
-        if ( not impossible_ko_rec( citems, visited ) )
+        if ( ! leads_to_ok_rec( citems, visited ) )
             return false;
     }
-
-    //
     return true;
 }
 
 }
 
-bool CharGraph::impossible_ko( const Vec<const CharItem *> &items ) {
+bool CharGraph::leads_to_ok( const Vec<const CharItem *> &items ) {
     std::set<Vec<const CharItem *>> visited;
-    return impossible_ko_rec( items, visited );
+    return leads_to_ok_rec( items, visited );
 }
 
 void CharGraph::err( const std::string &msg ) {

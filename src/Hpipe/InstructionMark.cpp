@@ -6,11 +6,12 @@ namespace Hpipe {
 InstructionMark::InstructionMark( const Context &cx, unsigned num_active_item ) : Instruction( cx ), num_active_item( num_active_item ) {
     mark                = this;
     has_code            = false;
+    has_ambiguous_code  = false;
     has_code_in_a_cycle = false;
 }
 
 void InstructionMark::write_dot( std::ostream &os, std::vector<std::string> *edge_labels ) const {
-    os << "MARK";
+    os << "MARK" << num_active_item;
 }
 
 bool InstructionMark::is_a_mark() const {

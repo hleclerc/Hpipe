@@ -21,6 +21,7 @@ public:
     Vec<InstructionRewind *> rewinds;
     unsigned                 num_active_item;
     bool                     has_code;
+    bool                     has_ambiguous_code;
     bool                     has_code_in_a_cycle;
 };
 
