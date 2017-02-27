@@ -69,6 +69,21 @@ CharGraph::CharGraph( Lexer &lexer, const Lexem *lexem ) : lexer( lexer ), base(
         } );
     } );
 
+    // remove pivots
+    apply( []( CharItem *item ) {
+        for( unsigned num_edge = 0; num_edge < item->edges.size(); ) {
+            CharItem *next = item->edges[ num_edge ].item;
+            if ( next->type == CharItem::PIVOT ) {
+                HPIPE_ASSERT( next->edges.size() >= 1, "" );
+                // replace item->edge[ { num_edge } ] by pivot->edges[ ... ]
+                item->edges[ num_edge ].item = next->edges[ 0 ].item;
+                for( unsigned ind = 1; ind < next->edges.size(); ++ind )
+                    item->edges.insert( item->edges.begin() + num_edge + ind, 1, next->edges[ ind ].item );
+            } else
+                ++num_edge;
+        }
+    } );
+
     // remove non advancing cycles (like '()**')
     std::map<CharItem *,Vec<unsigned>> edges_to_remove;
     get_cycles( [&]( Vec<ItemNum> vi ) {
@@ -89,21 +104,6 @@ CharGraph::CharGraph( Lexer &lexer, const Lexem *lexem ) : lexer( lexer ), base(
                 throw "Item is going nowhere";
         }
     }
-
-    // remove pivots
-    apply( []( CharItem *item ) {
-        for( unsigned num_edge = 0; num_edge < item->edges.size(); ) {
-            CharItem *next = item->edges[ num_edge ].item;
-            if ( next->type == CharItem::PIVOT ) {
-                HPIPE_ASSERT( next->edges.size() >= 1, "" );
-                // replace item->edge[ { num_edge } ] by pivot->edges[ ... ]
-                item->edges[ num_edge ].item = next->edges[ 0 ].item;
-                for( unsigned ind = 1; ind < next->edges.size(); ++ind )
-                    item->edges.insert( item->edges.begin() + num_edge + ind, 1, next->edges[ ind ].item );
-            } else
-                ++num_edge;
-        }
-    } );
 }
 
 void CharGraph::read( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> inputs ) {
