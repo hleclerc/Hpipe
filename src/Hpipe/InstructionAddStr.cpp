@@ -36,7 +36,7 @@ void InstructionAddStr::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &
         PRINTLE( "bing" );
         return;
     }
-    if ( cpp_emitter->interruptible() )
+    if ( cpp_emitter->interruptible() && cpp_emitter->rewind_rec_level == 0 )
         ss << "sipe_data->" << var << " += sipe_data->__save[ " << save->num_save << " ];";
     else
         ss << "sipe_data->" << var << " += save[ " << save->num_save << " ];";

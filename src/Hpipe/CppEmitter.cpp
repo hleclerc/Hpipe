@@ -48,8 +48,13 @@ void CppEmitter::write_constants( StreamSepMaker &ss ) {
 }
 
 void CppEmitter::write_preliminaries( StreamSepMaker &ss ) {
+    if ( not sg->cg->includes.empty() ) {
+        ss << "";
+        for( std::string inc : sg->cg->includes )
+            ss << "#include <" << inc << ">";
+    }
     for( const std::string &prel : sg->cg->preliminaries )
-        ss << "    " << prel;
+        ss << prel;
 }
 
 void CppEmitter::write_hpipe_data( StreamSepMaker &ss, const std::string &name ) {
@@ -201,11 +206,8 @@ int CppEmitter::test( const std::vector<Lexer::TestData> &tds ) {
     ss << "#include <Hpipe/Print.h>";
     ss << "#include <iostream>";
     ss << "#include <sstream>";
-    if ( not sg->cg->includes.empty() ) {
-        ss << "";
-        for( std::string inc : sg->cg->includes )
-            ss << "#include <" << inc << ">";
-    }
+    write_preliminaries( ss );
+
     ss << "";
     ss << "int Hpipe::Buffer::nb_alive_bufs = 0;";
     for( buffer_type = 0; buffer_type < 3; ++buffer_type ) {

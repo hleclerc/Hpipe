@@ -1,5 +1,6 @@
 #include "InstructionNextChar.h"
 #include "CppEmitter.h"
+#include "CharGraph.h"
 #include "DotOut.h"
 #include "Assert.h"
 
@@ -43,6 +44,8 @@ void Instruction::write_dot_rec( std::ostream &os, bool disp_inst_pred, bool dis
         for( unsigned i = 0; i < cx.pos.size(); ++i )
             ss << ( i ? "," : "" ) << cx.pos[ i ]->compact_repr();
         ss << "]";
+        //        if ( CharGraph::leads_to_ok( cx.pos ) )
+        //            ss << "OK";
         if ( cx.flags ) {
             ss << "(";
             if ( cx.flags & cx.BEG     ) ss << "B";

@@ -315,7 +315,10 @@ void CharGraph::read( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> i
             }
 
             static std::pair<const char *,std::function<void(const std::string &)>> fv[] = {
-                { "add_include", [&]( const std::string &l ) { includes.insert( l ); } },
+                { "add_include"    , [&]( const std::string &l ) { includes.insert( l );                                } },
+                { "add_preliminary", [&]( const std::string &l ) { preliminaries.push_back_unique( left_shifted( l ) ); } },
+                { "add_prel"       , [&]( const std::string &l ) { preliminaries.push_back_unique( left_shifted( l ) ); } },
+                { "add_attr"       , [&]( const std::string &l ) { attributes   .push_back_unique( l );                 } },
             };
 
             for( const auto &p : fv ) {
@@ -324,7 +327,7 @@ void CharGraph::read( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> i
                         const Lexem *n = l->children[ 1 ];
                         if ( n->eq( Lexem::OPERATOR, "(" ) )
                             n = n->children[ 0 ];
-                        includes.insert( n->str );
+                        p.second( n->str );
                     } else
                         lexer.err( l, ( std::string( p.first ) + " needs exactly 1 arg with exactly 1 value" ).c_str() );
                     return read( leaves, l->next, inputs );
@@ -441,7 +444,7 @@ CharItem *CharGraph::root() {
 
 namespace {
 
-void get_next_ltor( Vec<const CharItem *> &nitems, const CharItem *item ) {
+void get_next_ltor( Vec<const CharItem *> &nitems, const CharItem *item, bool impossible_ko ) {
     switch( item->type ) {
     case CharItem::COND:
     case CharItem::_EOF:
@@ -451,14 +454,15 @@ void get_next_ltor( Vec<const CharItem *> &nitems, const CharItem *item ) {
         nitems.push_back_unique( item );
         break;
     case CharItem::NEXT_CHAR:
-        break;
+        if ( ! impossible_ko )
+            break;
     default:
         for( const CharEdge &e : item->edges )
-            get_next_ltor( nitems, e.item );
+            get_next_ltor( nitems, e.item, impossible_ko );
     }
 }
 
-bool leads_to_ok_rec( const Vec<const CharItem *> &items, std::set<Vec<const CharItem *> > &visited ) {
+bool leads_to_ok_rec( const Vec<const CharItem *> &items, std::set<Vec<const CharItem *> > &visited, bool impossible_ko ) {
     // dead end...
     if ( items.empty() )
         return false;
@@ -466,7 +470,7 @@ bool leads_to_ok_rec( const Vec<const CharItem *> &items, std::set<Vec<const Cha
     // get next items that are COND, OK, KO, _IF, or _EOF, stopping if CharItem::NEXT
     Vec<const CharItem *> nitems;
     for( const CharItem *item : items )
-        get_next_ltor( nitems, item );
+        get_next_ltor( nitems, item, impossible_ko );
 
     // we have already seen this case ?
     std::sort( nitems.begin(), nitems.end() );
@@ -496,7 +500,7 @@ bool leads_to_ok_rec( const Vec<const CharItem *> &items, std::set<Vec<const Cha
     if ( not covered.always_checked() )
         return false; // possible to stop this path
 
-    if ( eofs.size() && ! leads_to_ok_rec( eofs, visited ) )
+    if ( eofs.size() && ! leads_to_ok_rec( eofs, visited, impossible_ko ) )
         return false;
 
     // get char sets
@@ -526,7 +530,7 @@ bool leads_to_ok_rec( const Vec<const CharItem *> &items, std::set<Vec<const Cha
             if ( item->type == CharItem::COND and ( c & item->cond ) )
                 for( const CharEdge &e : item->edges )
                     citems.push_back_unique( e.item );
-        if ( ! leads_to_ok_rec( citems, visited ) )
+        if ( ! leads_to_ok_rec( citems, visited, impossible_ko ) )
             return false;
     }
     return true;
@@ -534,9 +538,9 @@ bool leads_to_ok_rec( const Vec<const CharItem *> &items, std::set<Vec<const Cha
 
 }
 
-bool CharGraph::leads_to_ok( const Vec<const CharItem *> &items ) {
+bool CharGraph::leads_to_ok( const Vec<const CharItem *> &items, bool impossible_ko ) {
     std::set<Vec<const CharItem *>> visited;
-    return leads_to_ok_rec( items, visited );
+    return leads_to_ok_rec( items, visited, impossible_ko );
 }
 
 void CharGraph::err( const std::string &msg ) {
@@ -601,7 +605,7 @@ void CharGraph::clone( Lexem *&beg, Lexem *&end, const Lexem *&l, const Vec<Arg>
 
         // function call ( func[ args ] )
         auto is_inline = []( const Lexem *l ) {
-            return l->eq( "add_str" ) or l->eq( "clr_str" ) or l->eq( "add_include" );
+            return l->eq( "add_str" ) or l->eq( "clr_str" ) or l->eq( "add_include" ) or l->eq( "add_prel" ) or l->eq( "add_preliminary" ) or l->eq( "add_attr" );
         };
 
         bool do_not_clone_ch_0 = false;

@@ -17,20 +17,22 @@
 # prop: boucle ou amène sur OK, en excluant les +1. Pb: 
 
 # comments
-com_b  = '<' any* '>'
-s_com  = hspace | com_b
+# com_b  = '<' any* '>'
+# s_com  = hspace | com_b
 
-preproc_word =
-    ( 'AB' { os << *data; } )
+# preproc_word =
+#     ( 'AB' { os << *data; } )
 
-preproc = '#' s_com** preproc_word??
+# preproc = '#' s_com** preproc_word??
 
-main = (
-    # char    |
-    # string  |
-    preproc |
-    any
-)**
+# main = (
+#     # char    |
+#     # string  |
+#     preproc |
+#     any
+# )**
+main = ( '<' any * '>' )** ( 'AB' { pouet; } )??
+# si on veut que */ fasse sortir
 
 beg_test basic include read
     input

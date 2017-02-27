@@ -171,17 +171,20 @@ when the end machine is written twice.
 * `add_str[ "A" ]`: shortcut to write a code that will append the current char value to a string named A (that will be automatically declared in the generated HpipeData structure). `add_str` enables specific optimizations. For instance contiguous `add_str` may be transformed to an "add mark" and a "use mark" instructions, enabling effective zero copy.
 * `clr_str[ "A" ]`: shortcut to write a code that will clear the string named A.
 
+There are some internal predefined machine to help generate code:
+* `add_include[ 'my_include.h' ]` will add `#include <my_include.h>` (only once) in the preliminary of the generated code
+* `add_prel[ 'some_code' ]` or `add_preliminary[ 'some_code' ]` will add `some_code` (only once) in the preliminary of the generated code
+* `add_attr[ 'some_code' ]` will add `some_code` (only once) in the attributes of the generated class
+
+
 Buffer style
 ============
 
-By default, hpipe generate a `parse` function with the following signature:
-
+By default, hpipe generate a `parse` function with a signature like:
 
 ```C++
 unsigned parse( HpipeData* hpipe_data, Hpipe::Buffer* buf, bool last_buf = false )
 ```
-
-
 `Hpipe::Buffer` is basically a data chunk with a reference counter and a `next` field for strings made from several data chunks (`Hpipe::CbString` and `Hpipe::CbStringPtr` enable to handle those lists as more or less regular strings). A standard reading pattern using `Hpipe::Buffer` would be
 
 ```C++
@@ -206,7 +209,7 @@ void input_data_event() {
 }
 ```
 
-For more conventional buffer styles (actually not enabling interruption in the data), one can use the option `-s BEG_END` which generates a function with the following signature:
+For more conventional buffer styles (e.g. if data is given as a whole), one can use the option `-s BEG_END` which generates a function with the following signature:
 
 ```C++
 unsigned parse( HpipeData* sipe_data, const unsigned char* data, const unsigned char* end_m1 );
@@ -215,6 +218,8 @@ unsigned parse( HpipeData* sipe_data, const unsigned char* data, const unsigned 
 `end_m1` must point to the last char (e.g. for data.size == 0, end_m1 must be equal to data - 1).
 
 It is also possible to use `-s C_STR` which generates a function for zero ended strings.
+
+Additionally, `-s BUFFER_IN_CLASS` will generate the parse function without `HpipeData* hpipe_data, `, assuming that data accessible via an attribute or a global variable.
 
 How to call and define machines ?
 =================================

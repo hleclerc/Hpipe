@@ -1,10 +1,10 @@
 # strings
-char   = "'" ( "\\" | "\'" | ( "'" -> out_char   ) | any )** <- out_char
-string = '"' ( '\\' | '\"' | ( '"' -> out_string ) | any )** <- out_string
+char   = "'" ( "\\" | "\'" | ( "'" -> out ) | any )** <- out
+string = '"' ( '\\' | '\"' | ( '"' -> out ) | any )** <- out
 
 # comments
-com_l  = '//' ( any - lf )**
-com_b  = '/*' any* '*/'
+com_l  = '//' any* eol??
+com_b  = '/*' any* '*/'??
 s_com  = hspace | com_b
 
 # preprocessor
@@ -18,11 +18,11 @@ if_content[ func_name = "_if" ] = (
     )** <- out_if_content { func_name( std::move( arg ) ); } clr_str[ "arg" ]
 
 preproc_word =
-    add_include[ "Hpipe/Vec.h" ]
+    add_prel[ {#include "Hpipe/Vec.h"} ]
     add_include[ "map" ]
-    ( 'ifdef'  s_com* variable[ "res" ] { _ifdef ( res ); } ) |
-    ( 'ifndef' s_com* variable[ "res" ] { _ifndef( res ); } ) |
-    ( 'define' s_com* variable[ "res" ]
+    ( 'ifdef'  s_com** ( variable[ "res" ] { _ifdef ( res ); } ) ) |
+    ( 'ifndef' s_com** ( variable[ "res" ] { _ifndef( res ); } ) ) |
+    ( 'define' s_com** ( variable[ "res" ]
         (
             '(' { cur_args_define.clear(); }
             (
@@ -35,19 +35,19 @@ preproc_word =
             ( lf | "//" -> out_define_content ) |
             ( any add_str[ "arg" ] )
         )** <- out_define_content { _define( res, std::move( cur_args_define ), std::move( arg ) ); } clr_str[ "arg" ]
-    ) |
-    ( 'if' s_com+ if_content ) |
-    ( 'include' s_com* '<' var_any[ "res" ] '>' { _include( res, true ); } ) |
-    ( 'include' s_com* '"' var_any[ "res" ] '"' { _include( res, false ); } ) |
+    ) ) |
+    ( 'if' s_com++ if_content ) |
+    ( 'include' s_com** ( '<' var_any[ "res" ] '>' { _include( res, true  ); } )?? ) |
+    ( 'include' s_com** ( '"' var_any[ "res" ] '"' { _include( res, false ); } )?? ) |
     ( 'endif' { _endif(); } ) |
     ( 'else' { _else(); } )
 
-preproc = '#' s_com** preproc_word
+preproc = '#' s_com** preproc_word??
 
 main = (
-    char    |
-    string  |
     preproc |
+    string  |
+    char    |
     any
 )**
 
