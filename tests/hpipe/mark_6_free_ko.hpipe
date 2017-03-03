@@ -1,0 +1,13 @@
+# il faut sortir du rewind sur EOF
+main = 
+    ( 'A'** 'B' ) |
+    ( { os << *data; } 'A' )**
+
+
+beg_test 1
+    input
+        AAA
+    output
+        AAA status=OK
+end_test
+

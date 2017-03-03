@@ -103,6 +103,8 @@ void InstructionGraph::make_init() {
         // get instruction and pending transitions
         Vec<PendingTrans> loc_pending_trans;
         Instruction *inst = pt.res ? pt.res : make_transitions( loc_pending_trans, pt.cx, avoid_cycles, pt );
+
+        // if lead to a cycle, do the transition later
         if ( avoid_cycles && ! inst ) {
             pending_cycle_trans.emplace( pt );
             pending_trans.pop();
@@ -119,30 +121,23 @@ void InstructionGraph::make_init() {
             init = inst;
 
         // for each transition to be completed, look it it can cancel the mark (in which case we may modify the pending marks)
-        if ( inst->mark ) {
+        if ( pt.inst && pt.inst->mark ) {
             for( PendingTrans &npt : loc_pending_trans ) {
-                if ( CharGraph::leads_to_ok( npt.cx.pos ) ) {
+                if ( CharGraph::leads_to_ok( npt.cx.pos ) || npt.cx.pos.empty() ) {
                     std::set<std::pair<Instruction *,unsigned>> possible_instructions;
-                    if ( can_make_a_rewind( possible_instructions, inst->mark, inst, npt.rcitem ) ) {
+                    if ( can_make_a_rewind( possible_instructions, pt.inst->mark, inst, npt.rcitem ) ) {
                         // forbid branching to instructions of the paths between mark and rewind
                         for( const auto &p : possible_instructions )
-                            if ( p.first != inst->mark )
+                            if ( p.first != pt.inst->mark )
                                 forbiden_branching.insert( p.first->cx );
 
-                        //  // add rewind in the transition
-                        //  auto itre = cache_rewind.find( { npt.cx, npt.rcitem } );
-                        //  if ( itre != cache_rewind.end() ) {
-                        //      npt.res = itre->second;
-                        //  } else {
                         // we have the instruction for npt
                         InstructionRewind *rwnd = inst_pool << new InstructionRewind( npt.cx );
-                        // cache_rewind.insert( itre, { { npt.cx, npt.rcitem }, rwnd } );
-                        inst->mark->rewinds << rwnd;
+                        pt.inst->mark->rewinds << rwnd;
                         npt.res = rwnd;
 
                         // what to do after the rwnd
                         pending_trans.emplace( rwnd, 0, npt.cx.without_mark(), range_vec( unsigned( npt.rcitem.size() ) ) );
-                        //  }
                     }
                 }
             }

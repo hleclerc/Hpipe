@@ -2,6 +2,13 @@ main = 'a' { os << '1' << *data; } (
     ( 'b' { os << '2' << *data; } 'c' ) | ( 'b' any )
 )* 'c' { os << '3' << *data; }
 
+beg_test 2
+    input
+        ab
+    output
+        status=KO
+end_test
+
 beg_test 1
     input
         abcbcbdc

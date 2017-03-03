@@ -84,7 +84,6 @@ void InstructionRewind::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
         ++cpp_emitter->rewind_rec_level;
 
         cpp_emitter->write_parse_body( ss, exec );
-        // ss << "// end rewind";
 
         --cpp_emitter->rewind_rec_level;
         cpp_emitter->inst_to_go_if_ok = old_inst_to_go_if_ok;
@@ -94,9 +93,10 @@ void InstructionRewind::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
         // free mark
         if ( mark && cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER && cpp_emitter->rewind_rec_level == 0 )
             ss << "sipe_data->rw_buf->dec_ref_upto( buf );";
+
+        write_trans( ss, cpp_emitter );
     }
 
-    write_trans( ss, cpp_emitter );
 }
 
 void InstructionRewind::optimize_conditions( PtrPool<Instruction> &inst_pool ) {

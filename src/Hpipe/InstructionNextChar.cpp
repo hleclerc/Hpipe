@@ -184,34 +184,42 @@ void InstructionNextChar::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, Cpp
             if ( not beg )
                 ss << "++data;";
 
+            // go to next buffer
             es.rm_beg( 2 ) << "c_" << cpp_emitter->nb_cont_label << ":" << ( cpp_emitter->trace_labels ? " std::cout << __LINE__ << std::endl;" : "" );
-            es << "buf    = buf->next;";
-            es << "data   = buf->data;";
-            es << "end_m1 = buf->data - 1 + buf->size;";
+            if ( next.size() == 2 )
+                es << "if ( ! buf->next ) goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << "; // YOP";
+            // es << "{ HPIPE_BUFFER *old = buf; buf = buf->next; dec_ref( old ); data = buf->data; end_m1 = buf->data - 1 + buf->size; }";
+            es << "buf = buf->next; data = buf->data; end_m1 = buf->data - 1 + buf->size;";
             es << "if ( data > end_m1 ) goto c_" << cpp_emitter->nb_cont_label << ";";
             es << "goto l_" << next[ 0 ].inst->get_id_gen( cpp_emitter ) << ";";
-        } else if ( not beg )
-            ss << "++data;";
+        } else {
+            if ( next.size() == 2 ) {
+                if ( cpp_emitter->buffer_type == CppEmitter::C_STR ) {
+                    ss << "if ( *" << ( beg ? "data" : "( ++data )" ) << " == " << cpp_emitter->end_char << " ) goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << "; // YOP";
+                } else {
+                    ss << "if ( data " << ( beg ? ">" : ">=" ) << " end_m1 ) goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << "; // YOP";
+                    if ( not beg )
+                        ss << "++data;";
+                }
+            } else if ( not beg )
+                ss << "++data;";
+        }
 
         return write_trans( ss, cpp_emitter );
     }
 
     //
     if ( cpp_emitter->interruptible() ) {
-        //         // add a label if necessary
-        //         if ( not id_gen ) {
-        //             id_gen = ++cpp_emitter->nb_id_gen;
-        //             ss.rm_beg( 2 ) << "l_" << id_gen << ":";
-        //         }
-
         ss << "if ( data " << ( beg ? ">" : ">=" ) << " end_m1 ) goto c_" << ++cpp_emitter->nb_cont_label << ";"; // this one is good but it won't the case for the next
         if ( not beg )
             ss << "++data;";
 
         // c_... (code when there is no data left in the buffer)
         es.rm_beg( 2 ) << "c_" << cpp_emitter->nb_cont_label << ":" << ( cpp_emitter->trace_labels ? " std::cout << __LINE__ << std::endl;" : "" );
-        if ( not assume_not_eof )
+
+        if ( ! assume_not_eof )
             es << "if ( last_buf ) goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << ";";
+
         if ( mark and cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER ) {
             es << "sipe_data->inp_cont = &&e_" << cpp_emitter->nb_cont_label << ";";
             es << "Hpipe::inc_ref( buf );";
