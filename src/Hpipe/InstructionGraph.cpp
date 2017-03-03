@@ -135,7 +135,7 @@ void InstructionGraph::make_init() {
                         //      npt.res = itre->second;
                         //  } else {
                         // we have the instruction for npt
-                        InstructionRewind *rwnd = inst_pool << new InstructionRewind( pt.cx );
+                        InstructionRewind *rwnd = inst_pool << new InstructionRewind( npt.cx );
                         // cache_rewind.insert( itre, { { npt.cx, npt.rcitem }, rwnd } );
                         inst->mark->rewinds << rwnd;
                         npt.res = rwnd;
