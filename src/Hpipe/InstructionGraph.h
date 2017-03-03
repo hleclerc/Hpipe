@@ -18,7 +18,7 @@ class InstructionMark;
 */
 class InstructionGraph {
 public:
-    InstructionGraph( CharGraph *cg, const std::vector<std::string> &disp = {}, bool disp_inst_pred = false, bool disp_trans_freq = false, bool want_boyer_moore = false );
+    InstructionGraph( CharGraph *cg, const std::vector<std::string> &disp = {}, bool disp_inst_pred = false, bool disp_trans_freq = false, bool want_boyer_moore = false, bool no_training = false );
 
     void                            apply               ( std::function<void(Instruction *)> f, bool subgraphs = false );
     int                             display_dot         ( CharGraph *cg = 0, bool disp_inst_pred = false, bool disp_trans_freq = false, bool disp_rc_item = false, const char *f = ".inst.dot", const char *prg = 0 ) const;
@@ -77,6 +77,7 @@ protected:
     std::set<Context>               forbiden_branching;
     // TCacheRewind                    cache_rewind;
     PtrPool<Instruction>            inst_pool;
+    bool                            no_training;
 };
 
 } // namespace Hpipe

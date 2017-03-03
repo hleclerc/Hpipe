@@ -317,9 +317,9 @@ bool CppEmitter::bench( const std::vector<Lexer::TrainingData> &tds, int type ) 
         ss << "";
         ss << "struct Bench_" << buffer_type << " {";
 
-        write_constants     ( ns );
-        write_hpipe_data    ( ns );
-        write_parse_def( ns );
+        write_constants ( ns );
+        write_hpipe_data( ns );
+        write_parse_decl( ns );
 
         ss << "    void exec( const unsigned char *name, const unsigned char *data, unsigned size, const char *display ) {";
         switch ( buffer_type ) {
@@ -358,6 +358,10 @@ bool CppEmitter::bench( const std::vector<Lexer::TrainingData> &tds, int type ) 
         ss << "    std::ostringstream os;";
         ss << "    unsigned cpt = 0;";
         ss << "};";
+
+        ss << "#define HPIPE_METHOD_PREFIX Bench_" << buffer_type << "::";
+        write_parse_def( ss );
+        ss << "#undef HPIPE_METHOD_PREFIX";
     }
 
 
@@ -382,9 +386,10 @@ bool CppEmitter::bench( const std::vector<Lexer::TrainingData> &tds, int type ) 
     }
 
     std::string gpp = "g++ -O3 -march=native -std=c++14 -Isrc/ -o bench bench.cpp";
-    return _exec( gpp ) && _exec( "./bench 'without profile'" ) &&
-           _exec( gpp + " -fprofile-generate" ) && _exec( "./bench" ) &&
-           _exec( gpp + " -fprofile-use"      ) && _exec( "./bench 'with profile'" ); // -fno-reorder-blocks-and-partition
+    return _exec( gpp ) && _exec( "./bench 'without profile'" )
+            && _exec( gpp + " -fprofile-generate" ) && _exec( "./bench" )
+            && _exec( gpp + " -fprofile-use"      ) && _exec( "./bench 'with profile'" )
+            ; // -fno-reorder-blocks-and-partition
 }
 
 //void CppEmitter::write_code( StreamSepMaker &ss, std::string str, const std::string &repl ) {

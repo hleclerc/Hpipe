@@ -16,3 +16,10 @@ mark
 out
 err
 ext/
+bench
+bench.cpp
+*.gcda
+tests/re2c/js
+tests/re2c/js.cc
+tests/re2c/node_modules
+

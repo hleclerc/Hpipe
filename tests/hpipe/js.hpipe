@@ -1,75 +1,72 @@
 name = 
-    # alpha | '_' | '$' | ( 128 .. 255 any ) (
-    # alnum | '_' | '$' | ( 128 .. 255 any )
-    # )**
-    alpha alnum**
+    alpha | '_' | '$' | ( 128 .. 255 any ) (
+    alnum | '_' | '$' | ( 128 .. 255 any )
+    )**
     { ++name; }
 
 number = 
-    # ( '0' ( 'x' | 'X' )     xdigit    ++ ) |
-    # ( '0' ( 'o' | 'O' ) ( '0' .. '7' )++ ) |
-    # ( '0' ( 'b' | 'B' ) ( '0' .. '1' )++ ) |
-    # ( ( digit** '.' digit++ ) | ( digit++ '.'?? ) ( 'e' | 'E' ( '+' | '-' )?? digit++ )?? )
-    digit++
+    ( '0' ( 'x' | 'X' )     xdigit    ** ) |
+    ( '0' ( 'o' | 'O' ) ( '0' .. '7' )** ) |
+    ( '0' ( 'b' | 'B' ) ( '0' .. '1' )** ) |
+    ( ( digit++ '.'?? digit** ) | ( '.' digit** ) ( 'e' | 'E' ( '+' | '-' )?? digit++ )?? )
     { ++number; }
 
 punctuator = 
-    # '>>>=' |
+    '>>>=' |
 
-    # '>>>'  |
-    # '>>='  |
-    # '==='  | 
-    # '<<='  |
-    # '**='  |
-    # '...'  | 
-    # '!=='  | 
+    '>>>'  |
+    '>>='  |
+    '==='  | 
+    '<<='  |
+    '**='  |
+    '...'  | 
+    '!=='  | 
 
-    # '||'   | 
-    # '|='   |
-    # '>>'   |
-    # '>='   |
-    # '=>'   | 
-    # '=='   |
-    # '<='   |
-    # '<<'   |
-    # '+='   | 
-    # '++'   | 
-    # '^='   |
-    # '%='   |
-    # '&='   |
-    # '&&'   | 
-    # '/='   | 
-    # '*='   |
-    # '**'   |
-    # '!='   |
-    # '-='   | 
-    # '--'   | 
+    '||'   | 
+    '|='   |
+    '>>'   |
+    '>='   |
+    '=>'   | 
+    '=='   |
+    '<='   |
+    '<<'   |
+    '+='   | 
+    '++'   | 
+    '^='   |
+    '%='   |
+    '&='   |
+    '&&'   | 
+    '/='   | 
+    '*='   |
+    '**'   |
+    '!='   |
+    '-='   | 
+    '--'   | 
 
-    # '~'    |
-    # '|'    |
-    # '>'    |
-    # '='    |
-    # '<'    |
-    # '+'    |
-    # '^'    |
-    # '%'    |
-    # '&'    |
-    # '/'    |
-    # '*'    |
-    # '}'    |
-    # '{'    |
-    # ']'    |
-    # '['    |
-    # ')'    |
-    # '('    |
-    # '.'    |
-    # '?'    |
-    # '!'    |
-    # ':'    |
-    # ';'    |
-    # ','    |
-    # '-' 
-    ';' | '=' 
+    '~'    |
+    '|'    |
+    '>'    |
+    '='    |
+    '<'    |
+    '+'    |
+    '^'    |
+    '%'    |
+    '&'    |
+    '/'    |
+    '*'    |
+    '}'    |
+    '{'    |
+    ']'    |
+    '['    |
+    ')'    |
+    '('    |
+    '.'    |
+    '?'    |
+    '!'    |
+    ':'    |
+    ';'    |
+    ','    |
+    '-' 
     { ++punctuator; }
 
 sp = 
@@ -81,21 +78,20 @@ main = (
     name       |
     number     |
     punctuator |
-    ( any { ++unk; } )
+    ( any { ++err; } )
 )** {    os << name 
      << " " << number
      << " " << punctuator
      << " " << sp
-     << " " << unk;
+     << " " << err;
 }
-
 
 beg_methods
     Hpipe::SI64 name       = 0;
     Hpipe::SI64 number     = 0;
     Hpipe::SI64 punctuator = 0;
     Hpipe::SI64 sp         = 0;
-    Hpipe::SI64 unk        = 0;
+    Hpipe::SI64 err        = 0;
 end_methods
 
 beg_test preproc
@@ -105,40 +101,74 @@ beg_test preproc
         2 1 2 3 0 status=OK
 end_test
 
-# name = 
-#     alpha | '_' | '$' | ( 128 .. 255 any ) (
-#     alnum | '_' | '$' | ( 128 .. 255 any )
-#     )**
+beg_training
+    input
+        let variants = [], img_names = [];
+        for( const arg of process.argv.slice( 2 ) ) {
+            if ( arg.startsWith( "--" ) ) {
+                const ine = arg.indexOf( "=" );
+                if ( ine >= 0 ) // && vn.indexOf( arg.substring( 2, ine ) ) >= 0
+                    variants.push( { name: arg.substring( 2, ine - 1 ), values: arg.substring( ine + 1 ).split( "," ) } );
+            } else
+                img_names.push( arg );
+        }
 
-# number = 
-#     ( '0' ( 'x' | 'X' )    xdigit     ++ ) |
-#     ( '0' ( 'o' | 'O' ) ( '0' .. '7' )++ ) |
-#     ( '0' ( 'b' | 'B' ) ( '0' .. '1' )++ ) |
-#     ( ( digit** '.' digit++ ) | ( digit++ '.'?? ) ( 'e' | 'E' ( '+' | '-' )?? digit+ )?? )
-#     { ++num; }
+        function prefix( ext ) {
+            switch ( ext.toLowerCase() ) {
+                case ".jpeg":
+                    return `data:image/jpg;base64,`;
+                default:
+                    return `data:image/${ ext.slice( 1 ) };base64,`;
+            }
+        }
 
-# punctuator = 
-#     '--' | '++' | '&&' | '||' | '=>' | '...' |
-#     ( ( '**' | '*' | '+' | '-' | '/' | '%' | '&' | '|' | '^' | '>>>' | '>>' | '>' | '<<' | '<' | '!' | '!=' | '=' ) '='?? ) |
-#     '?' | '~' | '.' | ',' | ':' | ';' | '[' | ']' | '(' | ')' | '{' | '}'
+        function explore_variants( lst, var_name, img_name ) {
+            if ( lst.length == variants.length ) {
+                if ( lst.length == 0 )
+                    return console.log( `module.exports${ var_name.length ? "." + var_name : "" } = "${ prefix( path.extname( img_name ) ) }${ fs.readFileSync( img_name ).toString( 'base64' ) }";` );
+                // check image magick is present
+                const rp = cp.spawnSync( "nsmake", [ "prerequ", "convert" ], { stdio: [ 0, 2, 2 ] } );
+                if ( rp.error || rp.status )
+                    process.exit( 1 );
+                // launch convert
+                return tmp.file( {}, ( err, tmp_name, fd, cleanupCallback ) => {
+                    let convert_args = [ img_name ];
+                    for( const v of lst ) {
+                        if ( v.value.length )
+                            convert_args.push( "-" + v.name, v.value );
+                    }
+                    convert_args.push( tmp_name );
 
-# main = (
-#     name                   |
-#     number                 |
-#     punctuator             |
-#     ( space++ { ++num; } ) |
-#     ( any     { ++num; } )
-# )** { os << num; }
+                    const rp = cp.spawn( "convert", convert_args, { stdio: [ 0, 2, 2 ] } );
+                    rp.on( 'error', err => {
+                        cleanupCallback();
+                        process.exit( 1 );
+                    } );
+                    rp.on( 'close', code => {
+                        if ( code ) {
+                            cleanupCallback();
+                            process.exit( 1 );
+                        }
+                        console.log( `module.exports.${ var_name } = "${ prefix( path.extname( img_name ) ) }${ fs.readFileSync( tmp_name ).toString( 'base64' ) }";` );
+                        cleanupCallback();
+                    } );
+                } );
+            }
+            for( const value of variants[ lst.length ].values ) {
+                explore_variants( [ ...lst, { name: variants[ lst.length ].name, value } ], var_name + (
+                    value.length ? ( var_name.length ? "__" : "" ) +`${ variants[ lst.length ].name }_${ value }` : ''
+                ), img_name );
+            }
+        }
+
+        for( const img_name of img_names )
+            explore_variants( [], img_names.length > 1 ? encodeURIComponent( path.basename( img_name, path.extname( img_name ) ) ) : "", img_name );
+    freq
+        1
+end_training
+
+# --no-training 7.55192
+# training      2.77979
+# re2c          
 
 
-# beg_methods
-#     Hpipe::SI64 num = 0;
-# end_methods
-
-# # proute 0 10
-# beg_test preproc
-#     input
-#         10
-#     output
-#         5 status=OK
-# end_test

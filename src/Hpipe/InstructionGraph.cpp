@@ -23,7 +23,7 @@
 
 namespace Hpipe {
 
-InstructionGraph::InstructionGraph( CharGraph *cg, const std::vector<std::string> &disp, bool disp_inst_pred, bool disp_trans_freq, bool want_boyer_moore ) : cg( cg ), init( 0 ), cx_ok( cg->char_item_ok, false ) {
+InstructionGraph::InstructionGraph( CharGraph *cg, const std::vector<std::string> &disp, bool disp_inst_pred, bool disp_trans_freq, bool want_boyer_moore, bool no_training ) : cg( cg ), init( 0 ), cx_ok( cg->char_item_ok, false ), no_training( no_training ) {
     // predefined instructions
     ok = inst_pool << new InstructionOK( cx_ok );
     ko = inst_pool << new InstructionKO( Context{} );
@@ -385,7 +385,8 @@ void InstructionGraph::remove_unused() {
 }
 
 void InstructionGraph::optimize_conditions() {
-    train();
+    if ( ! no_training )
+        train();
     
     unsigned nb_conds = 0;
     root()->apply( [&]( Instruction *inst ) {
