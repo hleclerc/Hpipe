@@ -44,6 +44,7 @@ int main( int argc, char **argv ) {
 
         // output
         CppEmitter cp( &sg );
+        cp.trace_labels = trace_labels;
 
         if      ( strcmp( style, "BUFFER_IN_CLASS" ) == 0 ) { cp.buffer_type = CppEmitter::HPIPE_BUFFER; cp.in_class = true; }
         else if ( strcmp( style, "BUFFER"          ) == 0 ) { cp.buffer_type = CppEmitter::HPIPE_BUFFER; }

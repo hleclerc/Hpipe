@@ -34,7 +34,7 @@ InstructionGraph::InstructionGraph( CharGraph *cg, const std::vector<std::string
     disp_if( disp, disp_inst_pred, disp_trans_freq, "init" );
 
     // rewinds
-    simplify_marks( init );
+    make_marks_data( init );
     disp_if( disp, disp_inst_pred, disp_trans_freq, "mark" );
 
     // eq trans, eq pred (beware: rcitem becomes wrong)
@@ -129,20 +129,20 @@ void InstructionGraph::make_init() {
                             if ( p.first != inst->mark )
                                 forbiden_branching.insert( p.first->cx );
 
-                        // add rewind in the transition
-                        auto itre = cache_rewind.find( { npt.cx, npt.rcitem } );
-                        if ( itre != cache_rewind.end() ) {
-                            npt.res = itre->second;
-                        } else {
-                            // we have the instruction for npt
-                            InstructionRewind *rwnd = inst_pool << new InstructionRewind( npt.cx );
-                            cache_rewind.insert( itre, { { npt.cx, npt.rcitem }, rwnd } );
-                            inst->mark->rewinds << rwnd;
-                            npt.res = rwnd;
+                        //  // add rewind in the transition
+                        //  auto itre = cache_rewind.find( { npt.cx, npt.rcitem } );
+                        //  if ( itre != cache_rewind.end() ) {
+                        //      npt.res = itre->second;
+                        //  } else {
+                        // we have the instruction for npt
+                        InstructionRewind *rwnd = inst_pool << new InstructionRewind( pt.cx );
+                        // cache_rewind.insert( itre, { { npt.cx, npt.rcitem }, rwnd } );
+                        inst->mark->rewinds << rwnd;
+                        npt.res = rwnd;
 
-                            // what to do after the rwnd
-                            pending_trans.emplace( rwnd, 0, npt.cx.without_mark(), range_vec( unsigned( npt.rcitem.size() ) ) );
-                        }
+                        // what to do after the rwnd
+                        pending_trans.emplace( rwnd, 0, npt.cx.without_mark(), range_vec( unsigned( npt.rcitem.size() ) ) );
+                        //  }
                     }
                 }
             }
@@ -755,7 +755,7 @@ void remove_mark_rec( Instruction *inst, Instruction *mark ) {
             remove_mark_rec( p.inst, mark );
 }
 
-void InstructionGraph::simplify_marks( Instruction *root ) {
+void InstructionGraph::make_marks_data( Instruction *root ) {
     // get the marks
     ++Instruction::cur_op_id;
     Vec<InstructionMark *> marks;
@@ -764,42 +764,44 @@ void InstructionGraph::simplify_marks( Instruction *root ) {
             marks << mark;
     } );
 
-    // make rewind->exec, with simplifications
+    // make data
     for( InstructionMark *mark : marks ) {
-        for( InstructionRewind *rewind : mark->rewinds )
+        // make rewind->exec, update flags for mark
+        bool remove_mark = true;
+        unsigned num_save = 0;
+        for( InstructionRewind *rewind : mark->rewinds ) {
             make_rewind_exec( mark, rewind );
 
-        // simplifications
-        if ( ! mark->has_code ) {
+            if ( rewind->need_rw )
+                remove_mark = false;
+            else if ( rewind->code_seq.size() ) {
+                // add save points
+                for( InstructionWithCode *code : rewind->code_seq ) {
+                    if ( not code->data_code() )
+                        continue;
+                    Instruction *orig = code->orig;
+                    while ( orig->prev.size() == 1 and dynamic_cast<InstructionWithCode *>( orig->prev[ 0 ].inst ) )
+                        orig = orig->prev[ 0 ].inst;
+                    if ( orig->prev.size() == 1 and dynamic_cast<InstructionSave *>( orig->prev[ 0 ].inst ) ) {
+                        code->save = static_cast<InstructionSave *>( orig->prev[ 0 ].inst );
+                        continue;
+                    }
+                    code->save = inst_pool << new InstructionSave( orig->cx, num_save++ );
+                    orig->insert_before_this( code->save, init );
+                    code->save->mark = 0;
+                }
+            }
+        }
+
+        //
+        if ( remove_mark ) {
             ++Instruction::cur_op_id;
             for( InstructionRewind *rewind : mark->rewinds ) {
                 remove_mark_rec( rewind, mark );
-                rewind->remove();
-            }
-            mark->remove();
-        } else if ( ! mark->has_ambiguous_code && ! mark->has_code_in_a_cycle ) {
-            unsigned num_save = 0;
-            for( InstructionRewind *rewind : mark->rewinds ) {
-                remove_mark_rec( rewind, mark );
-                rewind->mark = 0;
-                if ( rewind->has_code ) {
-                    // InstructionSave for code in rewind code_seq
-                    for( InstructionWithCode *code : rewind->code_seq ) {
-                        if ( not code->data_code() )
-                            continue;
-                        Instruction *orig = code->orig;
-                        while ( orig->prev.size() == 1 and dynamic_cast<InstructionWithCode *>( orig->prev[ 0 ].inst ) )
-                            orig = orig->prev[ 0 ].inst;
-                        if ( orig->prev.size() == 1 and dynamic_cast<InstructionSave *>( orig->prev[ 0 ].inst ) ) {
-                            code->save = static_cast<InstructionSave *>( orig->prev[ 0 ].inst );
-                            continue;
-                        }
-                        code->save = inst_pool << new InstructionSave( orig->cx, num_save++ );
-                        orig->insert_before_this( code->save, init );
-                        code->save->mark = 0;
-                    }
-                } else
+                if ( rewind->code_seq.empty() )
                     rewind->remove();
+                else
+                    rewind->mark = 0;
             }
             mark->remove();
         }
@@ -922,40 +924,25 @@ void InstructionGraph::make_rewind_exec( InstructionMark *mark, InstructionRewin
     }
 
     // make marks in subgraph if necessary
-    simplify_marks( rewind->exec );
+    make_marks_data( rewind->exec );
 
     // information needed for simplifications
+    rewind->exec->update_in_a_branch();
     rewind->exec->update_in_a_cycle();
-
-    //    #warning ...
-    //    mark->has_code = true;
-    //    mark->has_code_in_a_cycle = true;
-    //    rewind->has_code = true;
-    //    rewind->has_code_in_a_cycle = true;
 
     rewind->exec->apply( [&]( Instruction *inst ) {
         if ( InstructionWithCode *code = dynamic_cast<InstructionWithCode *>( inst ) ) {
-            if ( inst->cx.pos.size() >= 2 )
-                mark->has_ambiguous_code = true;
-            mark->has_code = true;
-            rewind->has_code = true;
             rewind->code_seq << code;
-
-            if ( code->in_a_cycle ) {
-                mark->has_code_in_a_cycle = true;
-                rewind->has_code_in_a_cycle = true;
-            } else
-
-            if ( code->data_code() )
-                rewind->has_data_code = true;
-        } else if ( inst->with_code() ) {
-            if ( inst->cx.pos.size() >= 2 )
-                mark->has_ambiguous_code = true;
-            mark->has_code = true;
-            rewind->has_code = true;
-
-            mark->has_code_in_a_cycle = true;
-            rewind->has_code_in_a_cycle = true;
+            if ( inst->in_a_cycle || inst->in_a_branch )
+                rewind->need_rw = true;
+        } else if ( InstructionRewind *rw = dynamic_cast<InstructionRewind *>( inst ) ) {
+            if ( rw->code_seq.size() ) {
+                if ( rw->in_a_cycle || rw->in_a_branch || rw->need_rw )
+                    rewind->need_rw = true;
+                else
+                    for( InstructionWithCode *code : rw->code_seq )
+                        rewind->code_seq << static_cast<InstructionWithCode *>( code->orig );
+            }
         }
     } );
 }

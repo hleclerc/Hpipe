@@ -49,7 +49,7 @@ protected:
         Instruction *orig;
         Instruction *mark;
     };
-    using TCacheRewind = std::map<Context::PC,Instruction *>;
+    // using TCacheRewind = std::map<Context::PC,Instruction *>;
 
     void                            make_init            ();
     Instruction                    *make_transitions     ( Vec<PendingTrans> &pending_trans, const Context &cx, bool avoid_cycles, PendingTrans pt );
@@ -58,7 +58,7 @@ protected:
     void                            train                ( bool only_cont = false );
     void                            remove_unused        ();
     void                            optimize_conditions  ();
-    void                            simplify_marks       ( Instruction *root );
+    void                            make_marks_data       ( Instruction *root );
     void                            make_rewind_exec     ( InstructionMark *mark, InstructionRewind *rewind );
     void                            get_possible_inst_rec( std::set<std::pair<Instruction *,unsigned>> &possible_instructions, Instruction *inst, unsigned pos, const InstructionMark *mark );
     void                            disp_if              ( const std::vector<std::string> &disp, bool disp_inst_pred, bool disp_trans_freq, const std::string &name, bool disp_rcitem = true );
@@ -75,7 +75,7 @@ protected:
     Context                         cx_ok;
     std::map<Context,Instruction *> cache;
     std::set<Context>               forbiden_branching;
-    TCacheRewind                    cache_rewind;
+    // TCacheRewind                    cache_rewind;
     PtrPool<Instruction>            inst_pool;
 };
 

@@ -18,8 +18,6 @@ public:
     virtual void               apply_rec          ( std::function<void(Instruction *)> f, bool subgraphs = false );
     virtual void               get_unused_rec     ( Vec<Instruction *> &to_remove, Instruction *&init );
     virtual void               apply_rec_rewind_l ( std::function<void(Instruction *, unsigned)> f, unsigned rewind_level = 0 );
-    bool                       use_exec           () const;
-    bool                       use_code_seq       () const;
     virtual bool               with_code          () const;
     virtual void               write_cpp          ( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter );
     virtual void               optimize_conditions( PtrPool<Instruction> &inst_pool );
@@ -30,9 +28,7 @@ public:
 
     Instruction               *exec;
     Vec<InstructionWithCode *> code_seq;
-    bool                       has_code = false;
-    bool                       has_data_code = false;
-    bool                       has_code_in_a_cycle = false;
+    bool                       need_rw   = false; ///< true if this->exec is to be used
 };
 
 } // namespace Hpipe

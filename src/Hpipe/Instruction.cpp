@@ -373,6 +373,37 @@ void Instruction::update_in_a_cycle() {
     }
 }
 
+void Instruction::update_in_a_branch() {
+    Vec<Instruction *> tails;
+    apply( [&]( Instruction *inst ) {
+        inst->in_a_branch = true;
+        if ( inst->next.empty() )
+            tails << inst;
+    } );
+
+    // tails
+    for( Instruction *inst : tails ) {
+        while( true ) {
+            if ( inst->in_a_branch == false )
+                break;
+            inst->in_a_branch = false;
+            if ( inst->prev.size() != 1 )
+                break;
+            inst = inst->prev[ 0 ].inst;
+        }
+    }
+
+    // head
+    for( Instruction *inst = this; ; ) {
+        if ( inst->in_a_branch == false )
+            break;
+        inst->in_a_branch = false;
+        if ( inst->next.size() != 1 )
+            break;
+        inst = inst->next[ 0 ].inst;
+    }
+}
+
 //void Instruction::get_boyer_moore_seq( Vec<std::pair<Vec<Cond>,Instruction *>> &front ) {
 //    if ( next.size() == 0 )
 //        return;

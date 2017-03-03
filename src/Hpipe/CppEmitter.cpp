@@ -15,6 +15,7 @@ CppEmitter::CppEmitter( InstructionGraph *sg ) : root( sg->root() ), sg( sg ) {
     buffer_type      = HPIPE_BUFFER;
     in_class         = false;
     test_mode        = false;
+    trace_labels     = false;
     inst_to_go_if_ok = 0;
     rewind_rec_level = 0;
 
@@ -170,7 +171,7 @@ void CppEmitter::write_parse_body( StreamSepMaker &ss, Instruction *root ) {
     for( Instruction *inst : ordering ) {
         // write a label if neceassary
         if ( inst->id_gen )
-            ss.rm_beg( 2 ) << "l_" << inst->id_gen << ":";
+            ss.rm_beg( 2 ) << "l_" << inst->id_gen << ":" << ( trace_labels ? " std::cout << __LINE__ << std::endl;" : "" );
 
         //
         inst->write_cpp( ss, es, this );

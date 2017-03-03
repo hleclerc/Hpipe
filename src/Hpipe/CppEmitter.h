@@ -45,7 +45,8 @@ public:
     int               end_char;       ///< used if type == C_STR
     bool              test_mode;      ///<
     int               buffer_type;    ///< BUFFER, ...
-    bool              in_class;       ///<
+    bool              in_class;       ///< 
+    bool              trace_labels;   ///< 
 
     // contextual variables
     unsigned          nb_id_gen;

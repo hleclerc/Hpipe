@@ -1,36 +1,63 @@
-name = 
-    alpha | '_' | '$' | ( 128 .. 255 any ) (
-    alnum | '_' | '$' | ( 128 .. 255 any )
-    )**
-
 number = 
-    ( '0' ( 'x' | 'X' )    xdigit     ++ ) |
-    ( '0' ( 'o' | 'O' ) ( '0' .. '7' )++ ) |
-    ( '0' ( 'b' | 'B' ) ( '0' .. '1' )++ ) |
-    ( ( digit** '.' digit++ ) | ( digit++ '.'?? ) ( 'e' | 'E' ( '+' | '-' )?? digit+ )?? )
+    # ( '0' ( 'x' | 'X' )    xdigit     ++ ) |
+    # ( '0' ( 'o' | 'O' ) ( '0' .. '7' )++ ) |
+    # ( '0' ( 'b' | 'B' ) ( '0' .. '1' )++ ) |
+    # ( ( digit** '.' digit++ ) | ( digit++ '.'?? ) ( 'e' | 'E' ( '+' | '-' )?? digit++ )?? )
+    digit++ '.'?? ( 'E' digit++ )??
+    # digit++
     { ++num; }
 
-punctuator = 
-    '--' | '++' | '&&' | '||' | '=>' | '...' |
-    ( ( '**' | '*' | '+' | '-' | '/' | '%' | '&' | '|' | '^' | '>>>' | '>>' | '>' | '<<' | '<' | '!' | '!=' | '=' ) '='?? ) |
-    '?' | '~' | '.' | ',' | ':' | ';' | '[' | ']' | '(' | ')' | '{' | '}'
-
-main = (
-    name                   |
-    number                 |
-    punctuator             |
-    ( space++ { ++num; } ) |
-    ( any     { ++num; } )
-)** { os << num; }
+main = ( number 
+    | ( any { ++err; } )
+)** { os << err << " " << num; }
 
 
 beg_methods
     Hpipe::SI64 num = 0;
+    Hpipe::SI64 err = 0;
 end_methods
 
 beg_test preproc
     input
-        proute 0 10
+        10 20
     output
-        5 status=OK
+        1 2 status=OK
 end_test
+
+# name = 
+#     alpha | '_' | '$' | ( 128 .. 255 any ) (
+#     alnum | '_' | '$' | ( 128 .. 255 any )
+#     )**
+
+# number = 
+#     ( '0' ( 'x' | 'X' )    xdigit     ++ ) |
+#     ( '0' ( 'o' | 'O' ) ( '0' .. '7' )++ ) |
+#     ( '0' ( 'b' | 'B' ) ( '0' .. '1' )++ ) |
+#     ( ( digit** '.' digit++ ) | ( digit++ '.'?? ) ( 'e' | 'E' ( '+' | '-' )?? digit+ )?? )
+#     { ++num; }
+
+# punctuator = 
+#     '--' | '++' | '&&' | '||' | '=>' | '...' |
+#     ( ( '**' | '*' | '+' | '-' | '/' | '%' | '&' | '|' | '^' | '>>>' | '>>' | '>' | '<<' | '<' | '!' | '!=' | '=' ) '='?? ) |
+#     '?' | '~' | '.' | ',' | ':' | ';' | '[' | ']' | '(' | ')' | '{' | '}'
+
+# main = (
+#     name                   |
+#     number                 |
+#     punctuator             |
+#     ( space++ { ++num; } ) |
+#     ( any     { ++num; } )
+# )** { os << num; }
+
+
+# beg_methods
+#     Hpipe::SI64 num = 0;
+# end_methods
+
+# # proute 0 10
+# beg_test preproc
+#     input
+#         10
+#     output
+#         5 status=OK
+# end_test

@@ -45,6 +45,7 @@ public:
     virtual bool         with_code          () const;
     virtual bool         data_code          () const;
     virtual bool         has_ret_cont       () const;
+    void                 update_in_a_branch ();
     void                 update_in_a_cycle  ();
     // void              get_boyer_moore_seq( Vec<std::pair<Vec<Cond>, Instruction *> > &front );
     virtual void         write_cpp_code_seq ( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter );
@@ -62,6 +63,7 @@ public:
 
     // helpers for mark/rewind
     int                  num_in_dfs_stack;
+    bool                 in_a_branch;
     bool                 in_a_cycle;
     InstructionMark     *mark;         ///< true if between a mark and a rewind
     Instruction         *orig;         ///< if is a clone (for a rewind)
