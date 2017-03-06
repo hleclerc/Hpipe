@@ -7,6 +7,7 @@
 namespace Hpipe {
 
 /**
+  We try to have the most frequent child at position 0
 */
 class InstructionCond : public Instruction {
 public:

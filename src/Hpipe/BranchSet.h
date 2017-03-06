@@ -39,7 +39,6 @@ public:
 
         int           beg;
         bool          use_equ; ///< true means use ==; false means < (if not use_neg)
-        bool          use_neg; ///< true and use_equ means !=; true and not use_equ means >=.
 
         AutoPtr<Node> ok;
         AutoPtr<Node> ko;

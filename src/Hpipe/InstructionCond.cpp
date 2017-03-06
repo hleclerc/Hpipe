@@ -45,43 +45,49 @@ void InstructionCond::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmit
 
 Instruction *InstructionCond::make_cond( const BranchSet::Node *node, PtrPool<Instruction> &inst_pool, const Cond &not_in, bool in_a_cycle, InstructionMark *mark, int off_data ) {
     if ( node->ok ) {
+        // < => 3.75651 (no reorder)
+        // > => 4.46    (no reorder)
+
+        // < => 4.46981
+
+        bool use_neg = node->ok->freq < node->ko->freq;
         if ( node->use_equ ) {
             Cond cond( node->beg, node->beg );
-            if ( node->use_neg ) {
-                Instruction *res = inst_pool << new InstructionCond( {}, cond, off_data, not_in );
-                Instruction *ok = make_cond( node->ok.ptr(), inst_pool, not_in | ~ cond, in_a_cycle, mark, off_data );
+            if ( use_neg ) {
+                Instruction *res = inst_pool << new InstructionCond( {}, ~ cond, off_data, not_in );
                 Instruction *ko = make_cond( node->ko.ptr(), inst_pool, not_in |   cond, in_a_cycle, mark, off_data );
-                res->next << Transition( ok, {}, node->ok->freq ); ok->prev << res;
+                Instruction *ok = make_cond( node->ok.ptr(), inst_pool, not_in | ~ cond, in_a_cycle, mark, off_data );
                 res->next << Transition( ko, {}, node->ko->freq ); ko->prev << res;
+                res->next << Transition( ok, {}, node->ok->freq ); ok->prev << res;
                 res->in_a_cycle = in_a_cycle;
                 res->mark = mark;
                 return res;
             }
-            Instruction *res = inst_pool << new InstructionCond( {}, ~ cond, off_data, not_in );
-            Instruction *ko = make_cond( node->ko.ptr(), inst_pool, not_in |   cond, in_a_cycle, mark, off_data );
+            Instruction *res = inst_pool << new InstructionCond( {}, cond, off_data, not_in );
             Instruction *ok = make_cond( node->ok.ptr(), inst_pool, not_in | ~ cond, in_a_cycle, mark, off_data );
-            res->next << Transition( ko, {}, node->ko->freq ); ko->prev << res;
+            Instruction *ko = make_cond( node->ko.ptr(), inst_pool, not_in |   cond, in_a_cycle, mark, off_data );
             res->next << Transition( ok, {}, node->ok->freq ); ok->prev << res;
+            res->next << Transition( ko, {}, node->ko->freq ); ko->prev << res;
             res->in_a_cycle = in_a_cycle;
             res->mark = mark;
             return res;
         }
         Cond cond( node->beg, 255 );
-        if ( node->use_neg ) {
-            Instruction *res = inst_pool << new InstructionCond( {}, ~ cond, off_data, not_in );
-            Instruction *ok = make_cond( node->ok.ptr(), inst_pool, not_in |   cond, in_a_cycle, mark, off_data );
+        if ( use_neg ) {
+            Instruction *res = inst_pool << new InstructionCond( {}, cond, off_data, not_in );
             Instruction *ko = make_cond( node->ko.ptr(), inst_pool, not_in | ~ cond, in_a_cycle, mark, off_data );
-            res->next << Transition( ok, {}, node->ok->freq ); ok->prev << res;
+            Instruction *ok = make_cond( node->ok.ptr(), inst_pool, not_in |   cond, in_a_cycle, mark, off_data );
             res->next << Transition( ko, {}, node->ko->freq ); ko->prev << res;
+            res->next << Transition( ok, {}, node->ok->freq ); ok->prev << res;
             res->in_a_cycle = in_a_cycle;
             res->mark = mark;
             return res;
         }
-        Instruction *res = inst_pool << new InstructionCond( {}, cond, off_data, not_in );
-        Instruction *ko = make_cond( node->ko.ptr(), inst_pool, not_in | ~ cond, in_a_cycle, mark, off_data );
+        Instruction *res = inst_pool << new InstructionCond( {}, ~ cond, off_data, not_in );
         Instruction *ok = make_cond( node->ok.ptr(), inst_pool, not_in |   cond, in_a_cycle, mark, off_data );
-        res->next << Transition( ko, {}, node->ko->freq ); ko->prev << res;
+        Instruction *ko = make_cond( node->ko.ptr(), inst_pool, not_in | ~ cond, in_a_cycle, mark, off_data );
         res->next << Transition( ok, {}, node->ok->freq ); ok->prev << res;
+        res->next << Transition( ko, {}, node->ko->freq ); ko->prev << res;
         res->in_a_cycle = in_a_cycle;
         res->mark = mark;
         return res;

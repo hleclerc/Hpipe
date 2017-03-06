@@ -21,8 +21,9 @@ static void get_mean_depth_rec( double &sum, double &wgt, const BranchSet::Node 
 
 static void output_rec( std::ostream &ss, const BranchSet::Node *node ) {
     if ( node->ok ) {
+        bool use_neg = node->ok->freq < node->ko->freq;
         if ( node->use_equ ) {
-            if ( node->use_neg ) {
+            if ( use_neg ) {
                 ss << "if ( *data != " << node->beg << " ) { ";
                 output_rec( ss, node->ko.ptr() );
                 ss << " } else { ";
@@ -36,7 +37,7 @@ static void output_rec( std::ostream &ss, const BranchSet::Node *node ) {
                 ss << " }";
             }
         } else {
-            if ( node->use_neg ) {
+            if ( use_neg ) {
                 ss << "if ( *data >= " << node->beg << " ) { ";
                 output_rec( ss, node->ko.ptr() );
                 ss << " } else { ";
@@ -60,14 +61,12 @@ static void output_rec( std::ostream &ss, const BranchSet::Node *node ) {
 static double cost_and_freq( BranchSet::Node *node, double cost ) {
     if ( node->ok ) {
         if ( node->ok->freq > node->ko->freq ) {
-            node->use_neg = false;
-            return cost_and_freq( node->ok.ptr(), cost + BranchSet::COST_TEST + 1 * BranchSet::COST_MISPREDICTION ) +
-                   cost_and_freq( node->ko.ptr(), cost + BranchSet::COST_TEST + 0 * BranchSet::COST_MISPREDICTION );
+            return cost_and_freq( node->ok.ptr(), cost + BranchSet::COST_TEST + 0 * BranchSet::COST_MISPREDICTION ) +
+                   cost_and_freq( node->ko.ptr(), cost + BranchSet::COST_TEST + 1 * BranchSet::COST_MISPREDICTION );
         }
-        return cost_and_freq( node->ok.ptr(), cost + BranchSet::COST_TEST + 0 * BranchSet::COST_MISPREDICTION ) +
-               cost_and_freq( node->ko.ptr(), cost + BranchSet::COST_TEST + 1 * BranchSet::COST_MISPREDICTION );
+        return cost_and_freq( node->ok.ptr(), cost + BranchSet::COST_TEST + 1 * BranchSet::COST_MISPREDICTION ) +
+               cost_and_freq( node->ko.ptr(), cost + BranchSet::COST_TEST + 0 * BranchSet::COST_MISPREDICTION );
     }
-
     return node->freq * cost;
 }
 
@@ -184,11 +183,10 @@ BranchSet::Node *BranchSet::make_choice( const Vec<Range> &ranges ) {
     // else, find how to split with inequ (we want same freq * depth on the left than on the right)
     const auto approx_depth = []( unsigned l ) { return log2( 1 + l ); };
     double best_time = 1e300, cum_freq = 0;
-    unsigned best_cut = 0;
     bool equ = false;
+    unsigned best_cut = 0;
     for( unsigned i = 1; i < ranges.size(); ++i ) {
         cum_freq += ranges[ i - 1 ].freq;
-        bool b = cum_freq > tot_freq - cum_freq;
         double fdl =              cum_freq   * approx_depth(                 i );
         double fdr = ( tot_freq - cum_freq ) * approx_depth( ranges.size() - i );
         double time = fdl + fdr;
@@ -225,7 +223,7 @@ BranchSet::Node *BranchSet::make_choice( const Vec<Range> &ranges ) {
 
         return new Node( ranges[ best_cut ].beg, true, make_choice( ranges[ best_cut ] ), make_choice( ko_ranges ) );
     }
-    return new Node( ranges[ best_cut ].beg, false, make_choice( ranges.up_to( best_cut ) ), make_choice( ranges.from( best_cut ) ) );
+    return new Node( ranges[ best_cut ].beg, false, make_choice( ranges.up_to( best_cut ) ), make_choice( ranges.from ( best_cut ) ) );
 }
 
 BranchSet::Node *BranchSet::make_choice_syst( const Vec<Range> &ranges ) {
@@ -316,7 +314,7 @@ BranchSet::Node *BranchSet::make_choice_syst( const Vec<Range> &ranges ) {
 //}
 
 
-BranchSet::Node::Node( int beg, bool use_equ, Node *ok, Node *ko ) : beg( beg ), use_equ( use_equ ), use_neg( false ), ok( ok ), ko( ko ) {
+BranchSet::Node::Node( int beg, bool use_equ, Node *ok, Node *ko ) : beg( beg ), use_equ( use_equ ), ok( ok ), ko( ko ) {
     freq = ok->freq + ko->freq;
 }
 
