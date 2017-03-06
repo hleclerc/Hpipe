@@ -385,10 +385,10 @@ bool CppEmitter::bench( const std::vector<Lexer::TrainingData> &tds, int type ) 
                _exec( gpp + " -fprofile-instr-use"      ) && _exec( "./bench 'with profile'" );
     }
 
-    std::string gpp = "g++ -O3 -g3 -fno-reorder-blocks -march=native -std=c++14 -Isrc/ -o bench bench.cpp";
+    std::string gpp = "g++ -O6 -g3 -fno-reorder-blocks -march=native -std=c++14 -Isrc/ -o bench bench.cpp";
     return _exec( gpp ) && _exec( "./bench 'without profile'" )
-            // && _exec( gpp + " -fprofile-generate" ) && _exec( "./bench" )
-            // && _exec( gpp + " -fprofile-use"      ) && _exec( "./bench 'with profile'" )
+        && _exec( gpp + " -fprofile-generate" ) && _exec( "./bench" )
+        && _exec( gpp + " -fprofile-use"      ) && _exec( "./bench 'with profile'" )
             ; // -fno-reorder-blocks-and-partition
 }
 
