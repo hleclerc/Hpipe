@@ -18,7 +18,7 @@ class InstructionMark;
 */
 class InstructionGraph {
 public:
-    InstructionGraph( CharGraph *cg, const std::vector<std::string> &disp = {}, bool disp_inst_pred = false, bool disp_trans_freq = false, bool want_boyer_moore = false, bool no_training = false );
+    InstructionGraph( CharGraph *cg, const std::vector<std::string> &disp = {}, int stop_char = -1, bool disp_inst_pred = false, bool disp_trans_freq = false, bool want_boyer_moore = false, bool no_training = false );
 
     void                            apply               ( std::function<void(Instruction *)> f, bool subgraphs = false );
     int                             display_dot         ( CharGraph *cg = 0, bool disp_inst_pred = false, bool disp_trans_freq = false, bool disp_rc_item = false, const char *f = ".inst.dot", const char *prg = 0 ) const;
@@ -57,6 +57,7 @@ protected:
     // bool                            leads_to_ok_rec    ( const Vec<const CharItem *> &items, std::set<Vec<const CharItem *>> &visited );
     void                            train                ( bool only_cont = false );
     void                            remove_unused        ();
+    void                            opt_stop_char        ( int stop_char );
     void                            optimize_conditions  ();
     void                            make_marks_data       ( Instruction *root );
     void                            make_rewind_exec     ( InstructionMark *mark, InstructionRewind *rewind );

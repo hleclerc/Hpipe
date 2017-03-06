@@ -8,7 +8,7 @@ namespace Hpipe {
 */
 class InstructionNextChar : public Instruction {
 public:
-    InstructionNextChar( const Context &cx, bool beg, bool assume_not_eof );
+    InstructionNextChar( const Context &cx, bool beg );
 
     virtual void         write_dot           ( std::ostream &os, std::vector<std::string> *edge_labels = 0 ) const;
     virtual Transition  *train               ( std::string::size_type &s, std::string::size_type &m, const std::string &inp, double freq, bool use_contiguous );
@@ -19,7 +19,6 @@ public:
     virtual void         get_code_repr       ( std::ostream &os ) override;
 
     bool                 beg;
-    bool                 assume_not_eof;
 };
 
 } // namespace Hpipe

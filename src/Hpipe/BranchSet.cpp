@@ -172,8 +172,8 @@ BranchSet::Node *BranchSet::make_choice( const Vec<Range> &ranges ) {
         return new Node( ranges.back() );
 
     //
-    //    if ( ranges.size() < 10 )
-    //        return make_choice_syst( ranges );
+    if ( ranges.size() < 10 )
+        return make_choice_syst( ranges );
 
     // tot_freq
     double tot_freq = 0;
