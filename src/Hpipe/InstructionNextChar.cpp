@@ -12,7 +12,7 @@
 
 namespace Hpipe {
 
-InstructionNextChar::InstructionNextChar( const Context &cx, bool beg, bool assume_not_eof ) : Instruction( cx ), beg( beg ), assume_not_eof( assume_not_eof ) {
+InstructionNextChar::InstructionNextChar( const Context &cx, bool beg ) : Instruction( cx ), beg( beg ) {
 }
 
 void InstructionNextChar::write_dot( std::ostream &os, std::vector<std::string> *edge_labels ) const {
@@ -30,7 +30,7 @@ Transition *InstructionNextChar::train( std::string::size_type &s, std::string::
 Instruction *InstructionNextChar::clone( PtrPool<Instruction> &inst_pool, const Context &ncx, const Vec<unsigned> &keep_ind ) {
     if ( keep_ind.size() == 1 and keep_ind[ 0 ] == 1 )
         return inst_pool << new InstructionNone( ncx );
-    return inst_pool << new InstructionNextChar( ncx, beg, assume_not_eof );
+    return inst_pool << new InstructionNextChar( ncx, beg );
 }
 
 void InstructionNextChar::boyer_moore_opt( PtrPool<Instruction> &inst_pool, Instruction **init ) {
@@ -173,7 +173,7 @@ Instruction *InstructionNextChar::make_boyer_moore_rec( PtrPool<Instruction> &in
 }
 
 void InstructionNextChar::get_code_repr( std::ostream &os ) {
-    os << "NEXT_CHAR " << beg << " " << assume_not_eof;
+    os << "NEXT_CHAR " << beg;
 }
 
 void InstructionNextChar::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
@@ -217,7 +217,7 @@ void InstructionNextChar::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, Cpp
         // c_... (code when there is no data left in the buffer)
         es.rm_beg( 2 ) << "c_" << cpp_emitter->nb_cont_label << ":" << ( cpp_emitter->trace_labels ? " std::cout << __LINE__ << std::endl;" : "" );
 
-        if ( ! assume_not_eof )
+        if ( next.size() >= 2 )
             es << "if ( last_buf ) goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << ";";
 
         if ( mark and cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER ) {
@@ -241,12 +241,12 @@ void InstructionNextChar::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, Cpp
             es << "goto l_" << next[ 0 ].inst->get_id_gen( cpp_emitter ) << ";";
         }
     } else if ( cpp_emitter->buffer_type == CppEmitter::C_STR ) {
-        if ( not assume_not_eof )
+        if ( next.size() >= 2 )
             ss << "if ( *" << ( beg ? "data" : "( ++data )" ) << " == " << cpp_emitter->end_char << " ) goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << ";";
         else if ( not beg )
             ss << "++data;";
     } else { // not interruptible
-        if ( not assume_not_eof )
+        if ( next.size() >= 2 )
             ss << "if ( data " << ( beg ? ">" : ">=" ) << " end_m1 ) goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << ";";
         if ( not beg )
             ss << "++data;";

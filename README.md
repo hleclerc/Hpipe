@@ -122,7 +122,7 @@ Here is a comparison of the performance of a js scanner written with [re2c](http
 
 |                  |       re2c       |     re2c -g      |     hpipe      |speedup |
 |------------------|:----------------:|:----------------:|:--------------:|:------:|
-| w/o profile opt  |     6.06785s     |     3.26868s     |    2.77979s    | 1.17x  |
+| w/o profile opt  |     6.06785s     |     3.26868s     |    2.63476s    | 1.24x  |
 | with profile opt |     6.36135s     |     3.26959s     |    2.04037s    | 1.60x  |
 
 (re2c is not meant to work on interrupted streams, but techniques for uninterrupted stream are roughly the same).

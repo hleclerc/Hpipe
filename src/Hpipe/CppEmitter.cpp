@@ -211,7 +211,7 @@ int CppEmitter::test( const std::vector<Lexer::TestData> &tds ) {
 
     ss << "";
     ss << "int Hpipe::Buffer::nb_alive_bufs = 0;";
-    for( buffer_type = 0; buffer_type < 3; ++buffer_type ) {
+    { // for( buffer_type = buffer_type; buffer_type < 3; ++buffer_type )
         ss << "";
         ss << "struct Test_" << buffer_type << " {";
 
@@ -284,7 +284,7 @@ int CppEmitter::test( const std::vector<Lexer::TestData> &tds ) {
     }
     ss << "    int res = 0;";
     for( const Lexer::TestData &td : tds )
-        for( unsigned i = 0; i < 3; ++i)
+        for( unsigned i = buffer_type; i <= buffer_type; ++i)
             ss << "    res |= Test_" << i << "().exec( name_" << &td << ", inp_" << &td << ", " << td.inp.size() << ", std::string( (const char *)out_" << &td << ", " << td.out.size() << " ) );";
     ss << "    return res;";
     ss << "}";
@@ -313,7 +313,7 @@ bool CppEmitter::bench( const std::vector<Lexer::TrainingData> &tds, int type ) 
     ss << "#include <ctime>";
     ss << "";
     // ss << "#define HPIPE_TEST";
-    for( buffer_type = 0; buffer_type < 3; ++buffer_type ) {
+    { // for( buffer_type = 0; buffer_type < 3; ++buffer_type )
         ss << "";
         ss << "struct Bench_" << buffer_type << " {";
 
@@ -372,7 +372,7 @@ bool CppEmitter::bench( const std::vector<Lexer::TrainingData> &tds, int type ) 
         *ss.stream << "    static double freq_"        << &td << " = " << td.freq << ";\n";
     }
     for( const Lexer::TrainingData &td : tds )
-        ss << "    Bench_2().exec( name_" << &td << ", inp_" << &td << ", " << td.inp.size() << ", argc > 1 ? argv[ 1 ] : 0 );";
+        ss << "    Bench_" << buffer_type << "().exec( name_" << &td << ", inp_" << &td << ", " << td.inp.size() << ", argc > 1 ? argv[ 1 ] : 0 );";
     ss << "}";
     fout.close();
 

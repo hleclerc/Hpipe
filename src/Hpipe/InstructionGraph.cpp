@@ -23,7 +23,7 @@
 
 namespace Hpipe {
 
-InstructionGraph::InstructionGraph( CharGraph *cg, const std::vector<std::string> &disp, bool disp_inst_pred, bool disp_trans_freq, bool want_boyer_moore, bool no_training ) : cg( cg ), init( 0 ), cx_ok( cg->char_item_ok, false ), no_training( no_training ) {
+InstructionGraph::InstructionGraph( CharGraph *cg, const std::vector<std::string> &disp, int stop_char, bool disp_inst_pred, bool disp_trans_freq, bool want_boyer_moore, bool no_training ) : cg( cg ), init( 0 ), cx_ok( cg->char_item_ok, false ), no_training( no_training ) {
     // predefined instructions
     ok = inst_pool << new InstructionOK( cx_ok );
     ko = inst_pool << new InstructionKO( Context{} );
@@ -49,6 +49,14 @@ InstructionGraph::InstructionGraph( CharGraph *cg, const std::vector<std::string
     // clean up
     remove_unused();
     disp_if( disp, disp_inst_pred, disp_trans_freq, "unused", false );
+
+    // +1( MC, KO ) => +1[ no test ]( MC( 0 => KO, ... ) )
+    // js, wo => 3.57
+    // js, wi => 3.47
+    // js, wi, prof => 2.71
+    if ( stop_char >= 0 )
+        opt_stop_char( stop_char );
+    disp_if( disp, disp_inst_pred, disp_trans_freq, "stop_char", false );
 
     // cond opt
     optimize_conditions();
@@ -330,7 +338,7 @@ Instruction *InstructionGraph::make_transitions( Vec<PendingTrans> &pending_tran
         return tra( reg( new InstructionSkip( cx ) ), 0, Context::PC{ {}, {} } );
     }
 
-    Instruction *res = reg( new InstructionNextChar( cx, cx.beg(), cx.not_eof() ) );
+    Instruction *res = reg( new InstructionNextChar( cx, cx.beg() ) );
     tra( res, 0, cx.without_beg().without_not_eof().forward( CharItem::NEXT_CHAR ) ); // if OK
 
     if ( not cx.not_eof() ) {
@@ -377,6 +385,49 @@ void InstructionGraph::remove_unused() {
     // remove them
     for( Instruction *inst : to_remove )
         inst->remove( false );
+}
+
+void InstructionGraph::opt_stop_char( int stop_char ) {
+    // get all MultiCond
+    Vec<InstructionMultiCond *> mcs;
+    root()->apply( [&]( Instruction *inst ) {
+        if ( InstructionMultiCond *mc = dynamic_cast<InstructionMultiCond *>( inst ) )
+            mcs << mc;;
+    } );
+
+    // each multicond with prev
+    for( InstructionMultiCond *mc : mcs ) {
+        // we want all prev to be a NextChar, prev->ok to be mc, and all prev->ko to be the same
+        if ( mc->prev.empty() )
+            continue;
+        bool same_ko = true;
+        InstructionNextChar *fc = dynamic_cast<InstructionNextChar *>( mc->prev[ 0 ].inst );
+        Instruction *ko = fc->next.size() >= 2 ? fc->next[ 1 ].inst : 0;
+        for( int i = 0; i < mc->prev.size(); ++i ) {
+            InstructionNextChar *nc = dynamic_cast<InstructionNextChar *>( mc->prev[ i ].inst );
+            if ( nc == 0 || nc->next[ 0 ].inst != mc || ( ko ? nc->next[ 1 ].inst != ko : nc->next.size() < 2 ) ) {
+                same_ko = false;
+                break;
+            }
+        }
+        if( ! same_ko )
+            continue;
+
+        // remove nc->ko
+        for( int i = 0; i < mc->prev.size(); ++i ) {
+            InstructionNextChar *nc = static_cast<InstructionNextChar *>( mc->prev[ i ].inst );
+            ko->prev.remove_first_checking( [&]( Transition &prev ) { return prev.inst == nc; } );
+            nc->next.resize( 1 );
+        }
+
+        // add cond to mc
+        Cond zc( stop_char );
+        for( Cond &c : mc->conds )
+            c &= ~zc;
+        mc->conds.emplace_back( zc );
+        mc->next.emplace_back( ko );
+        ko->prev.emplace_back( mc );
+    }
 }
 
 void InstructionGraph::optimize_conditions() {
