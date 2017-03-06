@@ -1,56 +1,23 @@
-# main = (
-#     # ( eol eol -> end_get ) |
-#     ( any* { os << *data; } eol ) |
-#     any
-# ) # <- end_get
-# main = '1' any* { os << *data; } 'AB'
-# Pb leads_to_ok n'est pas suffisant
-# On pourrait être tentés de faire un goes_to_ok
-#  => par ex si tous les chemins tombent contiennt un ok dans les pos 
-#  pb avec le bouclage:
-#    - any* 'B' => ça boucle mais ce n'est pas bon
-#    - any** => ça boucle et c'est bon
-# Pb: si any boucle, on n'arrive jamais à OK
-# Prop 1: si arriver à OK est impossible, on a deux cas de figure
-#  => il est effectivement impossible d'arriver jusqu'au bout (=> ça serait bien d'avoir un message)
-#  => si OK 
-# prop: boucle ou amène sur OK, en excluant les +1. Pb: 
+main = 'GET ' 
+    # beg_word[ 'url' ]
+    ( any - ' ' )**
+    # end_word[ 'url' ]
+    any* eol (
+        any
+    )* eol eol { os << "url"; }
 
-# comments
-# com_b  = '<' any* '>'
-# s_com  = hspace | com_b
+# beg_methods
+#     Hpipe::SI64 name       = 0;
+#     Hpipe::SI64 number     = 0;
+#     Hpipe::SI64 punctuator = 0;
+#     Hpipe::SI64 sp         = 0;
+#     Hpipe::SI64 err        = 0;
+# end_methods
 
-# preproc_word =
-#     ( 'AB' { os << *data; } )
-
-# preproc = '#' s_com** preproc_word??
-
-# main = (
-#     # char    |
-#     # string  |
-#     preproc |
-#     any
-# )**
-main = ( '<' any * '>' )** ( 'AB' { pouet; } )??
-# si on veut que */ fasse sortir
-
-beg_test basic include read
+beg_test basic
     input
-        #<...>AB #AB
+        GET /smurf
     output
         BB status=OK
 end_test
 
-# beg_test basic include read
-#     input
-#         123AAAB
-#     output
-#         3 status=OK
-# end_test
-
-# beg_test basic include read
-#     input
-#         1AA
-#     output
-#         3 status=OK
-# end_test

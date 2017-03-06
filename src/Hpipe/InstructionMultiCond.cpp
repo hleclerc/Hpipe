@@ -1,6 +1,7 @@
 #include "InstructionMultiCond.h"
 #include "InstructionNone.h"
 #include "InstructionCond.h"
+#include <algorithm>
 #include <sstream>
 
 namespace Hpipe {
@@ -39,6 +40,49 @@ Transition *InstructionMultiCond::train( std::string::size_type &s, std::string:
 }
 
 void InstructionMultiCond::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
+    //    // jump table
+    //    Vec<std::string> jt( Vec<std::string>::Size(), 256 );
+    //    for( unsigned i = 0; i < conds.size(); ++i )
+    //        for( unsigned j = 0; j < 256; ++j )
+    //            if ( conds[ i ][ j ] )
+    //                jt[ j ] = "&&l_" + to_string( next[ i ].inst->get_id_gen( cpp_emitter ) );
+    //    ss << "{";
+    //    ss << "    static void *targets[256] = {";
+    //    for( unsigned j = 0; j < 256; ) {
+    //        *ss.stream << ss.beg + "        ";
+    //        for( unsigned i = 0; i < 8; ++j, ++i )
+    //            *ss.stream << jt[ j ] << ", ";
+    //        *ss.stream << ss.end;
+    //    }
+    //    ss << "    };";
+    //    ss << "    goto *targets[ data[ " + to_string( off_data ) + " ] ];";
+    //    ss << "}";
+
+    //    std::set<Instruction *> insts;
+    //    for( const Transition &t : next )
+    //        insts.insert( t.inst );
+    //    PRINT( insts.size() );
+
+    //    Cond tot_covered;
+    //    Vec<std::tuple<Instruction *,Cond,double>> cond_seq;
+    //    for( unsigned i = 0; i < conds.size(); ++i ) {
+    //        cond_seq.emplace_back( next[ i ].inst, conds[ i ] );
+    //        tot_covered |= conds[ i ];
+    //    }
+    //    std::sort( cond_seq.begin(), cond_seq.end(), []( const auto &a, const auto &b ) {
+    //        return a.first->freq > b.first->freq;
+    //    } );
+    //    for( std::pair<Instruction *,Cond> &c : cond_seq )
+    //        PRINT( c.first->freq );
+
+    //    Cond covered;
+    //    for( unsigned i = 0; i < conds.size(); ++i ) {
+    //        if ( next[ i ].inst->num_ordering == num_ordering + 1 )
+    //            continue;
+    //        covered |= conds[ i ];
+    //    }
+
+    // simple succession of tests
     Cond covered;
     for( unsigned i = 0; i < conds.size(); ++i ) {
         if ( next[ i ].inst->num_ordering == num_ordering + 1 )
@@ -92,7 +136,7 @@ void InstructionMultiCond::optimize_conditions( PtrPool<Instruction> &inst_pool 
     for( BranchSet::Range &range : ranges )
         range.freq += 1e-3 / nb_ranges[ range.inst ];
 
-    //
+    // if succession of cond seams to be a better solution, use them
     BranchSet best_bs( ranges );
     repl_in_preds( InstructionCond::make_cond( best_bs.root.ptr(), inst_pool, {}, in_a_cycle, mark, off_data ) );
     for( Transition &t : next )

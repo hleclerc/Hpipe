@@ -9,10 +9,12 @@ namespace Hpipe {
 template<class T>
 struct Vec : std::vector<T> {
     using const_iterator = typename std::vector<T>::const_iterator;
+    struct Size {};
 
     Vec() {}
     Vec( T a ) { push_back( a ); }
     Vec( T a, T b ) { push_back( a ); push_back( b ); }
+    Vec( Size, unsigned size ) : std::vector<T>( size ) {}
     Vec( const_iterator a, const_iterator b ) : std::vector<T>( a, b ) {}
 
     void     write_to_stream      ( std::ostream &os ) const;
@@ -46,9 +48,10 @@ struct Vec : std::vector<T> {
     template<class Op>
     int      index_first_checking ( Op &&op ) { for( unsigned i = 0; i < this->size(); ++i ) if ( op( this->operator[]( i ) ) ) return i; return -1; }
 
-    Vec      without              ( unsigned index ) const { Vec res; for( unsigned i = 0; i < this->size(); ++i ) if ( i != index ) res << this->operator[]( i ); return res; }
-    Vec      up_to                ( unsigned end ) const { Vec res; res.reserve( end ); for( unsigned i = 0; i < end; ++i ) res << this->operator[]( i ); return res; }
-    Vec      from                 ( unsigned beg ) const { Vec res; res.reserve( this->size() - beg ); for( unsigned i = beg; i < this->size(); ++i ) res << this->operator[]( i ); return res; }
+    Vec      subvec               ( unsigned beg, unsigned end ) const { Vec res; res.reserve( end - beg          ); for( unsigned i = beg; i < end         ; ++i ) res << this->operator[]( i ); return res; }
+    Vec      without              ( unsigned index             ) const { Vec res; res.reserve( this->size() - 1   ); for( unsigned i = 0  ; i < this->size(); ++i ) if ( i != index ) res << this->operator[]( i ); return res; }
+    Vec      up_to                ( unsigned end               ) const { Vec res; res.reserve( end                ); for( unsigned i = 0  ; i < end         ; ++i ) res << this->operator[]( i ); return res; }
+    Vec      from                 ( unsigned beg               ) const { Vec res; res.reserve( this->size() - beg ); for( unsigned i = beg; i < this->size(); ++i ) res << this->operator[]( i ); return res; }
 
     bool     all_eq               () const { for( unsigned i = 1; i < this->size(); ++i ) if ( this->operator[]( i ) != this->operator[]( 0 ) ) return false; return true; }
 
