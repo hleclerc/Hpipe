@@ -33,7 +33,7 @@ std::string left_shifted( const std::string &str ) {
 
 }
 
-CharGraph::CharGraph( Lexer &lexer, const Lexem *lexem ) : lexer( lexer ), base( CharItem::BEGIN ) {
+CharGraph::CharGraph( Lexer &lexer, const Lexem *lexem ) : ok( true ), lexer( lexer ), base( CharItem::BEGIN ) {
     // make a clone of the lexems, with subsituted variables
     Lexem *lexem_cl = clone( lexem, {} );
     // lexem_cl->display_dot();
@@ -104,6 +104,9 @@ CharGraph::CharGraph( Lexer &lexer, const Lexem *lexem ) : lexer( lexer ), base(
                 throw "Item is going nowhere";
         }
     }
+
+    //
+    update_beg_strs();
 }
 
 void CharGraph::read( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> inputs ) {
@@ -296,6 +299,8 @@ void CharGraph::read( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> i
             static std::pair<const char *,std::function<CharItem *(const std::string &)>> fs[] = {
                 { "add_str", [&]( const std::string &l ) { return ci_pool.New( CharItem::ADD_STR, l ); } },
                 { "clr_str", [&]( const std::string &l ) { return ci_pool.New( CharItem::CLR_STR, l ); } },
+                { "beg_str", [&]( const std::string &l ) { return ci_pool.New( CharItem::BEG_STR, l ); } },
+                { "end_str", [&]( const std::string &l ) { return ci_pool.New( CharItem::END_STR, l ); } },
             };
 
             for( const auto &p : fs ) {
@@ -605,7 +610,7 @@ void CharGraph::clone( Lexem *&beg, Lexem *&end, const Lexem *&l, const Vec<Arg>
 
         // function call ( func[ args ] )
         auto is_inline = []( const Lexem *l ) {
-            return l->eq( "add_str" ) or l->eq( "clr_str" ) or l->eq( "add_include" ) or l->eq( "add_prel" ) or l->eq( "add_preliminary" ) or l->eq( "add_attr" );
+            return l->eq( "add_str" ) or l->eq( "clr_str" ) or l->eq( "beg_str" ) or l->eq( "end_str" ) or l->eq( "add_include" ) or l->eq( "add_prel" ) or l->eq( "add_preliminary" ) or l->eq( "add_attr" );
         };
 
         bool do_not_clone_ch_0 = false;
@@ -785,6 +790,65 @@ bool CharGraph::in_wait_goto( CharItem *item ) const {
             if ( ci == item )
                 return true;
     return false;
+}
+
+void CharGraph::update_beg_strs() {
+    // get all beg_str and end_str
+    Vec<CharItem *> beg_strs;
+    Vec<CharItem *> end_strs;
+    apply( [&]( CharItem *c ) {
+        if ( c->type == CharItem::BEG_STR ) beg_strs << c;
+        if ( c->type == CharItem::END_STR ) end_strs << c;
+    } );
+
+    // { item->beg_strs << beg_str; } between beg_str and end_str
+    for( CharItem *beg_str : beg_strs )
+        for( CharEdge &edge : beg_str->edges )
+            mark_beg_str( edge.item, beg_str );
+
+    // check that all end_str are followed only by beg_str or nothing (not a end_str)
+    for( CharItem *end_str : end_strs ) {
+        ++CharItem::cur_op_id;
+        for( CharEdge &edge : end_str->edges )
+            check_end_str( edge.item, end_str );
+    }
+}
+
+void CharGraph::mark_beg_str( CharItem *item, CharItem *beg_str ) {
+    if ( item->type == CharItem::END_STR && item->str == beg_str->str )
+        return;
+
+    if ( item->type == CharItem::BEG_STR && item->str == beg_str->str ) {
+        err( "beg_str[ '" + beg_str->str + "' ] (with the same name) can be called twice, without any end_str[ '" + beg_str->str + "'  with the same name between the two" );
+        ok = false;
+        return;
+    }
+
+    if ( item->beg_strs.contains( beg_str ) )
+        return;
+
+    item->beg_strs << beg_str;
+
+    for( CharEdge &edge : item->edges )
+        mark_beg_str( edge.item, beg_str );
+}
+
+void CharGraph::check_end_str( CharItem *item, CharItem *end_str ) {
+    if ( item->op_id == CharItem::cur_op_id )
+        return;
+    item->op_id = CharItem::cur_op_id;
+
+    if ( item->type == CharItem::BEG_STR && item->str == end_str->str )
+        return;
+
+    if ( item->type == CharItem::END_STR && item->str == end_str->str ) {
+        err( "end_str[ '" + end_str->str + "' ] (with the same name) can be called twice, without any beg_str[ '" + end_str->str + "'  between the two" );
+        ok = false;
+        return;
+    }
+
+    for( CharEdge &edge : item->edges )
+        check_end_str( edge.item, end_str );
 }
 
 void CharGraph::Arg::write_to_stream( std::ostream &os ) const {

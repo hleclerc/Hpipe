@@ -18,6 +18,8 @@ public:
         NEXT_CHAR, ///< go to next char
         ADD_STR,
         CLR_STR,
+        BEG_STR,
+        END_STR,
         BEGIN,
         PIVOT,
         LABEL,
@@ -45,6 +47,7 @@ public:
     Vec<CharEdge>     edges;
     Cond              cond;       ///< used if type==COND
     std::string       str;        ///< if type==CODE, str = the code. if ADD_STR, CLR_STR, ...
+    Vec<CharItem *>   beg_strs;   ///<
     mutable unsigned  op_id;
     mutable int       op_mp;
     static unsigned   cur_op_id;

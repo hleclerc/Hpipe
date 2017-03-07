@@ -65,8 +65,10 @@ void CharItem::write_to_stream( std::ostream &os ) const {
     os << "(" << compact_repr() << ")";
     switch ( type ) {
     case CharItem::NEXT_CHAR: os << "+1"; break;
-    case CharItem::ADD_STR:   os << "A2(" << str << ")"; break;
+    case CharItem::ADD_STR:   os << "AS(" << str << ")"; break;
     case CharItem::CLR_STR:   os << "CL(" << str << ")"; break;
+    case CharItem::BEG_STR:   os << "BS(" << str << ")"; break;
+    case CharItem::END_STR:   os << "ES(" << str << ")"; break;
     case CharItem::BEGIN:     os << "B"; break;
     case CharItem::PIVOT:     os << "P"; break;
     case CharItem::LABEL:     os << "LABEL"; break;
@@ -78,6 +80,8 @@ void CharItem::write_to_stream( std::ostream &os ) const {
     case CharItem::OK:        os << "OK"; break;
     default:                  os << "?";
     }
+    for( CharItem *str : beg_strs )
+        os << "#" << str->str;
     //    if ( ending ) os << "(E)";
 }
 

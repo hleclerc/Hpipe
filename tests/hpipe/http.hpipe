@@ -1,10 +1,20 @@
-main = 'GET ' 
-    # beg_word[ 'url' ]
+read[ name ] = 
+    beg_str[ name ]
     ( any - ' ' )**
-    # end_word[ 'url' ]
-    any* eol (
-        any
-    )* eol eol { os << "url"; }
+    end_str[ name ]
+
+# main = read[ "url" ] { os << url; }
+main = "C"??
+    # beg_str[ "name" ]
+    { url_data = data; }
+    any**
+    # end_str[ "name" ]
+    { url_size = data - url_data; }
+    'AB'
+
+# main = 'GET ' read[ "url" ] any* eol (
+#     any
+# )* eol eol { os << "url"; }
 
 # beg_methods
 #     Hpipe::SI64 name       = 0;
@@ -17,6 +27,8 @@ main = 'GET '
 beg_test basic
     input
         GET /smurf
+
+
     output
         BB status=OK
 end_test

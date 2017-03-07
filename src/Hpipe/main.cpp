@@ -38,6 +38,9 @@ int main( int argc, char **argv ) {
         if ( disp_char_graph )
             cg.display_dot();
 
+        if ( ! cg.ok )
+            return 1;
+
         // instruction (language independant)
         std::istringstream iss( disp_inst_graph );
         int stop_char = strcmp( style, "C_STR" ) == 0 ? 0 : -1;

@@ -213,7 +213,7 @@ Instruction *InstructionGraph::make_transitions( Vec<PendingTrans> &pending_tran
 
     // something to skip ?
     for( const CharItem *item : cx.pos )
-        if ( item->type == CharItem::BEGIN or item->type == CharItem::PIVOT or item->type == CharItem::LABEL )
+        if ( item->type == CharItem::BEGIN or item->type == CharItem::PIVOT or item->type == CharItem::LABEL or item->type == CharItem::BEG_STR or item->type == CharItem::END_STR )
             return tra( reg( new InstructionSkip( cx ) ), 0, cx.forward( item ) );
 
     // everything is OK ?
