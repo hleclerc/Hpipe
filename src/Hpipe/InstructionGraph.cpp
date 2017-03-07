@@ -659,10 +659,56 @@ void InstructionGraph::boyer_moore() {
     //    std::cout << std::endl;
 }
 
-Instruction *InstructionGraph::make_rewind_inst( Vec<PendingRewindTrans> &pending_trans, std::map<InstructionGraph::RewindContext, Instruction *> &instruction_map, std::unordered_map<Instruction *, Vec<unsigned> > possible_inst, InstructionRewind *rewind, Instruction *orig, const PendingRewindTrans &pt ) {
+Instruction *InstructionGraph::make_rewind_inst( Vec<PendingRewindTrans> &pending_trans, std::map<InstructionGraph::RewindContext, Instruction *> &instruction_map, std::unordered_map<Instruction *, Vec<unsigned> > possible_inst, InstructionRewind *rewind, Instruction *orig, const PendingRewindTrans &pt, bool avoid_cycle, bool force_copy ) {
     std::map<RewindContext,Instruction *>::iterator iter = instruction_map.find( RewindContext{ orig, pt.rewind_mark } );
-    if ( iter != instruction_map.end() )
+    if ( force_copy == false && iter != instruction_map.end() ) {
+        // not a "cycles" phase (we first try to make straight paths, in order to avoid missing possible rewinds)
+        if ( avoid_cycle )
+            return 0;
+
+        //
+        Instruction *inst = iter->second;
+        if ( inst->mark ) {
+            Transition &t = pt.inst->orig->next[ pt.num_trans ];
+            const Vec<unsigned> &keep_ind_curr = possible_inst[ pt.inst->orig ];
+            const Vec<unsigned> &keep_ind_next = possible_inst[ t.inst ];
+
+            // adding of a temporary link
+            Vec<unsigned> nrcitem;
+            if ( pt.use_rv ) {
+                nrcitem = range_vec( unsigned( keep_ind_next.size() ) );
+            } else {
+                Vec<unsigned> corr_nrcitem;
+                corr_nrcitem.resize( pt.inst->orig->cx.pos.size() );
+                for( unsigned i = 0; i < keep_ind_curr.size(); ++i )
+                    corr_nrcitem[ keep_ind_curr[ i ] ] = i;
+
+                nrcitem.reserve( keep_ind_next.size() );
+                for( unsigned ind : keep_ind_next )
+                    nrcitem << corr_nrcitem[ t.rcitem[ ind ] ];
+            }
+
+            if ( pt.inst->next.size() <= pt.num_edge )
+                pt.inst->next.resize( pt.num_edge + 1 );
+            pt.inst->next[ pt.num_edge ] = { inst, nrcitem };
+            inst->prev.emplace_back( pt.inst, nrcitem );
+
+            // test if rewinds for inst->mark are still valid
+            for( InstructionRewind *rewind : inst->mark->rewinds ) {
+                std::set<std::pair<Instruction *,unsigned>> possible_instructions;
+                if ( ! can_make_a_rewind( possible_instructions, inst->mark, rewind, range_vec<unsigned>( rewind->cx.pos.size() ) ) ) {
+                    // remove the temporary link and return a copy
+                    inst->prev.pop_back();
+                    return make_rewind_inst( pending_trans, instruction_map, possible_inst, rewind, orig, pt, avoid_cycle, true );
+                }
+            }
+
+            // remove the temporary link
+            inst->prev.pop_back();
+        }
+
         return iter->second;
+    }
 
     Context cx( pt.rewind_mark, false );
     const Vec<unsigned> &keep_ind = possible_inst.find( orig )->second;
@@ -687,15 +733,15 @@ Instruction *InstructionGraph::make_rewind_inst( Vec<PendingRewindTrans> &pendin
                 instruction_map.insert( iter, { RewindContext{ orig, pt.rewind_mark }, mark } );
                 mark->orig = pt.inst->orig;
 
-                pending_trans.emplace_back( mark, pt.num_trans, mark, nullptr, true );
+                pending_trans.emplace_back( mark, 0, pt.num_trans, mark, nullptr, true );
                 return mark;
             }
         }
 
         // next instructions
-        for( unsigned ind = 0; ind < orig->next.size(); ++ind )
+        for( unsigned ind = 0, num = 0; ind < orig->next.size(); ++ind )
             if ( possible_inst.count( orig->next[ ind ].inst ) )
-                pending_trans.emplace_back( res, ind, pt.rewind_mark );
+                pending_trans.emplace_back( res, num++, ind, pt.rewind_mark );
     }
 
     instruction_map.insert( iter, { RewindContext{ orig, pt.rewind_mark }, res } );
@@ -879,20 +925,28 @@ void InstructionGraph::make_rewind_exec( InstructionMark *mark, InstructionRewin
     rewind->exec->orig = mark;
 
     // clone instructions
-    std::queue<PendingRewindTrans> pending_trans;
+    std::queue<PendingRewindTrans> pending_trans, pending_cycle_trans;
     std::map<RewindContext,Instruction *> instruction_map;
-    for( unsigned num_trans = 0; num_trans < mark->next.size(); ++num_trans )
+    for( unsigned num_trans = 0, num = 0; num_trans < mark->next.size(); ++num_trans )
         if ( possible_inst.count( mark->next[ num_trans ].inst ) )
-            pending_trans.emplace( rewind->exec, num_trans, nullptr );
-    while ( not pending_trans.empty() ) {
-        PendingRewindTrans &pt = pending_trans.front();
+            pending_trans.emplace( rewind->exec, num++, num_trans, nullptr );
+    while ( ! pending_trans.empty() || ! pending_cycle_trans.empty() ) {
+        bool avoid_cycles = pending_trans.size();
+        PendingRewindTrans &pt = avoid_cycles ? pending_trans.front() : pending_cycle_trans.front();
         Transition &t = pt.inst->orig->next[ pt.num_trans ];
 
         Vec<PendingRewindTrans> loc_pending_trans;
         const Vec<unsigned> &keep_ind_curr = possible_inst[ pt.inst->orig ];
         const Vec<unsigned> &keep_ind_next = possible_inst[ t.inst ];
-        Instruction *inst = pt.res ? pt.res : make_rewind_inst( loc_pending_trans, instruction_map, possible_inst, rewind, t.inst, pt );
+        Instruction *inst = pt.res ? pt.res : make_rewind_inst( loc_pending_trans, instruction_map, possible_inst, rewind, t.inst, pt, avoid_cycles, false );
 
+        if ( avoid_cycles && ! inst ) {
+            pending_cycle_trans.emplace( pt );
+            pending_trans.pop();
+            continue;
+        }
+
+        // insert it in the graph
         Vec<unsigned> nrcitem;
         if ( pt.use_rv ) {
             nrcitem = range_vec( unsigned( keep_ind_next.size() ) );
@@ -907,7 +961,9 @@ void InstructionGraph::make_rewind_exec( InstructionMark *mark, InstructionRewin
                 nrcitem << corr_nrcitem[ t.rcitem[ ind ] ];
         }
 
-        pt.inst->next.emplace_back( inst, nrcitem );
+        if ( pt.inst->next.size() <= pt.num_edge )
+            pt.inst->next.resize( pt.num_edge + 1 );
+        pt.inst->next[ pt.num_edge ] = { inst, nrcitem };
         inst->prev.emplace_back( pt.inst, nrcitem );
 
         // for each new transition to be completed, look if it is an opportunity to cancel the mark (in which case we may modify the pending marks)
@@ -961,14 +1017,15 @@ void InstructionGraph::make_rewind_exec( InstructionMark *mark, InstructionRewin
                     npt.res = rwnd;
 
                     // what to do after the rwnd (continue without the mark, and with a range_vec for the vector)
-                    pending_trans.emplace( rwnd, npt.num_trans, nullptr, nullptr, true );
+                    pending_trans.emplace( rwnd, 0, npt.num_trans, nullptr, nullptr, true );
                     //npt.use_rv = true;
                     //npt.inst = rwnd;
                 }
             }
         }
 
-        pending_trans.pop();
+        // reg loc_pending_trans
+        ( avoid_cycles ? pending_trans : pending_cycle_trans ).pop();
         for( PendingRewindTrans &npt : loc_pending_trans )
             pending_trans.push( npt );
     }

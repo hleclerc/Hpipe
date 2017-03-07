@@ -11,7 +11,7 @@ main =
     # { url_data = data; }
     any*
     # end_str[ "name" ]
-    { url_size = data - url_data; }
+    { os << *data; }
     'AB'
 
 # main = 'GET ' read[ "url" ] any* eol (
@@ -28,10 +28,8 @@ main =
 
 beg_test basic
     input
-        GET /smurf
-
-
+        U123AB
     output
-        BB status=OK
+        3 status=OK
 end_test
 
