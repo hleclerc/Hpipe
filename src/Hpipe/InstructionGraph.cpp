@@ -34,7 +34,7 @@ InstructionGraph::InstructionGraph( CharGraph *cg, const std::vector<std::string
     disp_if( disp, disp_inst_pred, disp_trans_freq, "init" );
 
     // rewinds
-    make_marks_data( init );
+    make_marks_data( init, 0 );
     disp_if( disp, disp_inst_pred, disp_trans_freq, "mark" );
 
     // eq trans, eq pred (beware: rcitem becomes wrong)
@@ -802,7 +802,10 @@ void remove_mark_rec( Instruction *inst, Instruction *mark ) {
             remove_mark_rec( p.inst, mark );
 }
 
-void InstructionGraph::make_marks_data( Instruction *root ) {
+void InstructionGraph::make_marks_data( Instruction *root, int rec_level ) {
+    if ( rec_level == 3 )
+        return;
+
     // get the marks
     ++Instruction::cur_op_id;
     Vec<InstructionMark *> marks;
@@ -817,7 +820,7 @@ void InstructionGraph::make_marks_data( Instruction *root ) {
         bool remove_mark = true;
         unsigned num_save = 0;
         for( InstructionRewind *rewind : mark->rewinds ) {
-            make_rewind_exec( mark, rewind );
+            make_rewind_exec( mark, rewind, rec_level );
 
             if ( rewind->need_rw )
                 remove_mark = false;
@@ -855,7 +858,7 @@ void InstructionGraph::make_marks_data( Instruction *root ) {
     }
 }
 
-void InstructionGraph::make_rewind_exec( InstructionMark *mark, InstructionRewind *rewind ) {
+void InstructionGraph::make_rewind_exec( InstructionMark *mark, InstructionRewind *rewind, int rec_level ) {
     if ( rewind->cx.pos.empty() )
         return;
 
@@ -971,7 +974,7 @@ void InstructionGraph::make_rewind_exec( InstructionMark *mark, InstructionRewin
     }
 
     // make marks in subgraph if necessary
-    make_marks_data( rewind->exec );
+    make_marks_data( rewind->exec, rec_level + 1 );
 
     // information needed for simplifications
     rewind->exec->update_in_a_branch();

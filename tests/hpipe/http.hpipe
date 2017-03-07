@@ -4,10 +4,12 @@ read[ name ] =
     end_str[ name ]
 
 # main = read[ "url" ] { os << url; }
-main = "C"??
+main = 
+    'U'
+    # "C"??
     # beg_str[ "name" ]
-    { url_data = data; }
-    any**
+    # { url_data = data; }
+    any*
     # end_str[ "name" ]
     { url_size = data - url_data; }
     'AB'
