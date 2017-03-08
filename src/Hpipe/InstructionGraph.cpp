@@ -116,7 +116,7 @@ void InstructionGraph::make_init() {
 
         // if transition clears some ambiguities,
         PendingTrans &pt = pending_trans.front();
-        if ( pt.inst->mark && ( CharGraph::leads_to_ok( pt.cx.pos ) || pt.cx.pos.empty() ) && no_ambiguity( pt.inst->mark, pt.inst, pt.rcitem ) ) {
+        if ( pt.inst->mark && ( CharGraph::leads_to_ok( pt.cx.pos ) || pt.cx.pos.empty() ) && no_code_ambiguity( pt.inst->mark, pt.inst, pt.rcitem ) ) {
             // make a rewind inst
             InstructionRewind *rwnd = inst_pool << new InstructionRewind( pt.cx );
             pt.inst->mark->rewinds << rwnd;
@@ -158,7 +158,6 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
             if ( pt.inst->mark ) {
                 // we take the first proposition that does not add ambiguity
                 const Vec<Instruction *> &hooks = iter->second;
-                PRINT( hooks.size() );
                 for( Instruction *hook : hooks )
                     if ( hook_wo_ambiguity( pt.inst, pt.rcitem, hook ) )
                         return hook;
@@ -328,13 +327,29 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
 }
 
 bool InstructionGraph::hook_wo_ambiguity( Instruction *inst, const Vec<unsigned> &rcitem, Instruction *hook ) {
+    if ( rcitem.empty() )
+        return true;
+
+    // the proposition is add use hook after inst. We do it if it does not introduce ambiguities to code items
     for( int i = 0; i < rcitem.size(); ++i ) {
         std::set<std::pair<Instruction *,unsigned>> possible_instructions;
-        get_possible_inst_rec( possible_instructions, inst, rcitem[ i ], hook );
-        for( int j = 0; j < rcitem.size(); ++j )
-            if ( j != i && possible_instructions.count( { hook, j } ) )
-                return false;
+        get_possible_inst_rec( possible_instructions, inst, rcitem[ i ], inst->mark );
+        get_possible_inst_rec( possible_instructions, hook, i, inst->mark );
+
+        //
+        std::map<InstructionWithCode *,bool> possible_with_code; // true => active
+        for( auto &p : possible_instructions ) {
+            if ( InstructionWithCode *code = dynamic_cast<InstructionWithCode *>( p.first ) ) {
+                std::map<InstructionWithCode *,bool>::iterator iter = possible_with_code.find( code );
+                bool active = p.second == code->num_active_item;
+                if ( iter == possible_with_code.end() )
+                    possible_with_code.insert( iter, std::make_pair( code, active ) );
+                else if ( iter->second != active )
+                    return false;
+            }
+        }
     }
+
     return true;
 }
 
@@ -793,7 +808,7 @@ Instruction *InstructionGraph::make_boyer_moore_rec( const Vec<std::pair<Vec<Con
 
 }
 
-bool InstructionGraph::no_ambiguity(InstructionMark *mark, Instruction *inst, const Vec<unsigned> &rcitem ) {
+bool InstructionGraph::no_code_ambiguity( InstructionMark *mark, Instruction *inst, const Vec<unsigned> &rcitem ) {
     if ( rcitem.empty() )
         return true;
 

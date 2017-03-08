@@ -20,6 +20,9 @@ public:
         ON_EOF = 2,
         NOT_EOF = 4,
     };
+    struct Code {
+
+    };
 
     Context( InstructionMark *mark, int flags );
     Context( const CharItem *item, int flags );

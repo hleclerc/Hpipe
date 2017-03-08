@@ -69,7 +69,7 @@ protected:
     Instruction                    *make_rewind_inst     ( Vec<PendingRewindTrans> &loc_pending_trans, std::map<RewindContext,Instruction *> &instruction_map, std::unordered_map<Instruction *,Vec<unsigned>> possible_inst, InstructionRewind *rewind, Instruction *orig, const PendingRewindTrans &pt, bool avoid_cycle, bool force_copy ); ///< rewind_mark is a mark in the rewind context
     unsigned                        nb_multi_conds       ();
     Instruction                    *make_boyer_moore_rec ( const Vec<std::pair<Vec<Cond>, Instruction *> > &front, InstructionNextChar *next_char, int orig_front_size );
-    bool                            no_ambiguity         ( InstructionMark *mark, Instruction *inst, const Vec<unsigned> &rcitem );
+    bool                            no_code_ambiguity         ( InstructionMark *mark, Instruction *inst, const Vec<unsigned> &rcitem );
     // bool                            can_make_a_rewind    ( std::set<std::pair<Instruction *,unsigned>> &possible_instructions, InstructionMark *mark, Instruction *inst, Vec<unsigned> rcitem );
 
     Instruction                    *init;
