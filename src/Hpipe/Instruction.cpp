@@ -53,8 +53,6 @@ void Instruction::write_dot_rec( std::ostream &os, bool disp_inst_pred, bool dis
             if ( cx.flags & cx.NOT_EOF ) ss << "N";
             ss << ")";
         }
-        if ( cx.num_path )
-            ss << "~" << cx.num_path;
         ss << " ";
     }
 
