@@ -860,14 +860,17 @@ void InstructionGraph::make_mark_data( Instruction *root, int rec_level ) {
             marks << mark;
     } );
 
-    // make data
+    // make rewind->exec (to be done in a first phase, before modifications of the graph)
+    for( InstructionMark *mark : marks )
+        for( InstructionRewind *rewind : mark->rewinds )
+            make_rewind_exec( mark, rewind, rec_level );
+
+    // add save point, remove mark if possible
     for( InstructionMark *mark : marks ) {
         // make rewind->exec, update flags for mark
         bool remove_mark = true;
         unsigned num_save = 0;
         for( InstructionRewind *rewind : mark->rewinds ) {
-            make_rewind_exec( mark, rewind, rec_level );
-
             if ( rewind->need_rw )
                 remove_mark = false;
             else if ( rewind->code_seq.size() ) {
