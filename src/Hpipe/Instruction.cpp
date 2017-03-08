@@ -8,7 +8,7 @@ namespace Hpipe {
 
 unsigned Instruction::cur_op_id = 0;
 
-Instruction::Instruction( Context cx ) : cx( cx ), mark( cx.mark ), display_id( 0 ), op_id( 0 ) {
+Instruction::Instruction( Context cx ) : cx( cx ), display_id( 0 ), op_id( 0 ) {
     in_a_cycle   = false;
     num_ordering = -2;
     id_gen       = 0;
@@ -66,8 +66,8 @@ void Instruction::write_dot_rec( std::ostream &os, bool disp_inst_pred, bool dis
     os << "\"";
     if ( in_a_cycle )
         os << ",style=dotted";
-    if ( mark )
-        os << ",color=green";
+    //    if ( mark )
+    //        os << ",color=green";
     os << "];\n";
 
     write_dot_add( os, disp_inst_pred, disp_trans_freq, disp_rc_item );

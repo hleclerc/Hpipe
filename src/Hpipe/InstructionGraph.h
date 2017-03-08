@@ -50,12 +50,12 @@ protected:
         Instruction *orig;
         Instruction *mark;
     };
-    using Tcache = std::map<Context,Vec<Instruction *>>;
+    using Tcache = std::map<Context,Instruction *>;
 
     void                            make_init            ();
     Instruction                    *make_transitions     ( std::deque<PendingTrans> &pending_trans, const PendingTrans &pt );
     Instruction                    *make_transitions     ( std::deque<PendingTrans> &pending_trans, const PendingTrans &pt, const Context &cx, bool cache_allowed = true );
-    bool                            hook_wo_ambiguity    ( Instruction *inst, const Vec<unsigned> &rcitem, Instruction *hook );
+    // bool                            hook_wo_ambiguity    ( Instruction *inst, const Vec<unsigned> &rcitem, Instruction *hook );
     void                            train                ( bool only_cont = false );
     void                            remove_unused        ();
     void                            opt_stop_char        ( int stop_char );
@@ -76,6 +76,7 @@ protected:
     Instruction                    *ok;
     Instruction                    *ko;
     Context                         cx_ok;
+    Context                         cx_ko;
     Tcache                          cache;
     // std::set<Context>               forbiden_branching;
     PtrPool<Instruction>            inst_pool;

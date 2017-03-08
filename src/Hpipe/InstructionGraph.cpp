@@ -23,11 +23,12 @@
 
 namespace Hpipe {
 
-InstructionGraph::InstructionGraph( CharGraph *cg, const std::vector<std::string> &disp, int stop_char, bool disp_inst_pred, bool disp_trans_freq, bool want_boyer_moore, bool no_training ) : cg( cg ), init( 0 ), cx_ok( cg->char_item_ok, false ), no_training( no_training ) {
+InstructionGraph::InstructionGraph( CharGraph *cg, const std::vector<std::string> &disp, int stop_char, bool disp_inst_pred, bool disp_trans_freq, bool want_boyer_moore, bool no_training ) : cg( cg ), init( 0 ), cx_ok( cg->char_item_ok ), no_training( no_training ) {
     // predefined instructions
     ok = inst_pool << new InstructionOK( cx_ok );
-    ko = inst_pool << new InstructionKO( Context{} );
-    cache[ cx_ok ] << ok;
+    ko = inst_pool << new InstructionKO( cx_ko );
+    cache[ cx_ok ] = ok;
+    cache[ cx_ko ] = ok;
 
     // first graph
     make_init();
@@ -116,21 +117,20 @@ void InstructionGraph::make_init() {
 
         // if transition clears some ambiguities,
         PendingTrans &pt = pending_trans.front();
-        if ( pt.inst->mark && ( CharGraph::leads_to_ok( pt.cx.pos ) || pt.cx.pos.empty() ) && no_code_ambiguity( pt.inst->mark, pt.inst, pt.rcitem ) ) {
-            // make a rewind inst
-            InstructionRewind *rwnd = inst_pool << new InstructionRewind( pt.cx );
-            pt.inst->mark->rewinds << rwnd;
+        //        if ( pt.inst->mark && ( CharGraph::leads_to_ok( pt.cx.pos ) || pt.cx.pos.empty() ) && no_code_ambiguity( pt.inst->mark, pt.inst, pt.rcitem ) ) {
+        //            // make a rewind inst
+        //            InstructionRewind *rwnd = inst_pool << new InstructionRewind( pt.cx );
+        //            pt.inst->mark->rewinds << rwnd;
 
-            // add it in the graph
-            pt.inst->next.secure_set( pt.num_edge, { rwnd, pt.rcitem } );
-            rwnd->prev.emplace_back( pt.inst, pt.rcitem );
+        //            // add it in the graph
+        //            pt.inst->next.secure_set( pt.num_edge, { rwnd, pt.rcitem } );
+        //            rwnd->prev.emplace_back( pt.inst, pt.rcitem );
 
-            // update pending trans
-            pt.cx.rm_mark();
-            pt.num_edge = 0;
-            pt.inst     = rwnd;
-            pt.rcitem   = range_vec( unsigned( pt.rcitem.size() ) );
-        }
+        //            // update pending trans
+        //            pt.num_edge = 0;
+        //            pt.inst     = rwnd;
+        //            pt.rcitem   = range_vec( unsigned( pt.rcitem.size() ) );
+        //        }
 
         // make instruction with associated new pending transitions
         Instruction *inst = make_transitions( pending_trans, pt );
@@ -155,24 +155,24 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
         Tcache::iterator iter = cache.find( cx );
         if ( iter != cache.end() ) {
             // if there is a mark,
-            if ( pt.inst->mark ) {
-                // we take the first proposition that does not add ambiguity
-                const Vec<Instruction *> &hooks = iter->second;
-                for( Instruction *hook : hooks )
-                    if ( hook_wo_ambiguity( pt.inst, pt.rcitem, hook ) )
-                        return hook;
+            //            if ( pt.inst->mark ) {
+            //                // we take the first proposition that does not add ambiguity
+            //                const Vec<Instruction *> &hooks = iter->second;
+            //                for( Instruction *hook : hooks )
+            //                    if ( hook_wo_ambiguity( pt.inst, pt.rcitem, hook ) )
+            //                        return hook;
 
-                // else: no working proposition. make a new "path"
-                return make_transitions( pending_trans, pt, cx, false );
-            }
+            //                // else: no working proposition. make a new "path"
+            //                return make_transitions( pending_trans, pt, cx, false );
+            //            }
 
-            return iter->second[ 0 ];
+            return iter->second;
         }
     }
 
     // helper funcs
     auto reg = [&]( auto *inst ) {
-        cache[ cx ] << ( inst_pool << inst );
+        cache[ cx ] = ( inst_pool << inst );
         return inst;
     };
     auto tra = [&]( Instruction *inst, unsigned num_edge, const Context::PC &pc ) {
@@ -208,9 +208,9 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
         const CharItem *item = cx.pos[ ind ];
         if ( item->code_like() ) {
             // if it's too early to decide if this code can be executed, we have to add a mark
-            if ( not cx.mark and ( cx.pos.size() >= 2 or not CharGraph::leads_to_ok( cx.pos ) ) ) {
-                InstructionMark *res = reg( new InstructionMark( cx, ind ) );
-                return tra( res, 0, cx.with_mark( res ) );
+            if ( cx.pos.size() >= 2 || ! CharGraph::leads_to_ok( cx.pos ) ) {
+                InstructionSkip *res = reg( new InstructionSkip( cx ) );
+                return tra( res, 0, cx.with_code_at( ind ) );
             }
 
             // Instruction type
@@ -223,8 +223,8 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
             }
 
             //
-            if ( not cx.mark and cx.beg() and res->data_code() )
-                cg->err( "A code cannot correctly depend on a char data before a first char has been queried" );
+            //            if ( not cx.mark and cx.beg() and res->data_code() )
+            //                cg->err( "A code cannot correctly depend on a char data before a first char has been queried" );
 
             // transition
             return tra( res, 0, cx.forward( item ) );
@@ -303,8 +303,7 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
 
     if ( cx.eof() ) {
         if ( first_leads_to_ok >= 0 ) { // result will be an OK instruction, with an edge enabling a rewind
-            Context ncx_ok( cx.mark, cx.flags );
-            ncx_ok.pos << cg->char_item_ok;
+            Context ncx_ok( cg->char_item_ok );
             return tra( reg( new InstructionSkip( cx ) ), 0, Context::PC{ ncx_ok, first_leads_to_ok } );
         }
         if ( cx.has( CharItem::OK ) )
@@ -317,8 +316,7 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
 
     if ( not cx.not_eof() ) {
         if ( first_leads_to_ok >= 0 ) { // result will be an OK instruction, with an edge enabling a rewind
-            Context ncx_ok( cx.mark, cx.flags | Context::ON_EOF );
-            ncx_ok.pos << cg->char_item_ok;
+            Context ncx_ok( cg->char_item_ok, cx.flags | Context::ON_EOF );
             tra( res, 1, Context::PC{ ncx_ok, first_leads_to_ok } ); // if no next char
         } else
             tra( res, 1, cx.with_eof().only_with( CharItem::OK ) ); // if no next char
@@ -326,32 +324,32 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
     return res;
 }
 
-bool InstructionGraph::hook_wo_ambiguity( Instruction *inst, const Vec<unsigned> &rcitem, Instruction *hook ) {
-    if ( rcitem.empty() )
-        return true;
+//bool InstructionGraph::hook_wo_ambiguity( Instruction *inst, const Vec<unsigned> &rcitem, Instruction *hook ) {
+//    if ( rcitem.empty() )
+//        return true;
 
-    // the proposition is add use hook after inst. We do it if it does not introduce ambiguities to code items
-    for( int i = 0; i < rcitem.size(); ++i ) {
-        std::set<std::pair<Instruction *,unsigned>> possible_instructions;
-        get_possible_inst_rec( possible_instructions, inst, rcitem[ i ], inst->mark );
-        get_possible_inst_rec( possible_instructions, hook, i, inst->mark );
+//    // the proposition is add use hook after inst. We do it if it does not introduce ambiguities to code items
+//    for( int i = 0; i < rcitem.size(); ++i ) {
+//        std::set<std::pair<Instruction *,unsigned>> possible_instructions;
+//        get_possible_inst_rec( possible_instructions, inst, rcitem[ i ], inst->mark );
+//        get_possible_inst_rec( possible_instructions, hook, i, inst->mark );
 
-        //
-        std::map<InstructionWithCode *,bool> possible_with_code; // true => active
-        for( auto &p : possible_instructions ) {
-            if ( InstructionWithCode *code = dynamic_cast<InstructionWithCode *>( p.first ) ) {
-                std::map<InstructionWithCode *,bool>::iterator iter = possible_with_code.find( code );
-                bool active = p.second == code->num_active_item;
-                if ( iter == possible_with_code.end() )
-                    possible_with_code.insert( iter, std::make_pair( code, active ) );
-                else if ( iter->second != active )
-                    return false;
-            }
-        }
-    }
+//        //
+//        std::map<InstructionWithCode *,bool> possible_with_code; // true => active
+//        for( auto &p : possible_instructions ) {
+//            if ( InstructionWithCode *code = dynamic_cast<InstructionWithCode *>( p.first ) ) {
+//                std::map<InstructionWithCode *,bool>::iterator iter = possible_with_code.find( code );
+//                bool active = p.second == code->num_active_item;
+//                if ( iter == possible_with_code.end() )
+//                    possible_with_code.insert( iter, std::make_pair( code, active ) );
+//                else if ( iter->second != active )
+//                    return false;
+//            }
+//        }
+//    }
 
-    return true;
-}
+//    return true;
+//}
 
 void InstructionGraph::train( bool only_cont ) {
     Vec<Lexer::TrainingData> tds = cg->training_data();
@@ -877,18 +875,18 @@ void InstructionGraph::get_possible_inst_rec( std::set<std::pair<Instruction *,u
             get_possible_inst_rec( possible_instructions, p.inst, p.rcitem[ pos ], mark );
 }
 
-void remove_mark_rec( Instruction *inst, Instruction *mark ) {
-    if ( inst->op_id == Instruction::cur_op_id )
-        return;
-    inst->op_id = Instruction::cur_op_id;
+//void remove_mark_rec( Instruction *inst, Instruction *mark ) {
+//    if ( inst->op_id == Instruction::cur_op_id )
+//        return;
+//    inst->op_id = Instruction::cur_op_id;
 
-    if ( not inst->with_code() )
-        inst->mark = 0;
+//    if ( not inst->with_code() )
+//        inst->mark = 0;
 
-    for( Transition &p : inst->prev )
-        if ( p.inst != mark )
-            remove_mark_rec( p.inst, mark );
-}
+//    for( Transition &p : inst->prev )
+//        if ( p.inst != mark )
+//            remove_mark_rec( p.inst, mark );
+//}
 
 void InstructionGraph::make_mark_data( Instruction *root, int rec_level ) {
     if ( rec_level == 16 ) {
@@ -931,23 +929,23 @@ void InstructionGraph::make_mark_data( Instruction *root, int rec_level ) {
                     }
                     code->save = inst_pool << new InstructionSave( orig->cx, num_save++ );
                     orig->insert_before_this( code->save, init );
-                    code->save->mark = mark;
+                    // code->save->mark = mark;
                 }
             }
         }
 
         //
-        if ( remove_mark ) {
-            ++Instruction::cur_op_id;
-            for( InstructionRewind *rewind : mark->rewinds ) {
-                remove_mark_rec( rewind, mark );
-                if ( rewind->code_seq.empty() )
-                    rewind->remove();
-                else
-                    rewind->mark = 0;
-            }
-            mark->remove();
-        }
+        //        if ( remove_mark ) {
+        //            ++Instruction::cur_op_id;
+        //            for( InstructionRewind *rewind : mark->rewinds ) {
+        //                remove_mark_rec( rewind, mark );
+        //                if ( rewind->code_seq.empty() )
+        //                    rewind->remove();
+        //                else
+        //                    rewind->mark = 0;
+        //            }
+        //            mark->remove();
+        //        }
     }
 }
 

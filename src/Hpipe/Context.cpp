@@ -10,206 +10,243 @@
 
 namespace Hpipe {
 
-Context::Context( InstructionMark *mark, int flags ) : mark( mark ), flags( flags ) {
+namespace {
+
+/// helper to construct a new Context::PC
+struct PcMaker {
+    PcMaker( const Context *orig, int flags ) : res{ flags, {} }, orig{ orig } {
+    }
+
+    PcMaker( const Context *orig ) : PcMaker{ orig, orig->flags } {
+    }
+
+    void add( const CharItem *item, unsigned ind ) {
+        res.first.pos << item;
+        res.second << ind;
+    }
+
+    Context::PC out() {
+        return res;
+    }
+
+    bool leads_to_ok() const {
+        return CharGraph::leads_to_ok( res.first.pos );
+    }
+
+    bool has( const CharItem *item ) const {
+        return res.first.pos.contains( item );
+    }
+
+    Context::PC    res;
+    const Context *orig;
+};
+
 }
 
-Context::Context( const CharItem *item, int flags ) : mark( 0 ), flags( flags ) {
+Context::Context( const CharItem *item, int flags ) : flags( flags ) {
     pos << item;
 }
 
-Context::Context() : mark( 0 ), flags( 0 ) {
+Context::Context( int flags ) : flags( flags ) {
 }
 
 bool Context::operator<( const Context &that ) const {
-    return std::tie( pos, mark, flags ) < std::tie( that.pos, that.mark, that.flags );
+    return std::tie( pos, codes, flags ) < std::tie( that.pos, that.codes, that.flags );
+}
+
+bool Context::Code::operator<( const Code &that ) const {
+    return std::tie( item, ko, ok ) < std::tie( that.item, that.ko, that.ok );
+}
+
+void Context::Code::write_to_stream( std::ostream &os ) const {
+    os << "(" << off_prec;
+    if ( off_loop )
+        os << "+" << off_loop << "n";
+    os << ")";
+    os << *item;
 }
 
 void Context::write_to_stream( std::ostream &os ) const {
     os << pointed_values( pos );
-    if ( mark )
-        os << " M(" << mark << ")";
     if ( beg() )
         os << " BEG";
     if ( eof() )
         os << " EOF";
     if ( not_eof() )
         os << " NOT_EOF";
+    for( const Code &code : codes )
+        os << " " << code;
 }
 
-Context::PC Context::forward( const CharItem *fip ) const {
-    Context res( mark, flags );
+Context::PC Context::forward( const CharItem *fip, bool is_a_code ) const {
+    PcMaker pm( this );
 
-    Vec<unsigned> rcitem;
     for( unsigned i = 0; i < pos.size(); ++i ) {
         const CharItem *item = pos[ i ];
         if ( item == fip ) {
             for( const CharEdge &e : item->edges ) {
-                if ( not res.pos.contains( e.item ) ) {
-                    res.pos << e.item;
-                    rcitem << i;
-                    if ( CharGraph::leads_to_ok( res.pos ) )
-                        return { res, rcitem };
+                if ( ! pm.has( e.item ) ) {
+                    pm.add( e.item, i );
+                    if ( pm.leads_to_ok() )
+                        return pm.out();
                 }
             }
-        } else if ( not res.pos.contains( item ) ) {
-            res.pos << item;
-            rcitem << i;
-            if ( CharGraph::leads_to_ok( res.pos ) )
-                return { res, rcitem };
+        } else if ( ! pm.has( item ) ) {
+            pm.add( item, i );
+            if ( pm.leads_to_ok() )
+                return pm.out();
         }
     }
 
-    return { res, rcitem };
+    return pm.out();
+}
+
+Context::PC Context::forward_code( const CharItem *fip ) const {
+    PcMaker pm( this );
+
+    Code *code = pm.res.first.codes.new_elem();
+    code->item = fip;
+
+    for( unsigned i = 0; i < pos.size(); ++i ) {
+        const CharItem *item = pos[ i ];
+        if ( item == fip ) {
+            code->off_prec = 0;
+            code->off_loop = 0;
+            code->ko       = range_vec( ind );
+            code->ok       = ind;
+
+            pm.res.first.codes.emplace_back( std::move( code ) );
+
+            for( const CharEdge &e : item->edges ) {
+                if ( ! pm.has( e.item ) ) {
+                    pm.add( e.item, i );
+                    if ( pm.leads_to_ok() )
+                        return pm.out();
+                }
+            }
+        } else if ( ! pm.has( item ) ) {
+            pm.add( item, i );
+            if ( pm.leads_to_ok() )
+                return pm.out();
+        }
+    }
+
+    return pm.out();
 }
 
 Context::PC Context::forward( const Cond &c ) const {
-    Context res( mark, flags );
+    PcMaker pm( this );
 
-    Vec<unsigned> rcitem;
     for( unsigned i = 0; i < pos.size(); ++i ) {
         const CharItem *item = pos[ i ];
         if ( item->type != CharItem::COND ){
-            if ( not res.pos.contains( item ) ) {
-                res.pos << item;
-                rcitem << i;
-                if ( CharGraph::leads_to_ok( res.pos ) )
-                    return { res, rcitem };
+            if ( not pm.has( item ) ) {
+                pm.add( item, i );
+                if ( pm.leads_to_ok() )
+                    return pm.out();
             }
         } else if ( c & item->cond ) {
             for( const CharEdge &e : item->edges ) {
-                if ( not res.pos.contains( e.item ) ) {
-                    res.pos << e.item;
-                    rcitem << i;
-                    if ( CharGraph::leads_to_ok( res.pos ) )
-                        return { res, rcitem };
+                if ( not pm.has( e.item ) ) {
+                    pm.add( e.item, i );
+                    if ( pm.leads_to_ok() )
+                        return pm.out();
                 }
             }
         }
     }
 
-    return { res, rcitem };
+    return pm.out();
 }
 
 Context::PC Context::forward( int type ) const {
-    Context res( mark, flags );
+    PcMaker pm( this );
 
-    Vec<unsigned> rcitem;
     for( unsigned i = 0; i < pos.size(); ++i ) {
         const CharItem *item = pos[ i ];
         if ( item->type == type ) {
             for( const CharEdge &e : item->edges ) {
-                if ( not res.pos.contains( e.item ) ) {
-                    res.pos << e.item;
-                    rcitem << i;
-                    if ( CharGraph::leads_to_ok( res.pos ) )
-                        return { res, rcitem };
+                if ( not pm.has( e.item ) ) {
+                    pm.add( e.item, i );
+                    if ( pm.leads_to_ok() )
+                        return pm.out();
                 }
             }
-        } else if ( not res.pos.contains( item ) ) {
-            res.pos << item;
-            rcitem << i;
-            if ( CharGraph::leads_to_ok( res.pos ) )
-                return { res, rcitem };
+        } else if ( not pm.has( item ) ) {
+            pm.add( item, i );
+            if ( pm.leads_to_ok() )
+                return pm.out();
         }
     }
 
-    return { res, rcitem };
+    return pm.out();
 }
 
 Context::PC Context::only_with( int type ) const {
-    Context res( mark, flags );
+    PcMaker pm( this );
 
-    Vec<unsigned> rcitem;
-    for( unsigned i = 0; i < pos.size(); ++i ) {
-        const CharItem *item = pos[ i ];
-        if ( item->type == type ) {
-            res.pos << item;
-            rcitem << i;
-        }
-    }
+    for( unsigned i = 0; i < pos.size(); ++i )
+        if ( pos[ i ]->type == type )
+            pm.add( pos[ i ], i );
 
-    return { res, rcitem };
+    return pm.out();
 }
 
 Context::PC Context::without( const CharItem *fip ) const {
-    Context res( mark, flags );
+    PcMaker pm( this );
 
-    Vec<unsigned> rcitem;
-    for( unsigned i = 0; i < pos.size(); ++i ) {
-        const CharItem *item = pos[ i ];
-        if ( item != fip ) {
-            res.pos << item;
-            rcitem << i;
-        }
-    }
+    for( unsigned i = 0; i < pos.size(); ++i )
+        if ( pos[ i ] != fip )
+            pm.add( pos[ i ], i );
 
-    return { res, rcitem };
+    return pm.out();
 }
 
 Context::PC Context::keep_up_to( unsigned n ) const {
-    Context res( mark, flags );
+    PcMaker pm( this );
 
     for( unsigned i = 0; i <= n; ++i )
-        res.pos << pos[ i ];
+        pm.add( pos[ i ], i );
 
-    return { res, range_vec( n + 1 ) };
+    return pm.out();
 }
 
 Context::PC Context::keep_only( const Vec<unsigned> &keep ) const {
-    Context res( mark, flags );
-    Vec<unsigned> rcitem;
+    PcMaker pm( this );
 
-    for( unsigned ind : keep ) {
-        res.pos << pos[ ind ];
-        rcitem << ind;
-    }
+    for( unsigned ind : keep )
+        pm.add( pos[ ind ], ind );
 
-    return { res, rcitem };
-}
-
-Context::PC Context::with_mark( InstructionMark *inst ) const {
-    Context res( inst, flags );
-    res.pos = pos;
-    return { res, range_vec( unsigned( pos.size() ) ) };
-}
-
-void Context::rm_mark() {
-    mark = 0;
-}
-
-Context Context::without_mark() const {
-    Context res( (InstructionMark *)nullptr, flags );
-    res.pos = pos;
-    return res;
+    return pm.out();
 }
 
 Context Context::without_beg() const {
-    Context res( mark, flags & ~BEG );
-    res.pos = pos;
+    Context res( *this );
+    res.flags &= ~BEG;
     return res;
 }
 
 Context Context::with_eof() const {
-    Context res( mark, flags | ON_EOF );
-    res.pos = pos;
+    Context res( *this );
+    res.flags |= ON_EOF;
     return res;
 }
 
 Context Context::with_not_eof() const {
-    Context res( mark, flags | NOT_EOF );
-    res.pos = pos;
+    Context res( *this );
+    res.flags |= NOT_EOF;
     return res;
 }
 
 Context Context::without_eof() const {
-    Context res( mark, flags & ~ ON_EOF );
-    res.pos = pos;
+    Context res( *this );
+    res.flags &= ~ON_EOF;
     return res;
 }
 
 Context Context::without_not_eof() const {
-    Context res( mark, flags & ~ NOT_EOF );
-    res.pos = pos;
+    Context res( *this );
+    res.flags &= ~NOT_EOF;
     return res;
 }
 

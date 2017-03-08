@@ -65,7 +65,6 @@ public:
     int                  num_in_dfs_stack;
     bool                 in_a_branch;
     bool                 in_a_cycle;
-    InstructionMark     *mark;         ///< true if between a mark and a rewind
     Instruction         *orig;         ///< if is a clone (for a rewind)
 
     // for code generation

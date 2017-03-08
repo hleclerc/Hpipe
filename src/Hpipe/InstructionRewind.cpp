@@ -91,8 +91,8 @@ void InstructionRewind::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
         for( InstructionWithCode *inst : code_seq )
             inst->write_cpp_code_seq( ss, es, cpp_emitter );
         // free mark
-        if ( mark && cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER && cpp_emitter->rewind_rec_level == 0 )
-            ss << "sipe_data->rw_buf->dec_ref_upto( buf );";
+        //        if ( mark && cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER && cpp_emitter->rewind_rec_level == 0 )
+        //            ss << "sipe_data->rw_buf->dec_ref_upto( buf );";
 
         write_trans( ss, cpp_emitter );
     }
@@ -154,14 +154,14 @@ void InstructionRewind::get_code_repr( std::ostream &os ) {
             std::string ss = inst->code_repr();
             os << " " << ss.size() << " " << ss;
         }
-        if ( mark )
-            os << "FM";
+        //        if ( mark )
+        //            os << "FM";
     }
 }
 
 void InstructionRewind::write_dot_add( std::ostream &os, bool disp_inst_pred, bool disp_trans_freq, bool disp_rc_item ) const {
-    if ( mark )
-        os << "  node_" << this << " -> node_" << mark << " [color=green];\n";
+    //    if ( mark )
+    //        os << "  node_" << this << " -> node_" << mark << " [color=green];\n";
 
     if ( exec ) { // need_rw
         // os << "  node_" << this << " -> node_" << rewind_exec << " [style=dashed,color=red,rank=same];\n";

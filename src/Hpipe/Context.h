@@ -21,28 +21,33 @@ public:
         NOT_EOF = 4,
     };
     struct Code {
+        bool operator<      ( const Code &that ) const;
+        void write_to_stream( std::ostream &os ) const;
 
+        const CharItem *item;
+        unsigned        off_prec;
+        unsigned        off_loop;
+        Vec<unsigned>   ko;       ///< paths that prevent this code to be executed
+        Vec<unsigned>   ok;       ///< paths to the code
     };
 
-    Context( InstructionMark *mark, int flags );
-    Context( const CharItem *item, int flags );
-    Context();
+    Context( const CharItem *item, int flags = 0 );
+    Context( int flags = 0 );
 
     bool                       operator<      ( const Context &that ) const;
     void                       write_to_stream( std::ostream &os ) const;
 
-    PC                         forward        ( const CharItem *fip ) const;       ///< replace item by item.edges[*].item
-    PC                         forward        ( const Cond &c ) const;             ///< replace item by item.edges[*].item
-    PC                         forward        ( int type ) const;                  ///< replace item by item.edges[*].item
-    PC                         only_with      ( int type ) const;                  ///< replace item by item.edges[*].item
-    PC                         without        ( const CharItem *fip ) const;       ///<
-    PC                         keep_up_to     ( unsigned n ) const;                ///< (assuming that all the items are conds)
+    PC                         forward        ( const Vec<const CharItem *> &npos, const Vec<unsigned> &trans ) const; ///<
+
+
+    PC                         forward        ( const CharItem *fip ) const; ///< replace item by item.edges[*].item
+    PC                         forward        ( const Cond &c ) const;                               ///< replace item by item.edges[*].item
+    PC                         forward        ( int type ) const;                                    ///< replace item by item.edges[*].item
+    PC                         only_with      ( int type ) const;                                    ///< replace item by item.edges[*].item
+    PC                         without        ( const CharItem *fip ) const;                         ///<
+    PC                         keep_up_to     ( unsigned n ) const;                                  ///< (assuming that all the items are conds)
     PC                         keep_only      ( const Vec<unsigned> &keep ) const;
-    PC                         with_mark      ( InstructionMark *inst ) const;
 
-    void                       rm_mark        ();
-
-    Context                    without_mark   () const;
     Context                    without_beg    () const;
     Context                    with_eof       () const;
     Context                    with_not_eof   () const;
@@ -58,7 +63,7 @@ public:
     bool                       not_eof        () const { return flags & NOT_EOF; }
 
     Vec<const CharItem *>      pos;                                                ///< items, sorted by priority
-    InstructionMark           *mark;                                               ///<
+    Vec<Code>                  codes;                                              ///< waiting code items
     int                        flags;                                              ///< true if no +1 since the beginning
 };
 

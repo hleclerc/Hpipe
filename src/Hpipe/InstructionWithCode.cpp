@@ -11,7 +11,7 @@ bool InstructionWithCode::with_code() const {
 }
 
 bool InstructionWithCode::can_be_deleted() const {
-    return mark; // cx.pos.size() > 1;
+    return false; // mark; // cx.pos.size() > 1;
 }
 
 
