@@ -33,3 +33,19 @@ beg_test basic
         3 status=OK
 end_test
 
+
+beg_test basic
+    input
+        UAAB
+    output
+        A status=OK
+end_test
+
+
+beg_test basic
+    input
+        UAB
+    output
+        U status=OK
+end_test
+

@@ -57,7 +57,7 @@ protected:
     void                            remove_unused        ();
     void                            opt_stop_char        ( int stop_char );
     void                            optimize_conditions  ();
-    void                            make_marks_data      ( Instruction *root, int rec_level );
+    void                            make_mark_data       ( Instruction *root, int rec_level );
     void                            make_rewind_exec     ( InstructionMark *mark, InstructionRewind *rewind, int rec_level );
     void                            get_possible_inst_rec( std::set<std::pair<Instruction *,unsigned>> &possible_instructions, Instruction *inst, unsigned pos, const InstructionMark *mark );
     void                            disp_if              ( const std::vector<std::string> &disp, bool disp_inst_pred, bool disp_trans_freq, const std::string &name, bool disp_rcitem = true );

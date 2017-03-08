@@ -34,7 +34,7 @@ InstructionGraph::InstructionGraph( CharGraph *cg, const std::vector<std::string
     disp_if( disp, disp_inst_pred, disp_trans_freq, "init" );
 
     // rewinds
-    make_marks_data( init, 0 );
+    make_mark_data( init, 0 );
     disp_if( disp, disp_inst_pred, disp_trans_freq, "mark" );
 
     // eq trans, eq pred (beware: rcitem becomes wrong)
@@ -848,7 +848,7 @@ void remove_mark_rec( Instruction *inst, Instruction *mark ) {
             remove_mark_rec( p.inst, mark );
 }
 
-void InstructionGraph::make_marks_data( Instruction *root, int rec_level ) {
+void InstructionGraph::make_mark_data( Instruction *root, int rec_level ) {
     if ( rec_level == 3 )
         return;
 
@@ -1031,7 +1031,7 @@ void InstructionGraph::make_rewind_exec( InstructionMark *mark, InstructionRewin
     }
 
     // make marks in subgraph if necessary
-    make_marks_data( rewind->exec, rec_level + 1 );
+    make_mark_data( rewind->exec, rec_level + 1 );
 
     // information needed for simplifications
     rewind->exec->update_in_a_branch();
