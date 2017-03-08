@@ -8,7 +8,7 @@ namespace Hpipe {
 */
 class InstructionClrStr : public InstructionWithCode {
 public:
-    InstructionClrStr( const Context &cx, const std::string &var, const CharItem *active_ci );
+    InstructionClrStr( const Context &cx, const std::string &var, int num_active_item );
     virtual void         write_dot         ( std::ostream &os, std::vector<std::string> *edge_labels = 0 ) const;
     virtual void         reg_var           ( std::function<void (std::string, std::string)> f );
     virtual void         write_cpp         ( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter );

@@ -8,7 +8,7 @@ namespace Hpipe {
 */
 class InstructionCode : public InstructionWithCode {
 public:
-    InstructionCode( const Context &cx, const std::string &code, const CharItem *active_ci );
+    InstructionCode( const Context &cx, const std::string &code, int num_active_item );
     virtual void         write_dot         ( std::ostream &os, std::vector<std::string> *edge_labels = 0 ) const;
     virtual void         write_cpp         ( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter );
     virtual void         write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter );

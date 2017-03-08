@@ -6,7 +6,7 @@
 
 namespace Hpipe {
 
-InstructionCode::InstructionCode( const Context &cx, const std::string &code, const CharItem *active_ci ) : InstructionWithCode( cx, active_ci ), code( code ) {
+InstructionCode::InstructionCode( const Context &cx, const std::string &code, int num_active_item ) : InstructionWithCode( cx, num_active_item ), code( code ) {
 }
 
 void InstructionCode::write_dot( std::ostream &os, std::vector<std::string> *edge_labels ) const {
@@ -14,9 +14,10 @@ void InstructionCode::write_dot( std::ostream &os, std::vector<std::string> *edg
 }
 
 Instruction *InstructionCode::clone( PtrPool<Instruction> &inst_pool, const Context &ncx, const Vec<unsigned> &keep_ind ) {
-    if ( not ncx.pos.contains( active_ci ) )
-        return inst_pool << new InstructionNone( ncx );
-    return inst_pool << new InstructionCode( ncx, code, active_ci );
+    int ind = ncx.pos.index_first( cx.pos[ num_active_item ] );
+    if ( ind >= 0 )
+        return inst_pool << new InstructionCode( ncx, code, ind );
+    return inst_pool << new InstructionNone( ncx );
 }
 
 bool InstructionCode::has_ret_cont() const {

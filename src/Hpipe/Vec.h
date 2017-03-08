@@ -40,7 +40,7 @@ struct Vec : std::vector<T> {
     void     remove_duplicates    () { for( unsigned i = 0; i < this->size(); ++i ) for( unsigned j = i + 1; j < this->size(); ++j ) if ( this->operator[]( i ) == this->operator[]( j ) ) remove( j-- ); }
 
     void     remove_first         ( const T &val ) { for( unsigned i = 0; i < this->size(); ++i ) if ( this->operator[]( i ) == val ) return remove( i ); }
-    int      index_first          ( const T &val ) { for( unsigned i = 0; i < this->size(); ++i ) if ( this->operator[]( i ) == val ) return i; return -1; }
+    int      index_first          ( const T &val ) const { for( unsigned i = 0; i < this->size(); ++i ) if ( this->operator[]( i ) == val ) return i; return -1; }
 
     template<class Op>
     void     remove_first_checking( Op &&op ) { for( unsigned i = 0; i < this->size(); ++i ) if ( op( this->operator[]( i ) ) ) return remove( i ); }

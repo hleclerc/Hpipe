@@ -2,7 +2,7 @@
 
 namespace Hpipe {
 
-InstructionWithCode::InstructionWithCode( const Context &cx, const CharItem *active_ci ) : Instruction( cx ), active_ci( active_ci ) {
+InstructionWithCode::InstructionWithCode( const Context &cx, int num_active_item ) : Instruction( cx ), num_active_item( num_active_item ) {
     save = 0;
 }
 

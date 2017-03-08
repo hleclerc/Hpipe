@@ -5,7 +5,7 @@
 
 namespace Hpipe {
 
-InstructionAddStr::InstructionAddStr( const Context &cx, const std::string &var, const CharItem *active_ci ) : InstructionWithCode( cx, active_ci ), var( var ) {
+InstructionAddStr::InstructionAddStr( const Context &cx, const std::string &var, int num_active_item ) : InstructionWithCode( cx, num_active_item ), var( var ) {
 }
 
 void InstructionAddStr::write_dot( std::ostream &os, std::vector<std::string> *edge_labels ) const {
@@ -13,9 +13,10 @@ void InstructionAddStr::write_dot( std::ostream &os, std::vector<std::string> *e
 }
 
 Instruction *InstructionAddStr::clone( PtrPool<Instruction> &inst_pool, const Context &ncx, const Vec<unsigned> &keep_ind ) {
-    if ( not ncx.pos.contains( active_ci ) )
-        return inst_pool << new InstructionNone( ncx );
-    return inst_pool << new InstructionAddStr( ncx, var, active_ci );
+    int ind = ncx.pos.index_first( cx.pos[ num_active_item ] );
+    if ( ind >= 0 )
+        return inst_pool << new InstructionAddStr( ncx, var, ind );
+    return inst_pool << new InstructionNone( ncx );
 }
 
 void InstructionAddStr::get_code_repr( std::ostream &os ) {

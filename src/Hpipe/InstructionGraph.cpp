@@ -132,13 +132,14 @@ void InstructionGraph::make_init() {
         if ( pt.inst && pt.inst->mark ) {
             for( PendingTrans &npt : loc_pending_trans ) {
                 if ( CharGraph::leads_to_ok( npt.cx.pos ) || npt.cx.pos.empty() ) {
+                    if ( npt.cx.pos.size() == 1 && npt.cx.pos[ 0 ]->type == CharItem::OK ) {
+                        std::set<std::pair<Instruction *,unsigned>> possible_instructions;
+                        display_dot( cg );
+                        PRINT( can_make_a_rewind( possible_instructions, pt.inst->mark, inst, npt.rcitem ) );
+                    }
+
                     std::set<std::pair<Instruction *,unsigned>> possible_instructions;
                     if ( can_make_a_rewind( possible_instructions, pt.inst->mark, inst, npt.rcitem ) ) {
-                        // forbid branching to instructions of the paths between mark and rewind
-                        for( const auto &p : possible_instructions )
-                            if ( p.first != pt.inst->mark )
-                                forbiden_branching.insert( p.first->cx );
-
                         // we have the instruction for npt
                         InstructionRewind *rwnd = inst_pool << new InstructionRewind( npt.cx );
                         pt.inst->mark->rewinds << rwnd;
@@ -164,35 +165,26 @@ Instruction *InstructionGraph::make_transitions( Vec<PendingTrans> &pending_tran
         // not a "cycles" phase (we first try to make straight paths, in order to avoid missing possible rewinds)
         if ( avoid_cycles )
             return 0;
-        //
-        if ( forbiden_branching.count( cx ) ) {
-            // adding of a temporary link
-            Instruction *inst = iter->second;
+        // making a cycle in a mark is ok, only if it does not change the rewinds we already have
+        Instruction *inst = iter->second;
+        if ( inst->mark ) {
+            // adding a temporary link
             if ( pt.inst->next.size() <= pt.num_edge )
                 pt.inst->next.resize( pt.num_edge + 1 );
             pt.inst->next[ pt.num_edge ] = { inst, pt.rcitem };
             inst->prev.emplace_back( pt.inst, pt.rcitem );
 
             // test if rewinds are still valid
-            std::set<Context> tmp_forbiden_branching;
             for( InstructionRewind *rewind : inst->mark->rewinds ) {
                 std::set<std::pair<Instruction *,unsigned>> possible_instructions;
                 if ( ! can_make_a_rewind( possible_instructions, inst->mark, rewind, range_vec<unsigned>( rewind->cx.pos.size() ) ) ) {
-                    for( const auto &p : possible_instructions )
-                        if ( p.first != inst->mark )
-                            tmp_forbiden_branching.insert( p.first->cx );
-
                     // remove the temporary link
                     inst->prev.pop_back();
                     return make_transitions( pending_trans, cx.with_new_num_path(), avoid_cycles, pt );
                 }
             }
 
-            // forbid branching to instructions of the (new) paths between mark and rewind
-            for( const auto &cx : tmp_forbiden_branching )
-                forbiden_branching.insert( cx );
-
-            // remove the temporary link
+            // remove the temporary link (will be added again)
             inst->prev.pop_back();
         }
         return iter->second;
@@ -243,9 +235,9 @@ Instruction *InstructionGraph::make_transitions( Vec<PendingTrans> &pending_tran
             // Instruction type
             Instruction *res = 0;
             switch( item->type ) {
-            case CharItem::CODE:    res = reg( new InstructionCode  ( cx, item->str, item ) ); break;
-            case CharItem::ADD_STR: res = reg( new InstructionAddStr( cx, item->str, item ) ); break;
-            case CharItem::CLR_STR: res = reg( new InstructionClrStr( cx, item->str, item ) ); break;
+            case CharItem::CODE:    res = reg( new InstructionCode  ( cx, item->str, ind ) ); break;
+            case CharItem::ADD_STR: res = reg( new InstructionAddStr( cx, item->str, ind ) ); break;
+            case CharItem::CLR_STR: res = reg( new InstructionClrStr( cx, item->str, ind ) ); break;
             default: HPIPE_TODO;
             }
 
@@ -304,9 +296,10 @@ Instruction *InstructionGraph::make_transitions( Vec<PendingTrans> &pending_tran
     }
 
     // ifs ?
-    for( const CharItem *item : cx.pos ) {
+    for( unsigned ind = 0; ind < cx.pos.size(); ++ind ) {
+        const CharItem *item = cx.pos[ ind ];
         if ( item->type == CharItem::_IF ) {
-            InstructionIf *res = reg( new InstructionIf( cx, item->str, item ) );
+            InstructionIf *res = reg( new InstructionIf( cx, item->str, ind ) );
             tra( res, 0, cx.forward( item ) );
             tra( res, 1, cx.without( item ) );
             return res;
@@ -729,7 +722,7 @@ Instruction *InstructionGraph::make_rewind_inst( Vec<PendingRewindTrans> &pendin
         // need a mark ?
         if ( InstructionWithCode *code = dynamic_cast<InstructionWithCode *>( res ) ) {
             if ( cx.pos.size() > 1 and not pt.rewind_mark ) {
-                InstructionMark *mark = inst_pool << new InstructionMark( cx, cx.pos.index_first( code->active_ci ) );
+                InstructionMark *mark = inst_pool << new InstructionMark( cx, keep_ind.index_first( code->num_active_item ) );
                 instruction_map.insert( iter, { RewindContext{ orig, pt.rewind_mark }, mark } );
                 mark->orig = pt.inst->orig;
 
@@ -757,7 +750,7 @@ unsigned InstructionGraph::nb_multi_conds() {
     return res;
 }
 
-Instruction *InstructionGraph::make_boyer_moore_rec(const Vec<std::pair<Vec<Cond>, Instruction *> > &front, InstructionNextChar *next_char, int orig_front_size) {
+Instruction *InstructionGraph::make_boyer_moore_rec( const Vec<std::pair<Vec<Cond>, Instruction *> > &front, InstructionNextChar *next_char, int orig_front_size ) {
     //
     auto same_inst = [&]() {
         Instruction *f = front[ 0 ].second;
@@ -814,13 +807,30 @@ bool InstructionGraph::can_make_a_rewind( std::set<std::pair<Instruction *,unsig
     for( unsigned ind : rcitem )
         get_possible_inst_rec( possible_instructions, inst, ind, mark );
 
+    //
+    #ifdef TEST_ONLY_FIRST_IN_CAN_MAKE_A_REWIND
     bool has_active = false;
     bool has_inactive = false;
     for( unsigned ind = 0; ind < mark->cx.pos.size(); ++ind )
         if ( possible_instructions.count( { mark, ind } ) )
             ( ind == mark->num_active_item ? has_active : has_inactive ) = true;
-
     return has_active ^ has_inactive;
+    #else
+    std::set<InstructionWithCode *> possible_with_code;
+    for( auto &p : possible_instructions )
+        if ( InstructionWithCode *code = dynamic_cast<InstructionWithCode *>( p.first ) )
+            possible_with_code.insert( code );
+    for( InstructionWithCode *code : possible_with_code ) {
+        bool has_active = false;
+        bool has_inactive = false;
+        for( unsigned ind = 0; ind < code->cx.pos.size(); ++ind )
+            if ( possible_instructions.count( { code, ind } ) )
+                ( ind == code->num_active_item ? has_active : has_inactive ) = true;
+        if ( has_active && has_inactive )
+            return false;
+    }
+    return true;
+    #endif
 }
 
 
@@ -849,8 +859,10 @@ void remove_mark_rec( Instruction *inst, Instruction *mark ) {
 }
 
 void InstructionGraph::make_mark_data( Instruction *root, int rec_level ) {
-    if ( rec_level == 3 )
+    if ( rec_level == 16 ) {
+        cg->err( "Max rec level exceeded in make_mark_data. Possible internal hpipe problem." );
         return;
+    }
 
     // get the marks
     ++Instruction::cur_op_id;
@@ -887,7 +899,7 @@ void InstructionGraph::make_mark_data( Instruction *root, int rec_level ) {
                     }
                     code->save = inst_pool << new InstructionSave( orig->cx, num_save++ );
                     orig->insert_before_this( code->save, init );
-                    code->save->mark = 0;
+                    code->save->mark = mark;
                 }
             }
         }

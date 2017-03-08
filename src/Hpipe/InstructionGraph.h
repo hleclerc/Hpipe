@@ -73,7 +73,7 @@ protected:
     Instruction                    *ko;
     Context                         cx_ok;
     std::map<Context,Instruction *> cache;
-    std::set<Context>               forbiden_branching;
+    // std::set<Context>               forbiden_branching;
     PtrPool<Instruction>            inst_pool;
     bool                            no_training;
 };

@@ -6,7 +6,7 @@
 
 namespace Hpipe {
 
-InstructionIf::InstructionIf( const Context &cx, const std::string &cond, const CharItem *active_ci ) : InstructionWithCode( cx, active_ci ), cond( cond ) {
+InstructionIf::InstructionIf( const Context &cx, const std::string &cond, int num_active_item ) : InstructionWithCode( cx, num_active_item ), cond( cond ) {
 }
 
 void InstructionIf::write_dot( std::ostream &os, std::vector<std::string> *edge_labels ) const {
@@ -14,9 +14,9 @@ void InstructionIf::write_dot( std::ostream &os, std::vector<std::string> *edge_
 }
 
 Instruction *InstructionIf::clone( PtrPool<Instruction> &inst_pool, const Context &ncx, const Vec<unsigned> &keep_ind ) {
-    if ( not ncx.pos.contains( active_ci ) )
-        return inst_pool << new InstructionNone( ncx );
-    return inst_pool << new InstructionIf( ncx, cond, active_ci );
+    if ( keep_ind.contains( num_active_item ) )
+        return inst_pool << new InstructionIf( ncx, cond, keep_ind.index_first( num_active_item ) );
+    return inst_pool << new InstructionNone( ncx );
 }
 
 bool InstructionIf::can_be_deleted() const {

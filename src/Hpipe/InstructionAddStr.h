@@ -8,7 +8,7 @@ namespace Hpipe {
 */
 class InstructionAddStr : public InstructionWithCode {
 public:
-    InstructionAddStr( const Context &cx, const std::string &var, const CharItem *active_ci );
+    InstructionAddStr( const Context &cx, const std::string &var, int num_active_item );
 
     virtual void         write_dot         ( std::ostream &os, std::vector<std::string> *edge_labels = 0 ) const;
     virtual void         reg_var           ( std::function<void( std::string type, std::string name )> f );

@@ -163,7 +163,7 @@ void InstructionRewind::write_dot_add( std::ostream &os, bool disp_inst_pred, bo
     if ( mark )
         os << "  node_" << this << " -> node_" << mark << " [color=green];\n";
 
-    if ( need_rw ) { //  || true
+    if ( exec ) { // need_rw
         // os << "  node_" << this << " -> node_" << rewind_exec << " [style=dashed,color=red,rank=same];\n";
         os << "subgraph cluster_" << this << " {\n";
         os << "  label = \"RW_" << get_display_id() << ( need_rw ? " need_rw" : "" ) << " " << code_seq.size() << "\";\n";

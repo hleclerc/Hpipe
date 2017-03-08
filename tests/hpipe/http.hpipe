@@ -26,26 +26,26 @@ main =
 #     Hpipe::SI64 err        = 0;
 # end_methods
 
-beg_test basic
+beg_test U123AB
     input
         U123AB
     output
         3 status=OK
 end_test
 
+beg_test UAB
+    input
+        UAB
+    output
+        U status=OK
+end_test
 
-beg_test basic
+
+beg_test UAAB
     input
         UAAB
     output
         A status=OK
 end_test
 
-
-beg_test basic
-    input
-        UAB
-    output
-        U status=OK
-end_test
 

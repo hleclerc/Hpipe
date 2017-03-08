@@ -7,7 +7,14 @@ InstructionCond::InstructionCond( const Context &cx, const Cond &cond, int off_d
 }
 
 void InstructionCond::write_dot( std::ostream &os, std::vector<std::string> *edge_labels ) const {
-    os << cond; // << " not_in " << not_in;
+    if ( edge_labels ) {
+        os << "?";
+        edge_labels->emplace_back( to_string(   cond ) );
+        edge_labels->emplace_back( to_string( ~ cond ) );
+    } else
+        os << cond;
+
+    // os << " not_in " << not_in;
     if ( off_data )
         os << " O(" << off_data << ")";
 }
