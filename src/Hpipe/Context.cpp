@@ -25,7 +25,27 @@ struct PcMaker {
         res.second << ind;
     }
 
-    Context::PC out() {
+    Context::PC out( const CharItem *item = 0, unsigned ind = 0 ) {
+        for( const Context::Code &code : orig->codes ) {
+            Vec<unsigned> new_ok_paths;
+            for( unsigned num_path = 0; num_path < res.second.size(); ++num_path )
+                if ( code.ok_paths.contains( res.second[ num_path ] ) )
+                    new_ok_paths << num_path;
+            if ( new_ok_paths.size() ) {
+                Context::Code new_code = code;
+                new_code.ok_paths = new_ok_paths;
+                res.first.codes << new_code;
+            }
+        }
+
+        if ( item ) {
+            Context::Code *code = res.first.codes.new_elem();
+            code->ok_paths << ind;
+            code->off_prec = 0;
+            code->off_loop = 0;
+            code->item = item;
+        }
+
         return res;
     }
 
@@ -55,7 +75,7 @@ bool Context::operator<( const Context &that ) const {
 }
 
 bool Context::Code::operator<( const Code &that ) const {
-    return std::tie( item, ko, ok ) < std::tie( that.item, that.ko, that.ok );
+    return std::tie( item, ok_paths ) < std::tie( that.item, that.ok_paths );
 }
 
 void Context::Code::write_to_stream( std::ostream &os ) const {
@@ -78,7 +98,7 @@ void Context::write_to_stream( std::ostream &os ) const {
         os << " " << code;
 }
 
-Context::PC Context::forward( const CharItem *fip, bool is_a_code ) const {
+Context::PC Context::forward( const CharItem *fip ) const {
     PcMaker pm( this );
 
     for( unsigned i = 0; i < pos.size(); ++i ) {
@@ -101,37 +121,27 @@ Context::PC Context::forward( const CharItem *fip, bool is_a_code ) const {
     return pm.out();
 }
 
-Context::PC Context::forward_code( const CharItem *fip ) const {
+Context::PC Context::forward_code( unsigned ind ) const {
     PcMaker pm( this );
-
-    Code *code = pm.res.first.codes.new_elem();
-    code->item = fip;
 
     for( unsigned i = 0; i < pos.size(); ++i ) {
         const CharItem *item = pos[ i ];
-        if ( item == fip ) {
-            code->off_prec = 0;
-            code->off_loop = 0;
-            code->ko       = range_vec( ind );
-            code->ok       = ind;
-
-            pm.res.first.codes.emplace_back( std::move( code ) );
-
+        if ( i == ind ) {
             for( const CharEdge &e : item->edges ) {
                 if ( ! pm.has( e.item ) ) {
                     pm.add( e.item, i );
                     if ( pm.leads_to_ok() )
-                        return pm.out();
+                        return pm.out( pos[ ind ], ind );
                 }
             }
         } else if ( ! pm.has( item ) ) {
             pm.add( item, i );
             if ( pm.leads_to_ok() )
-                return pm.out();
+                return pm.out( pos[ ind ], ind );
         }
     }
 
-    return pm.out();
+    return pm.out( pos[ ind ], ind );
 }
 
 Context::PC Context::forward( const Cond &c ) const {

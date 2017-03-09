@@ -210,7 +210,7 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
             // if it's too early to decide if this code can be executed, we have to add a mark
             if ( cx.pos.size() >= 2 || ! CharGraph::leads_to_ok( cx.pos ) ) {
                 InstructionSkip *res = reg( new InstructionSkip( cx ) );
-                return tra( res, 0, cx.with_code_at( ind ) );
+                return tra( res, 0, cx.forward_code( ind ) );
             }
 
             // Instruction type

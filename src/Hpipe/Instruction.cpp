@@ -59,6 +59,9 @@ void Instruction::write_dot_rec( std::ostream &os, bool disp_inst_pred, bool dis
     std::vector<std::string> edge_labels;
     write_dot( ss, &edge_labels );
 
+    for( const Context::Code &code : cx.codes )
+        ss << "\n" << *code.item << " on " << code.ok_paths;
+
     // ss << "in=" << cx.in << " ";
 
     dot_out( os, ss.str() );

@@ -14,7 +14,7 @@ read[ name ] =
 #     { os << *data; }
 #     'AB'
 
-main = ( {1} '1' ) | ( {1} '2' )
+main = ( {1} '1' ) | ( {2} '2' )
 
 # main = 'GET ' read[ "url" ] any* eol (
 #     any

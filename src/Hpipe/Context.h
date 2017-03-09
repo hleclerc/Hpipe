@@ -27,8 +27,7 @@ public:
         const CharItem *item;
         unsigned        off_prec;
         unsigned        off_loop;
-        Vec<unsigned>   ko;       ///< paths that prevent this code to be executed
-        Vec<unsigned>   ok;       ///< paths to the code
+        Vec<unsigned>   ok_paths;       ///< paths to the code
     };
 
     Context( const CharItem *item, int flags = 0 );
@@ -37,11 +36,9 @@ public:
     bool                       operator<      ( const Context &that ) const;
     void                       write_to_stream( std::ostream &os ) const;
 
-    PC                         forward        ( const Vec<const CharItem *> &npos, const Vec<unsigned> &trans ) const; ///<
-
-
     PC                         forward        ( const CharItem *fip ) const; ///< replace item by item.edges[*].item
     PC                         forward        ( const Cond &c ) const;                               ///< replace item by item.edges[*].item
+    PC                         forward_code   ( unsigned ind ) const;       ///< replace item by item.edges[*].item
     PC                         forward        ( int type ) const;                                    ///< replace item by item.edges[*].item
     PC                         only_with      ( int type ) const;                                    ///< replace item by item.edges[*].item
     PC                         without        ( const CharItem *fip ) const;                         ///<
