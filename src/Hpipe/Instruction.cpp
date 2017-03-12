@@ -50,8 +50,9 @@ void Instruction::write_dot_rec( std::ostream &os, bool disp_inst_pred, bool dis
         if ( cx.flags ) {
             ss << "(";
             if ( cx.flags & cx.FL_BEG     ) ss << "B";
-            if ( cx.flags & cx.FL_EOF  ) ss << "O";
+            if ( cx.flags & cx.FL_EOF     ) ss << "O";
             if ( cx.flags & cx.FL_NOT_EOF ) ss << "N";
+            if ( cx.flags & cx.FL_OK      ) ss << "K";
             ss << ")";
         }
         ss << " ";

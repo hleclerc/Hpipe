@@ -16,7 +16,8 @@ public:
     virtual bool     can_be_deleted() const;
 
     int              num_active_item; ///< active CharItem in cx
-    InstructionSave *save;      ///<
+    InstructionSave *save;            ///<
+    bool             in_code_seq;     ///>
 };
 
 } // namespace Hpipe

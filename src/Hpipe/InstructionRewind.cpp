@@ -5,22 +5,24 @@
 
 namespace Hpipe {
 
-InstructionRewind::InstructionRewind( const Context &cx ) : Instruction( cx ) {
+InstructionRewind::InstructionRewind( const Context &cx ) : Instruction( cx ), exec( 0 ) {
 }
 
 void InstructionRewind::write_dot( std::ostream &os, std::vector<std::string> *edge_labels ) const {
-    if ( need_rw ) {
-        os << "RW_" << get_display_id();
-    } else if ( code_seq.size() ) {
-        os << "RW_SEQ" << get_display_id();
-        for( InstructionWithCode *inst : code_seq ) {
-            if ( inst->save )
-                inst->write_dot( os << " S" << inst->save->num_save << "\n" );
-            else
-                inst->write_dot( os << "\n" );
-        }
-    } else
-        os << "FM_" << get_display_id();
+    os << "RW_SEQ" << get_display_id();
+
+    if ( code_seq_beg.size() )
+        for( const CodeSeqItem &item : code_seq_beg )
+            item.code->write_dot( os << "\nB" << item.offset );
+
+    if ( code_seq_end.size() && ! restart_before )
+        for( const CodeSeqItem &item : code_seq_end )
+            item.code->write_dot( os << "\nE" << item.offset );
+
+    //    if ( need_rw ) {
+    //        os << "RW_" << get_display_id();
+    //    } else
+    //        os << "FM_" << get_display_id();
 }
 
 Instruction *InstructionRewind::clone( PtrPool<Instruction> &inst_pool, const Context &ncx, const Vec<unsigned> &keep_ind ) {
@@ -66,7 +68,7 @@ void InstructionRewind::apply_rec_rewind_l( std::function<void(Instruction *, un
 }
 
 bool InstructionRewind::with_code() const {
-    return need_rw or code_seq.size();
+    return need_rw || code_seq_beg.size() || code_seq_end.size();
 }
 
 void InstructionRewind::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
@@ -77,8 +79,11 @@ void InstructionRewind::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
     } else
         ss << "data = rw_ptr[ 0 ];";
 
-    for( InstructionWithCode *inst : code_seq )
-        inst->write_cpp_code_seq( ss, es, cpp_emitter );
+    for( const CodeSeqItem &item : code_seq_beg )
+        item.code->write_cpp_code_seq( ss, es, cpp_emitter );
+    if ( use_of_ncx == USE_NCX_END )
+        for( const CodeSeqItem &item : code_seq_end )
+            item.code->write_cpp_code_seq( ss, es, cpp_emitter );
 
     //    if ( need_rw ) {
     //        // ss << "// beg rewind";
@@ -130,9 +135,12 @@ Transition *InstructionRewind::train( std::string::size_type &s, std::string::si
 }
 
 void InstructionRewind::reg_var( std::function<void(std::string, std::string)> f ) {
-    if ( not need_rw )
-        for( InstructionWithCode *inst : code_seq )
-            inst->reg_var( f );
+    if ( not need_rw ) {
+        for( CodeSeqItem &item : code_seq_beg )
+            item.code->reg_var( f );
+        for( CodeSeqItem &item : code_seq_end )
+            item.code->reg_var( f );
+    }
 }
 
 void InstructionRewind::get_code_repr( std::ostream &os ) {
@@ -153,16 +161,16 @@ void InstructionRewind::get_code_repr( std::ostream &os ) {
     //                os << " " << trans.inst->op_mp;
     //        }
     //    } else {
-    os << "RW_SEQ " << code_seq.size();
-    for( InstructionWithCode *inst : code_seq ) {
-        if ( inst->save )
-            os << " S" << inst->save->num_save;
-        else
-            os << " N";
+    os << "RW_SEQ " << code_seq_beg.size() << " " << code_seq_end.size();
+    //    for( InstructionWithCode *inst : code_seq ) {
+    //        if ( inst->save )
+    //            os << " S" << inst->save->num_save;
+    //        else
+    //            os << " N";
 
-        std::string ss = inst->code_repr();
-        os << " " << ss.size() << " " << ss;
-    }
+    //        std::string ss = inst->code_repr();
+    //        os << " " << ss.size() << " " << ss;
+    //    }
     //        if ( mark )
     //            os << "FM";
     //    }
@@ -172,14 +180,14 @@ void InstructionRewind::write_dot_add( std::ostream &os, bool disp_inst_pred, bo
     //    if ( mark )
     //        os << "  node_" << this << " -> node_" << mark << " [color=green];\n";
 
-    //    if ( exec ) { // need_rw
-    //        // os << "  node_" << this << " -> node_" << rewind_exec << " [style=dashed,color=red,rank=same];\n";
-    //        os << "subgraph cluster_" << this << " {\n";
-    //        os << "  label = \"RW_" << get_display_id() << ( need_rw ? " need_rw" : "" ) << " " << code_seq.size() << "\";\n";
-    //        os << "  color = gray;\n";
-    //        exec->write_dot_rec( os, disp_inst_pred, disp_trans_freq, disp_rc_item );
-    //        os << "}\n";
-    //    }
+    if ( exec ) { // need_rw
+        // os << "  node_" << this << " -> node_" << rewind_exec << " [style=dashed,color=red,rank=same];\n";
+        os << "subgraph cluster_" << this << " {\n";
+        os << "  label = \"RW_" << get_display_id() << ( need_rw ? " need_rw" : "" ) << " orx=" << offset_for_ncx << "\";\n";
+        os << "  color = gray;\n";
+        exec->write_dot_rec( os, disp_inst_pred, disp_trans_freq, disp_rc_item );
+        os << "}\n";
+    }
 }
 
 

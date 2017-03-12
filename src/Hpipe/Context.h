@@ -36,8 +36,8 @@ public:
     PC                         without        ( const CharItem *fip ) const;                      ///<
     PC                         keep_up_to     ( unsigned n ) const;                               ///< (assuming that all the items are conds)
     PC                         keep_only      ( const Vec<unsigned> &keep ) const;
-    PC                         with_mark      ( InstructionMark *mark ) const;         ///<
-    PC                         without_mark   ( const Vec<unsigned> &keep_ind ) const; ///<
+    PC                         with_mark      ( InstructionMark *mark ) const;                    ///<
+    PC                         without_mark   () const;                                           ///<  const Vec<unsigned> &keep_ind
 
     Context                    without_flag   ( int val ) const;
     Context                    with_flag      ( int val ) const;

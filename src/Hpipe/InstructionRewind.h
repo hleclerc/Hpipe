@@ -10,25 +10,42 @@ class InstructionMark;
 */
 class InstructionRewind : public Instruction {
 public:
+    struct CodeSeqItem {
+        CodeSeqItem( unsigned offset, InstructionWithCode *code ) : offset( offset ), code( code ) {}
+        unsigned             offset;
+        InstructionWithCode *code;
+    };
+    enum {
+        USE_NCX_NONE,
+        USE_NCX_BEG,
+        USE_NCX_END,
+    };
     InstructionRewind( const Context &cx );
 
-    virtual void               write_dot          ( std::ostream &os, std::vector<std::string> *edge_labels = 0 ) const;
-    virtual void               write_dot_add      ( std::ostream &os, bool disp_inst_pred, bool disp_trans_freq, bool disp_rc_item ) const;
-    virtual Instruction       *clone              ( PtrPool<Instruction> &inst_pool, const Context &ncx, const Vec<unsigned> &keep_ind );
-    virtual void               apply_rec          ( std::function<void(Instruction *)> f, bool subgraphs = false );
-    virtual void               get_unused_rec     ( Vec<Instruction *> &to_remove, Instruction *&init );
-    virtual void               apply_rec_rewind_l ( std::function<void(Instruction *, unsigned)> f, unsigned rewind_level = 0 );
-    virtual bool               with_code          () const;
-    virtual void               write_cpp          ( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter );
-    virtual void               optimize_conditions( PtrPool<Instruction> &inst_pool );
-    virtual Transition        *train              ( std::string::size_type &s, std::string::size_type &m, const std::string &inp, double freq, bool use_contiguous );
-    virtual void               reg_var            ( std::function<void (std::string, std::string)> f );
-    virtual void               get_code_repr      ( std::ostream &os ) override;
+    virtual void         write_dot          ( std::ostream &os, std::vector<std::string> *edge_labels = 0 ) const;
+    virtual void         write_dot_add      ( std::ostream &os, bool disp_inst_pred, bool disp_trans_freq, bool disp_rc_item ) const;
+    virtual Instruction *clone              ( PtrPool<Instruction> &inst_pool, const Context &ncx, const Vec<unsigned> &keep_ind );
+    virtual void         apply_rec          ( std::function<void(Instruction *)> f, bool subgraphs = false );
+    virtual void         get_unused_rec     ( Vec<Instruction *> &to_remove, Instruction *&init );
+    virtual void         apply_rec_rewind_l ( std::function<void(Instruction *, unsigned)> f, unsigned rewind_level = 0 );
+    virtual bool         with_code          () const;
+    virtual void         write_cpp          ( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter );
+    virtual void         optimize_conditions( PtrPool<Instruction> &inst_pool );
+    virtual Transition  *train              ( std::string::size_type &s, std::string::size_type &m, const std::string &inp, double freq, bool use_contiguous );
+    virtual void         reg_var            ( std::function<void (std::string, std::string)> f );
+    virtual void         get_code_repr      ( std::ostream &os ) override;
 
 
-    // Instruction               *exec;
-    Vec<InstructionWithCode *> code_seq;
-    bool                       need_rw   = true; ///< true if this->exec is to be used
+    Instruction         *exec;
+    Vec<CodeSeqItem>     code_seq_beg;           ///< code from mark
+    Vec<CodeSeqItem>     code_seq_end;           ///< code from rewind
+
+    unsigned             offset_for_ncx;
+    int                  use_of_ncx;             ///< USE_NCX_BEG, ...
+    Context::PC          ncx;                    ///< new context
+
+    bool                 restart_before = false; ///<
+    bool                 need_rw        = false; ///< true if needed to rewind at mark (+ offset_for_ncx)
 };
 
 } // namespace Hpipe

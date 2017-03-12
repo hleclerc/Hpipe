@@ -55,22 +55,20 @@ protected:
     void                            make_init            ();
     Instruction                    *make_transitions     ( std::deque<PendingTrans> &pending_trans, const PendingTrans &pt );
     Instruction                    *make_transitions     ( std::deque<PendingTrans> &pending_trans, const PendingTrans &pt, const Context &cx, bool cache_allowed = true );
-    // bool                            hook_wo_ambiguity    ( Instruction *inst, const Vec<unsigned> &rcitem, Instruction *hook );
     void                            train                ( bool only_cont = false );
-    void                            remove_unused        ();
+    void                            remove_unused        ( Instruction *&root );
     void                            opt_stop_char        ( int stop_char );
     void                            optimize_conditions  ();
-    void                            make_mark_data       ( Instruction *root, int rec_level );
-    void                            make_rewind_exec     ( InstructionMark *mark, InstructionRewind *rewind, int rec_level );
+    void                            make_rewind_data     ( InstructionRewind *rw );
+    void                            make_rewind_exec     ( InstructionMark *mark, InstructionRewind *rewind );
     void                            get_possible_inst_rec( std::set<std::pair<Instruction *,unsigned>> &possible_instructions, Instruction *inst, unsigned pos, const Instruction *mark );
     void                            disp_if              ( const std::vector<std::string> &disp, bool disp_inst_pred, bool disp_trans_freq, const std::string &name, bool disp_rcitem = true );
     void                            merge_eq_pred        ( Instruction *&root );
     void                            boyer_moore          ();
-    Instruction                    *make_rewind_inst     ( Vec<PendingRewindTrans> &loc_pending_trans, std::map<RewindContext,Instruction *> &instruction_map, std::unordered_map<Instruction *,Vec<unsigned>> possible_inst, InstructionRewind *rewind, Instruction *orig, const PendingRewindTrans &pt, bool avoid_cycle, bool force_copy ); ///< rewind_mark is a mark in the rewind context
+    Instruction                    *make_rewind_inst     ( Vec<PendingRewindTrans> &loc_pending_trans, std::map<RewindContext,Instruction *> &instruction_map, std::unordered_map<Instruction *,Vec<unsigned>> possible_inst, InstructionRewind *rewind, Instruction *orig, const PendingRewindTrans &pt ); ///< rewind_mark is a mark in the rewind context
     unsigned                        nb_multi_conds       ();
     Instruction                    *make_boyer_moore_rec ( const Vec<std::pair<Vec<Cond>, Instruction *> > &front, InstructionNextChar *next_char, int orig_front_size );
-    bool                            no_code_ambiguity         ( InstructionMark *mark, Instruction *inst, const Vec<unsigned> &rcitem );
-    // bool                            can_make_a_rewind    ( std::set<std::pair<Instruction *,unsigned>> &possible_instructions, InstructionMark *mark, Instruction *inst, Vec<unsigned> rcitem );
+    bool                            no_code_ambiguity    ( InstructionMark *mark, Instruction *inst, const Vec<unsigned> &rcitem );
 
     Instruction                    *init;
     Instruction                    *ok;

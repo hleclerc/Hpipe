@@ -3,6 +3,7 @@
 namespace Hpipe {
 
 InstructionWithCode::InstructionWithCode( const Context &cx, int num_active_item ) : Instruction( cx ), num_active_item( num_active_item ) {
+    in_code_seq = false;
     save = 0;
 }
 

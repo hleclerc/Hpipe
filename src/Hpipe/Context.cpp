@@ -187,12 +187,12 @@ Context::PC Context::with_mark( InstructionMark *mark ) const {
     return pm.out();
 }
 
-Context::PC Context::without_mark( const Vec<unsigned> &keep_ind ) const {
+Context::PC Context::without_mark() const { //  const Vec<unsigned> &keep_ind
     PcMaker pm( this );
 
+    //if ( keep_ind.contains( i ) )
     for( unsigned i = 0; i < pos.size(); ++i )
-        if ( keep_ind.contains( i ) )
-            pm.add( pos[ i ], i, false );
+        pm.add( pos[ i ], i, false );
 
     pm.res.first.flags |= FL_OK;
     pm.res.first.mark = nullptr;
