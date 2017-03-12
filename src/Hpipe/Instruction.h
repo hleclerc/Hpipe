@@ -45,6 +45,7 @@ public:
     virtual bool         with_code          () const;
     virtual bool         data_code          () const;
     virtual bool         has_ret_cont       () const;
+    virtual bool         always_need_id_gen ( CppEmitter *cpp_emitter ) const;
     void                 update_in_a_branch ();
     void                 update_in_a_cycle  ();
     // void              get_boyer_moore_seq( Vec<std::pair<Vec<Cond>, Instruction *> > &front );
@@ -66,6 +67,7 @@ public:
     bool                 in_a_branch;
     bool                 in_a_cycle;
     Instruction         *orig;         ///< if is a clone (for a rewind)
+    InstructionMark     *mark;         ///<
 
     // for code generation
     int                  num_ordering;

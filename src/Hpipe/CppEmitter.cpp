@@ -161,7 +161,7 @@ void CppEmitter::write_parse_body( StreamSepMaker &ss, Instruction *root ) {
 
     // update id_gen (for now, we set id_gen only for transition to the "past" -- in ordering)
     for( Instruction *inst : ordering )
-        inst->id_gen = 0;
+        inst->id_gen = inst->always_need_id_gen( this ) ? ++nb_id_gen : 0;
     for( Instruction *inst : ordering )
         for( Transition &t : inst->next )
             if ( t.inst->num_ordering <= inst->num_ordering and not t.inst->id_gen )
@@ -171,9 +171,9 @@ void CppEmitter::write_parse_body( StreamSepMaker &ss, Instruction *root ) {
     for( Instruction *inst : ordering ) {
         // write a label if neceassary
         if ( inst->id_gen )
-            ss.rm_beg( 2 ) << "l_" << inst->id_gen << ":" << ( trace_labels ? " std::cout << __LINE__ << std::endl;" : "" );
+            ss.rm_beg( 2 ) << "l_" << inst->id_gen << ":" << ( trace_labels ? " std::cout << \"l_" + to_string( inst->id_gen ) + " \" << __LINE__ << std::endl;" : "" );
 
-        //
+        // write instruction content
         inst->write_cpp( ss, es, this );
     }
 

@@ -12,6 +12,7 @@ Instruction::Instruction( Context cx ) : cx( cx ), display_id( 0 ), op_id( 0 ) {
     in_a_cycle   = false;
     num_ordering = -2;
     id_gen       = 0;
+    mark         = cx.mark;
     orig         = nullptr;
     cum_freq     = 0;
 }
@@ -48,9 +49,9 @@ void Instruction::write_dot_rec( std::ostream &os, bool disp_inst_pred, bool dis
         //            ss << "OK";
         if ( cx.flags ) {
             ss << "(";
-            if ( cx.flags & cx.BEG     ) ss << "B";
-            if ( cx.flags & cx.ON_EOF  ) ss << "O";
-            if ( cx.flags & cx.NOT_EOF ) ss << "N";
+            if ( cx.flags & cx.FL_BEG     ) ss << "B";
+            if ( cx.flags & cx.FL_EOF  ) ss << "O";
+            if ( cx.flags & cx.FL_NOT_EOF ) ss << "N";
             ss << ")";
         }
         ss << " ";
@@ -59,8 +60,11 @@ void Instruction::write_dot_rec( std::ostream &os, bool disp_inst_pred, bool dis
     std::vector<std::string> edge_labels;
     write_dot( ss, &edge_labels );
 
-    for( const Context::Code &code : cx.codes )
-        ss << "\n" << *code.item << " on " << code.ok_paths;
+    if ( cx.mark ) {
+        ss << "\n";
+        for( bool v : cx.code_path )
+            ss << v;
+    }
 
     // ss << "in=" << cx.in << " ";
 
@@ -69,8 +73,8 @@ void Instruction::write_dot_rec( std::ostream &os, bool disp_inst_pred, bool dis
     os << "\"";
     if ( in_a_cycle )
         os << ",style=dotted";
-    //    if ( mark )
-    //        os << ",color=green";
+    if ( cx.mark )
+        os << ",color=green";
     os << "];\n";
 
     write_dot_add( os, disp_inst_pred, disp_trans_freq, disp_rc_item );
@@ -559,6 +563,10 @@ void Instruction::merge_eq_next( PtrPool<Instruction> &inst_pool ) {
 }
 
 bool Instruction::has_ret_cont() const {
+    return false;
+}
+
+bool Instruction::always_need_id_gen( CppEmitter *cpp_emitter ) const {
     return false;
 }
 

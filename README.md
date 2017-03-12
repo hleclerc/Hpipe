@@ -22,7 +22,7 @@ main = (
 
 If the input is "bar5", `bar += 1` won't be executed: a code is executed only if the belonging path succeeds; `|` handles the priority of the left hand side over the right one (if the lhs succeeds, the rhs is discarded... and codes are executed only when the ambiguities have disappeared).
 
-If produces code like
+It produces code like
 
 ```C++
 l_2:

@@ -19,7 +19,7 @@ struct Vec : std::vector<T> {
 
     void     write_to_stream      ( std::ostream &os ) const;
 
-    Vec     &operator<<           ( const T &val ) { push_back( val ); return *this; }
+    Vec     &operator<<           ( const T &val ) { this->emplace_back( val ); return *this; }
 
     Vec     &append               ( const Vec<T> &vec ) { for( const T &val : vec ) push_back( val ); return *this; }
 
@@ -61,6 +61,7 @@ struct Vec : std::vector<T> {
     void     secure_set                  ( unsigned index, const T &val ) { if ( index >= this->size() ) this->resize( index + 1 ); this->operator[]( index ) = val; }
 
     bool     contains             ( const T &val ) const { for( unsigned i = 0; i < this->size(); ++i ) if ( this->operator[]( i ) == val ) return true; return false; }
+    bool     only_has             ( const T &val ) const { for( unsigned i = 0; i < this->size(); ++i ) if ( this->operator[]( i ) != val ) return false; return true; }
 
     Vec      concat               ( const Vec &v ) const { Vec res = *this; return res.append( v ); }
 };

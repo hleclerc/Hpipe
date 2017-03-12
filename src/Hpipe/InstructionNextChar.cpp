@@ -172,74 +172,83 @@ Instruction *InstructionNextChar::make_boyer_moore_rec( PtrPool<Instruction> &in
 
 }
 
+bool InstructionNextChar::always_need_id_gen( CppEmitter *cpp_emitter ) const {
+    return cpp_emitter->interruptible();
+}
+
 void InstructionNextChar::get_code_repr( std::ostream &os ) {
     os << "NEXT_CHAR " << beg;
 }
 
 void InstructionNextChar::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
-    // HPIPE_ASSERT( transitions.size() == 2, "..." );
-    if ( cpp_emitter->rewind_rec_level ) {
-        if ( cpp_emitter->interruptible() ) {
-            ss << "if ( data " << ( beg ? ">" : ">=" ) << " end_m1 ) goto c_" << ++cpp_emitter->nb_cont_label << ";";
-            if ( not beg )
-                ss << "++data;";
+    //    // HPIPE_ASSERT( transitions.size() == 2, "..." );
+    //    if ( cpp_emitter->rewind_rec_level ) {
+    //        if ( cpp_emitter->interruptible() ) {
+    //            ss << "if ( data " << ( beg ? ">" : ">=" ) << " end_m1 ) goto c_" << ++cpp_emitter->nb_cont_label << ";";
+    //            if ( not beg )
+    //                ss << "++data;";
 
-            // go to next buffer
-            es.rm_beg( 2 ) << "c_" << cpp_emitter->nb_cont_label << ":" << ( cpp_emitter->trace_labels ? " std::cout << __LINE__ << std::endl;" : "" );
-            if ( next.size() == 2 )
-                es << "if ( ! buf->next ) goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << "; // YOP";
-            // es << "{ HPIPE_BUFFER *old = buf; buf = buf->next; dec_ref( old ); data = buf->data; end_m1 = buf->data - 1 + buf->size; }";
-            es << "buf = buf->next; data = buf->data; end_m1 = buf->data - 1 + buf->size;";
-            es << "if ( data > end_m1 ) goto c_" << cpp_emitter->nb_cont_label << ";";
-            es << "goto l_" << next[ 0 ].inst->get_id_gen( cpp_emitter ) << ";";
-        } else {
-            if ( next.size() == 2 ) {
-                if ( cpp_emitter->buffer_type == CppEmitter::C_STR ) {
-                    ss << "if ( *" << ( beg ? "data" : "( ++data )" ) << " == " << cpp_emitter->end_char << " ) goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << "; // YOP";
-                } else {
-                    ss << "if ( data " << ( beg ? ">" : ">=" ) << " end_m1 ) goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << "; // YOP";
-                    if ( not beg )
-                        ss << "++data;";
-                }
-            } else if ( not beg )
-                ss << "++data;";
-        }
+    //            // go to next buffer
+    //            es.rm_beg( 2 ) << "c_" << cpp_emitter->nb_cont_label << ":" << ( cpp_emitter->trace_labels ? " std::cout << __LINE__ << std::endl;" : "" );
+    //            if ( next.size() == 2 )
+    //                es << "if ( ! buf->next ) goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << "; // YOP";
+    //            // es << "{ HPIPE_BUFFER *old = buf; buf = buf->next; dec_ref( old ); data = buf->data; end_m1 = buf->data - 1 + buf->size; }";
+    //            es << "buf = buf->next; data = buf->data; end_m1 = buf->data - 1 + buf->size;";
+    //            es << "if ( data > end_m1 ) goto c_" << cpp_emitter->nb_cont_label << ";";
+    //            es << "goto l_" << next[ 0 ].inst->get_id_gen( cpp_emitter ) << ";";
+    //        } else {
+    //            if ( next.size() == 2 ) {
+    //                if ( cpp_emitter->buffer_type == CppEmitter::C_STR ) {
+    //                    ss << "if ( *" << ( beg ? "data" : "( ++data )" ) << " == " << cpp_emitter->end_char << " ) goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << "; // YOP";
+    //                } else {
+    //                    ss << "if ( data " << ( beg ? ">" : ">=" ) << " end_m1 ) goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << "; // YOP";
+    //                    if ( not beg )
+    //                        ss << "++data;";
+    //                }
+    //            } else if ( not beg )
+    //                ss << "++data;";
+    //        }
 
-        return write_trans( ss, cpp_emitter );
-    }
+    //        return write_trans( ss, cpp_emitter );
+    //    }
 
-    //
+    // (  ) (  ) bim
     if ( cpp_emitter->interruptible() ) {
-        ss << "if ( data " << ( beg ? ">" : ">=" ) << " end_m1 ) goto c_" << ++cpp_emitter->nb_cont_label << ";"; // this one is good but it won't the case for the next
+        unsigned cont_label = ++cpp_emitter->nb_cont_label;
+        ss << "if ( data " << ( beg ? ">" : ">=" ) << " end_m1 ) goto c_" << cont_label << ";"; // this one is good but it won't the case for the next
         if ( not beg )
             ss << "++data;";
 
         // c_... (code when there is no data left in the buffer)
-        es.rm_beg( 2 ) << "c_" << cpp_emitter->nb_cont_label << ":" << ( cpp_emitter->trace_labels ? " std::cout << __LINE__ << std::endl;" : "" );
+        es.rm_beg( 2 ) << "c_" << cont_label << ":" << ( cpp_emitter->trace_labels ? " std::cout << \"c_" + to_string( cont_label ) + " \" << __LINE__ << std::endl;" : "" );
+        if ( mark and cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER )
+            es << "if ( buf->next ) { HPIPE_BUFFER *old = buf; buf = buf->next; data = buf->data - 1; end_m1 = data + buf->used; goto l_" << get_id_gen( cpp_emitter ) << "; }";
+        else
+            es << "if ( buf->next ) { HPIPE_BUFFER *old = buf; buf = buf->next; Hpipe::dec_ref( old ); data = buf->data - 1; end_m1 = data + buf->used; goto l_" << get_id_gen( cpp_emitter ) << "; }";
 
         if ( next.size() >= 2 )
             es << "if ( last_buf ) goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << ";";
 
-        //        if ( mark and cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER ) {
-        //            es << "sipe_data->inp_cont = &&e_" << cpp_emitter->nb_cont_label << ";";
-        //            es << "Hpipe::inc_ref( buf );";
-        //            es << "return RET_CONT;";
+        if ( mark and cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER ) {
+            es << "sipe_data->inp_cont = &&e_" << cpp_emitter->nb_cont_label << ";";
+            es << "Hpipe::inc_ref( buf );";
+            es << "return RET_CONT;";
 
-        //            // e_... (come back code)
-        //            es.rm_beg( 2 ) << "e_" << cpp_emitter->nb_cont_label << ":" << ( cpp_emitter->trace_labels ? " std::cout << __LINE__ << std::endl;" : "" );
-        //            es << "sipe_data->pending_buf->next = buf;";
-        //            es << "sipe_data->pending_buf = buf;";
-        //            es << "if ( data > end_m1 ) goto c_" << cpp_emitter->nb_cont_label << ";";
-        //            es << "goto l_" << next[ 0 ].inst->get_id_gen( cpp_emitter ) << ";";
-        //        } else {
-        es << "sipe_data->inp_cont = &&e_" << cpp_emitter->nb_cont_label << ";";
-        es << "return RET_CONT;";
+            // e_... (come back code)
+            es.rm_beg( 2 ) << "e_" << cont_label << ":" << ( cpp_emitter->trace_labels ? " std::cout << \"e_" + to_string( cont_label ) + " \" << __LINE__ << std::endl;" : "" );
+            es << "sipe_data->pending_buf->next = buf;";
+            es << "sipe_data->pending_buf = buf;";
+            es << "if ( data > end_m1 ) goto c_" << cont_label << ";";
+            es << "goto l_" << next[ 0 ].inst->get_id_gen( cpp_emitter ) << ";";
+        } else {
+            es << "sipe_data->inp_cont = &&e_" << cont_label << ";";
+            es << "return RET_CONT;";
 
-        // e_... (come back code)
-        es.rm_beg( 2 ) << "e_" << cpp_emitter->nb_cont_label << ":";
-        es << "if ( data > end_m1 ) goto c_" << cpp_emitter->nb_cont_label << ";";
-        es << "goto l_" << next[ 0 ].inst->get_id_gen( cpp_emitter ) << ";";
-        // }
+            // e_... (come back code)
+            es.rm_beg( 2 ) << "e_" << cont_label << ":";
+            es << "if ( data > end_m1 ) goto c_" << cont_label << ";";
+            es << "goto l_" << next[ 0 ].inst->get_id_gen( cpp_emitter ) << ";";
+        }
     } else if ( cpp_emitter->buffer_type == CppEmitter::C_STR ) {
         if ( next.size() >= 2 )
             ss << "if ( *" << ( beg ? "data" : "( ++data )" ) << " == " << cpp_emitter->end_char << " ) goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << ";";

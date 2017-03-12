@@ -103,20 +103,20 @@ Instruction *InstructionGraph::root() {
 
 void InstructionGraph::make_init() {
     // as much as possible, we try to move forward without cycles (to avoid miss of possible "free mark")
-    std::deque<PendingTrans> pending_trans;
-    init = inst_pool << new InstructionSkip( Context( cg->root(), Context::BEG ) );
+    std::deque<PendingTrans> pending_trans, pending_trans_mark;
+    init = inst_pool << new InstructionSkip( Context( cg->root(), Context::FL_BEG ) );
 
     // first transition
     pending_trans.emplace_back( init, 0, init->cx.forward( cg->root() ) );
 
     // make all the remaining transitions
     int cpt = 0;
-    while ( pending_trans.size() ) {
-        if ( ++cpt == 50 )
-            break;
+    while ( pending_trans.size() || pending_trans_mark.size() ) {
+        //        if ( ++cpt == 50 )
+        //            break;
 
-        // if transition clears some ambiguities,
-        PendingTrans &pt = pending_trans.front();
+        std::deque<PendingTrans> &pt_list = pending_trans_mark.size() ? pending_trans_mark : pending_trans;
+        PendingTrans &pt = pt_list.front();
         //        if ( pt.inst->mark && ( CharGraph::leads_to_ok( pt.cx.pos ) || pt.cx.pos.empty() ) && no_code_ambiguity( pt.inst->mark, pt.inst, pt.rcitem ) ) {
         //            // make a rewind inst
         //            InstructionRewind *rwnd = inst_pool << new InstructionRewind( pt.cx );
@@ -133,15 +133,17 @@ void InstructionGraph::make_init() {
         //        }
 
         // make instruction with associated new pending transitions
-        Instruction *inst = make_transitions( pending_trans, pt );
-        PRINT( *inst );
+        std::deque<PendingTrans> loc_pending_trans;
+        Instruction *inst = make_transitions( loc_pending_trans, pt );
+        for( PendingTrans &pt : loc_pending_trans )
+            ( pt.cx.mark ? pending_trans_mark : pending_trans ).push_back( std::move( pt ) );
 
         // insert it into the graph
         pt.inst->next.secure_set( pt.num_edge, { inst, pt.rcitem } );
         inst->prev.emplace_back( pt.inst, pt.rcitem );
 
-        // reg loc_pending_trans
-        pending_trans.pop_front();
+        //
+        pt_list.pop_front();
     }
 }
 
@@ -150,24 +152,15 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
 }
 
 Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pending_trans, const PendingTrans &pt, const Context &cx, bool cache_allowed ) {
+    // normalization
+    if ( ( cx.flags & Context::FL_OK ) && CharGraph::leads_to_ok( cx.pos ) )
+        return make_transitions( pending_trans, pt, cx.without_flag( Context::FL_OK ) );
+
     // we already hay way(s) to go to cx ?
     if ( cache_allowed ) {
         Tcache::iterator iter = cache.find( cx );
-        if ( iter != cache.end() ) {
-            // if there is a mark,
-            //            if ( pt.inst->mark ) {
-            //                // we take the first proposition that does not add ambiguity
-            //                const Vec<Instruction *> &hooks = iter->second;
-            //                for( Instruction *hook : hooks )
-            //                    if ( hook_wo_ambiguity( pt.inst, pt.rcitem, hook ) )
-            //                        return hook;
-
-            //                // else: no working proposition. make a new "path"
-            //                return make_transitions( pending_trans, pt, cx, false );
-            //            }
-
+        if ( iter != cache.end() )
             return iter->second;
-        }
     }
 
     // helper funcs
@@ -179,6 +172,19 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
         pending_trans.emplace_back( inst, num_edge, pc.first, pc.second );
         return inst;
     };
+
+    // we can cancel a mark ?
+    if ( cx.mark && CharGraph::leads_to_ok( cx.pos ) ) {
+        if ( cx.code_path.contains( cx.mark->num_active_item ) == false ) {
+            InstructionRewind *res = reg( new InstructionRewind( cx ) );
+            return tra( res, 0, cx.mark->next[ 0 ].inst->next[ 0 ].inst->cx.without_mark( cx.code_path ) );
+        }
+        if ( cx.code_path.only_has( cx.mark->num_active_item ) ) {
+            InstructionRewind *res = reg( new InstructionRewind( cx ) );
+            res->code_seq << static_cast<InstructionWithCode *>( cx.mark->next[ 0 ].inst );
+            return tra( res, 0, cx.mark->next[ 0 ].inst->next[ 0 ].inst->cx.without_mark( cx.code_path ) );
+        }
+    }
 
     // dead end ?
     if ( cx.pos.empty() )
@@ -197,8 +203,8 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
     for( const CharItem *i : cx.pos ) {
         if ( i->type == CharItem::_EOF ) {
             InstructionEof *res = reg( new InstructionEof( cx, cx.beg() ) );
-            tra( res, 0, cx.with_not_eof().without( i ) );
-            tra( res, 1, cx.with_eof    ().forward( i ) );
+            tra( res, 0, cx.with_flag( Context::FL_NOT_EOF ).without( i ) );
+            tra( res, 1, cx.with_flag( Context::FL_EOF  ).forward( i ) );
             return res;
         }
     }
@@ -208,9 +214,9 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
         const CharItem *item = cx.pos[ ind ];
         if ( item->code_like() ) {
             // if it's too early to decide if this code can be executed, we have to add a mark
-            if ( cx.pos.size() >= 2 || ! CharGraph::leads_to_ok( cx.pos ) ) {
-                InstructionSkip *res = reg( new InstructionSkip( cx ) );
-                return tra( res, 0, cx.forward_code( ind ) );
+            if ( not cx.mark and ( cx.pos.size() >= 2 or not cx.leads_to_ok() ) ) {
+                InstructionMark *res = reg( new InstructionMark( cx, ind ) );
+                return tra( res, 0, cx.with_mark( res ) );
             }
 
             // Instruction type
@@ -312,14 +318,14 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
     }
 
     Instruction *res = reg( new InstructionNextChar( cx, cx.beg() ) );
-    tra( res, 0, cx.without_beg().without_not_eof().forward( CharItem::NEXT_CHAR ) ); // if OK
+    tra( res, 0, cx.without_flag( Context::FL_BEG ).without_flag( Context::FL_NOT_EOF ).forward( CharItem::NEXT_CHAR ) ); // if OK
 
     if ( not cx.not_eof() ) {
         if ( first_leads_to_ok >= 0 ) { // result will be an OK instruction, with an edge enabling a rewind
-            Context ncx_ok( cg->char_item_ok, cx.flags | Context::ON_EOF );
+            Context ncx_ok( cg->char_item_ok, cx.flags | Context::FL_EOF );
             tra( res, 1, Context::PC{ ncx_ok, first_leads_to_ok } ); // if no next char
         } else
-            tra( res, 1, cx.with_eof().only_with( CharItem::OK ) ); // if no next char
+            tra( res, 1, cx.without_flag( Context::FL_EOF ).only_with( CharItem::OK ) ); // if no next char
     }
     return res;
 }
@@ -451,10 +457,10 @@ void InstructionGraph::merge_eq_pred( Instruction *&root ) {
             rewinds << rw;
     } );
 
-    // merge_eq_pred in sub graphs
-    for( InstructionRewind *rw : rewinds )
-        if ( rw->exec )
-            merge_eq_pred( rw->exec );
+    //    // merge_eq_pred in sub graphs
+    //    for( InstructionRewind *rw : rewinds )
+    //        if ( rw->exec )
+    //            merge_eq_pred( rw->exec );
 
     // set inst->_cache_code_repr to avoid ++Instruction::cur_op_id inside the find_rec
     root->apply( []( Instruction *inst ) {

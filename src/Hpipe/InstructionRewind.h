@@ -26,9 +26,9 @@ public:
     virtual void               get_code_repr      ( std::ostream &os ) override;
 
 
-    Instruction               *exec;
+    // Instruction               *exec;
     Vec<InstructionWithCode *> code_seq;
-    bool                       need_rw   = false; ///< true if this->exec is to be used
+    bool                       need_rw   = true; ///< true if this->exec is to be used
 };
 
 } // namespace Hpipe
