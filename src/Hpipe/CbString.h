@@ -35,7 +35,9 @@ public:
 
     CbString( const std::string &bs );
 
-    CbString( IKnowWhatIDo, Buffer *buff, PT off, PT len ); ///< dangerous (because if you have buff, you can make weird thing. Normally, buff should be managed by CbQueue)
+    CbString( Buffer *beg_buff, Buffer::PI8 *beg_data, Buffer *end_buff, Buffer::PI8 *end_data ); ///< this constructor does not inc_ref the buffers
+    CbString( Buffer *buff, PT off, PT len ); ///< this constructor does not inc_ref the buffers
+
     void inc_length_wo_cr() { ++end; } ///< dangerous (ref count is managerd elsewhere)
 
     CbString() : beg( 0 ), off( 0 ), end( 0 ) {}
@@ -152,7 +154,17 @@ public:
     }
 
     // display
-    void write_to_stream( std::ostream &os ) const;
+    void write_to_stream( std::ostream &os ) const {
+        int cpt = 0;
+        visitor( [ &os, &cpt ]( const Buffer *b, PT beg, PT end ) {
+            for( PT i = beg; i < end; ++i )
+                os << ( cpt++ ? " " : "" ) << unsigned( b->data[ i ] );
+            //        static const char *c = "0123456789abcdef";
+            //        for( PT i = beg; i < end; ++i )
+            //            os << ( cpt++ ? " " : "" ) << c[ b->data[ i ] / 16 ] << c[ b->data[ i ] % 16 ];
+            return true;
+        } );
+    }
 
 protected:
     friend class CbStringPtr;

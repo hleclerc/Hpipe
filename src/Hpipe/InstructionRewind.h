@@ -31,7 +31,7 @@ public:
     virtual bool         with_code           () const;
     virtual void         write_cpp           ( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter );
     virtual Transition  *train               ( std::string::size_type &s, std::string::size_type &m, const std::string &inp, double freq, bool use_contiguous );
-    virtual void         reg_var             ( std::function<void (std::string, std::string)> f );
+    virtual void         reg_var             ( std::function<void (std::string, std::string)> f, CppEmitter *cpp_emitter );
     virtual void         get_code_repr       ( std::ostream &os ) override;
 
     bool                 use_data_in_code_seq() const;

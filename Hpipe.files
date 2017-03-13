@@ -42,6 +42,10 @@ src/Hpipe/FindVarInCode.h
 src/Hpipe/inc_and_dec_ref.h
 src/Hpipe/Instruction.cpp
 src/Hpipe/Instruction.h
+src/Hpipe/InstructionBegStr.cpp
+src/Hpipe/InstructionBegStr.h
+src/Hpipe/InstructionEndStr.cpp
+src/Hpipe/InstructionEndStr.h
 src/Hpipe/InstructionAddStr.cpp
 src/Hpipe/InstructionAddStr.h
 src/Hpipe/InstructionClrStr.cpp

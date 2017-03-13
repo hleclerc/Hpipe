@@ -22,21 +22,6 @@ CppEmitter::CppEmitter( InstructionGraph *sg ) : root( sg->root() ), sg( sg ) {
     need_mark     = false;
     size_save_glo = 0;
     size_save_loc = 0;
-
-    ++Instruction::cur_op_id;
-    root->apply_rec_rewind_l( [&]( Instruction *inst, unsigned rewind_level ) {
-        if ( inst->is_a_mark() )
-            need_mark = true;
-
-        inst->reg_var( [&]( std::string type, std::string name ) {
-            variables[ name ].type = type;
-        } );
-
-        if ( inst->save_in_loc_reg() >= 0 ) {
-            unsigned &si = rewind_level ? size_save_loc : size_save_glo;
-            si = std::max( si, unsigned( inst->save_in_loc_reg() + 1 ) );
-        }
-    } );
 }
 
 void CppEmitter::write_constants( StreamSepMaker &ss ) {
@@ -50,6 +35,22 @@ void CppEmitter::write_constants( StreamSepMaker &ss ) {
 }
 
 void CppEmitter::write_preliminaries( StreamSepMaker &ss ) {
+    ++Instruction::cur_op_id;
+    root->apply_rec_rewind_l( [&]( Instruction *inst, unsigned rewind_level ) {
+        if ( inst->is_a_mark() )
+            need_mark = true;
+
+        inst->reg_var( [&]( std::string type, std::string name ) {
+            variables[ name ].type = type;
+        }, this );
+
+        if ( inst->save_in_loc_reg() >= 0 ) {
+            unsigned &si = rewind_level ? size_save_loc : size_save_glo;
+            si = std::max( si, unsigned( inst->save_in_loc_reg() + 1 ) );
+        }
+    } );
+
+    //
     if ( not sg->cg->includes.empty() ) {
         ss << "";
         for( std::string inc : sg->cg->includes )

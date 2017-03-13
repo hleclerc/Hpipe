@@ -4,6 +4,8 @@
 #include "InstructionRewind.h"
 #include "InstructionAddStr.h"
 #include "InstructionClrStr.h"
+#include "InstructionBegStr.h"
+#include "InstructionEndStr.h"
 #include "InstructionGraph.h"
 #include "InstructionNone.h"
 #include "InstructionMark.h"
@@ -198,7 +200,7 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
 
     // something to skip ?
     for( const CharItem *item : cx.pos )
-        if ( item->type == CharItem::BEGIN or item->type == CharItem::PIVOT or item->type == CharItem::LABEL or item->type == CharItem::BEG_STR or item->type == CharItem::END_STR )
+        if ( item->type == CharItem::BEGIN or item->type == CharItem::PIVOT or item->type == CharItem::LABEL )
             return tra( reg( new InstructionSkip( cx ) ), 0, cx.forward( item ) );
 
     // everything is OK ?
@@ -231,6 +233,8 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
             case CharItem::CODE:    res = reg( new InstructionCode  ( cx, item->str, ind ) ); break;
             case CharItem::ADD_STR: res = reg( new InstructionAddStr( cx, item->str, ind ) ); break;
             case CharItem::CLR_STR: res = reg( new InstructionClrStr( cx, item->str, ind ) ); break;
+            case CharItem::BEG_STR: res = reg( new InstructionBegStr( cx, item->str, ind ) ); break;
+            case CharItem::END_STR: res = reg( new InstructionEndStr( cx, item->str, ind ) ); break;
             default: HPIPE_TODO;
             }
 

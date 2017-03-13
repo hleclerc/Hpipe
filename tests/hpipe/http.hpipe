@@ -3,21 +3,16 @@ read[ name ] =
     ( any - ' ' )**
     end_str[ name ]
 
-main = 'U' { os << *data; } '.' { os << *data; } '.'+ 'C' { os << *data; } 'A'
+main = 
+    'U ' read[ "pouet" ] { os << pouet; }
 
-beg_test U...CA
+beg_test U trucmuche 
     input
-        U...CA
+        U trucmuche 
     output
-        U.C status=OK
+        trucmuche status=OK
 end_test
 
-# main = 'U' { os << *data; } '.'+ { os << *data; } 'A'
-
-# beg_test U..A
-#     input
-#         U...A
-#     output
-#         .A status=OK
-# end_test
-
+beg_methods
+    Hpipe::CbString pouet;
+end_methods

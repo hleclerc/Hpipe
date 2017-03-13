@@ -127,7 +127,7 @@ void CharItem::write_dot_rec( std::ostream &os ) const {
 }
 
 bool CharItem::code_like() const {
-    return type == CODE or type == ADD_STR or type == CLR_STR;
+    return type == CODE or type == ADD_STR or type == CLR_STR or type == BEG_STR or type == END_STR;
 }
 
 bool CharItem::advancer() const {

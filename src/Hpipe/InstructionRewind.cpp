@@ -180,12 +180,12 @@ Transition *InstructionRewind::train( std::string::size_type &s, std::string::si
     return &next[ 0 ];
 }
 
-void InstructionRewind::reg_var( std::function<void(std::string, std::string)> f ) {
+void InstructionRewind::reg_var( std::function<void(std::string, std::string)> f, CppEmitter *cpp_emitter ) {
     if ( not need_rw ) {
         for( CodeSeqItem &item : code_seq_beg )
-            item.code->reg_var( f );
+            item.code->reg_var( f, cpp_emitter );
         for( CodeSeqItem &item : code_seq_end )
-            item.code->reg_var( f );
+            item.code->reg_var( f, cpp_emitter );
     }
 }
 

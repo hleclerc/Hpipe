@@ -21,7 +21,7 @@ void InstructionClrStr::get_code_repr( std::ostream &os ) {
     os << "CLR_STR " << var.size() << " " << var;
 }
 
-void InstructionClrStr::reg_var( std::function<void (std::string, std::string)> f ) {
+void InstructionClrStr::reg_var( std::function<void (std::string, std::string)> f, CppEmitter *cpp_emitter ) {
     f( "std::string", var );
 }
 

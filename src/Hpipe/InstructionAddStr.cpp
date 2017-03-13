@@ -23,7 +23,7 @@ void InstructionAddStr::get_code_repr( std::ostream &os ) {
     os << "ADD_STR " << var.size() << " " << var;
 }
 
-void InstructionAddStr::reg_var( std::function<void (std::string, std::string)> f ) {
+void InstructionAddStr::reg_var( std::function<void (std::string, std::string)> f, CppEmitter *cpp_emitter ) {
     f( "std::string", var );
 }
 

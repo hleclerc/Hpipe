@@ -104,7 +104,7 @@ CbString::CbString( const CbQueue &bs ) : beg( bs.beg ), off( bs.off ), end( off
     } );
 }
 
-CbString::CbString( IKnowWhatIDo, Buffer *buff, PT off, PT len ) : beg( buff ), off( off ), end( off + len ) {
+CbString::CbString( Buffer *buff, PT off, PT len ) : beg( buff ), off( off ), end( off + len ) {
     HPIPE_ASSERT_IF_DEBUG( buff->next == 0 );
     if ( len )
         Buffer::inc_ref( buff );
@@ -118,6 +118,19 @@ CbString::CbString( const std::string &bs ) {
     end = bs.size();
     beg = buf;
     off = 0;
+}
+
+CbString::CbString( Buffer *beg_buff, Buffer::PI8 *beg_data, Buffer *end_buff, Buffer::PI8 *end_data ) {
+    beg = beg_buff;
+    off = beg_data - beg_buff->data;
+    if ( end_buff == beg_buff ) {
+        end = end_data - beg_buff->data;
+    } else {
+        end = 0;
+        for ( ; beg_buff != end_buff; beg_buff = beg_buff->next )
+            end += beg_buff->used;
+        end += end_data - end_buff->data;
+    }
 }
 
 void CbString::free() {
@@ -274,18 +287,6 @@ CbString CbString::read_line( char sep, bool skip_void_lines ) {
     CbString res{ *this, 0, pcr };
     skip_some( pcr + 1 );
     return res;
-}
-
-void CbString::write_to_stream( std::ostream &os ) const {
-    int cpt = 0;
-    visitor( [ &os, &cpt ]( const Buffer *b, PT beg, PT end ) {
-        for( PT i = beg; i < end; ++i )
-            os << ( cpt++ ? " " : "" ) << unsigned( b->data[ i ] );
-        //        static const char *c = "0123456789abcdef";
-        //        for( PT i = beg; i < end; ++i )
-        //            os << ( cpt++ ? " " : "" ) << c[ b->data[ i ] / 16 ] << c[ b->data[ i ] % 16 ];
-        return true;
-    } );
 }
 
 

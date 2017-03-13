@@ -22,6 +22,8 @@ add_executable( hpipe
     src/Hpipe/ErrorList.cpp
     src/Hpipe/FindVarInCode.cpp
     src/Hpipe/Instruction.cpp
+    src/Hpipe/InstructionBegStr.cpp
+    src/Hpipe/InstructionEndStr.cpp
     src/Hpipe/InstructionAddStr.cpp
     src/Hpipe/InstructionClrStr.cpp
     src/Hpipe/InstructionCode.cpp
