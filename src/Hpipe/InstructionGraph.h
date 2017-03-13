@@ -54,7 +54,8 @@ protected:
 
     void                            make_init            ();
     Instruction                    *make_transitions     ( std::deque<PendingTrans> &pending_trans, const PendingTrans &pt );
-    Instruction                    *make_transitions     ( std::deque<PendingTrans> &pending_trans, const PendingTrans &pt, const Context &cx, bool cache_allowed = true );
+    Instruction                    *make_transitions     ( std::deque<PendingTrans> &pending_trans, const PendingTrans &pt, const Context &cx );
+    void                            simplify_marks       ();
     void                            train                ( bool only_cont = false );
     void                            remove_unused        ( Instruction *&root );
     void                            opt_stop_char        ( int stop_char );

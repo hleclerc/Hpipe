@@ -28,7 +28,7 @@ void Instruction::write_to_stream( std::ostream &os ) const {
 void Instruction::write_dot_add( std::ostream &os, bool disp_inst_pred, bool disp_trans_freq, bool disp_rc_item ) const {
 }
 
-void Instruction::write_dot_rec( std::ostream &os, bool disp_inst_pred, bool disp_trans_freq, bool disp_rc_item ) const {
+void Instruction::write_dot_rec( std::ostream &os, bool disp_inst_pred, bool disp_trans_freq, bool disp_rc_item, bool rec ) const {
     if ( op_id == cur_op_id )
         return;
     op_id = cur_op_id;
@@ -45,8 +45,6 @@ void Instruction::write_dot_rec( std::ostream &os, bool disp_inst_pred, bool dis
         for( unsigned i = 0; i < cx.pos.size(); ++i )
             ss << ( i ? "," : "" ) << cx.pos[ i ]->compact_repr();
         ss << "]";
-        //        if ( CharGraph::leads_to_ok( cx.pos ) )
-        //            ss << "OK";
         if ( cx.flags ) {
             ss << "(";
             if ( cx.flags & cx.FL_BEG     ) ss << "B";
@@ -61,7 +59,7 @@ void Instruction::write_dot_rec( std::ostream &os, bool disp_inst_pred, bool dis
     std::vector<std::string> edge_labels;
     write_dot( ss, &edge_labels );
 
-    if ( cx.mark ) {
+    if ( mark ) {
         ss << "\n";
         for( bool v : cx.code_path )
             ss << v;
@@ -74,7 +72,7 @@ void Instruction::write_dot_rec( std::ostream &os, bool disp_inst_pred, bool dis
     os << "\"";
     if ( in_a_cycle )
         os << ",style=dotted";
-    if ( cx.mark )
+    if ( mark )
         os << ",color=green";
     os << "];\n";
 
@@ -82,8 +80,8 @@ void Instruction::write_dot_rec( std::ostream &os, bool disp_inst_pred, bool dis
 
     for( unsigned nt = 0; nt < next.size(); ++nt) {
         const Transition &t = next[ nt ];
-        if ( t.inst )
-            t.inst->write_dot_rec( os, disp_inst_pred, disp_trans_freq, disp_rc_item );
+        if ( rec && t.inst )
+            t.inst->write_dot_rec( os, disp_inst_pred, disp_trans_freq, disp_rc_item, rec );
 
         std::ostringstream label;
         int cpt = 0;

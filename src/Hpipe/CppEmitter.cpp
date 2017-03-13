@@ -17,20 +17,21 @@ CppEmitter::CppEmitter( InstructionGraph *sg ) : root( sg->root() ), sg( sg ) {
     test_mode        = false;
     trace_labels     = false;
     inst_to_go_if_ok = 0;
-    rewind_rec_level = 0;
 
     // variables to be computed, max_mark_level, size_save_...
-    max_mark_level = 0;
-    size_save_glo  = 0;
-    size_save_loc  = 0;
+    need_mark     = false;
+    size_save_glo = 0;
+    size_save_loc = 0;
 
     ++Instruction::cur_op_id;
     root->apply_rec_rewind_l( [&]( Instruction *inst, unsigned rewind_level ) {
         if ( inst->is_a_mark() )
-            max_mark_level = std::max( max_mark_level, rewind_level + 1 );
+            need_mark = true;
+
         inst->reg_var( [&]( std::string type, std::string name ) {
             variables[ name ].type = type;
         } );
+
         if ( inst->save_in_loc_reg() >= 0 ) {
             unsigned &si = rewind_level ? size_save_loc : size_save_glo;
             si = std::max( si, unsigned( inst->save_in_loc_reg() + 1 ) );
@@ -69,7 +70,7 @@ void CppEmitter::write_hpipe_data( StreamSepMaker &ss, const std::string &name )
     ss << "struct " << name << " {";
     if ( interruptible() ) {
         ss << "    " << name << "() : inp_cont( 0 ) {}";
-        if ( max_mark_level ) {
+        if ( need_mark ) {
             ss << "    HPIPE_BUFFER        *pending_buf; ///< if we need to add the current buffer to a previous one";
             ss << "    HPIPE_BUFFER        *rw_buf;";
             ss << "    const unsigned char *rw_ptr;";
@@ -121,18 +122,16 @@ void CppEmitter::write_parse_def( StreamSepMaker &ss, const std::string &hpipe_d
             ss << "unsigned HPIPE_METHOD_PREFIX " << func_name << "( " << hpipe_data_name << " *sipe_data, HPIPE_BUFFER *buf, bool last_buf" << ( additional_args ? additional_args : "" ) << ", const unsigned char *data, const unsigned char *end_m1 ) {";
         nss << "if ( ! data ) data = buf->data;";
         nss << "if ( ! end_m1 ) end_m1 = buf->data - 1 + buf->used;";
-        if ( max_mark_level > 1 )
-            nss << "const unsigned char *rw_ptr[" + to_string( max_mark_level - 1 ) + "];";
         break;
     case BEGEND:
         ss << "unsigned HPIPE_METHOD_PREFIX " << func_name << "( " << hpipe_data_name << " *sipe_data, const unsigned char *data, const unsigned char *end_m1" << ( additional_args ? additional_args : "" ) << " ) {";
-        if ( max_mark_level )
-            nss << "const unsigned char *rw_ptr[ " << to_string( max_mark_level ) << " ];";
+        if ( need_mark )
+            nss << "const unsigned char *rw_ptr;";
         break;
     case C_STR:
         ss << "unsigned HPIPE_METHOD_PREFIX " << func_name << "( " << hpipe_data_name << " *sipe_data, const unsigned char *data" << ( additional_args ? additional_args : "" ) << " ) {";
-        if ( max_mark_level )
-            nss << "const unsigned char *rw_ptr[ " << to_string( max_mark_level ) << " ];";
+        if ( need_mark )
+            nss << "const unsigned char *rw_ptr;";
         break;
     }
 
@@ -140,8 +139,6 @@ void CppEmitter::write_parse_def( StreamSepMaker &ss, const std::string &hpipe_d
         ss << "    unsigned char save[ " << std::max( size_save_loc, size_save_glo ) << " ];";
     if ( test_mode )
         ss << "    unsigned cpt = 0;";
-    if ( buffer_type == HPIPE_BUFFER and max_mark_level > 1 )
-        ss << "    Hpipe::Buffer *rw_buf[ " << max_mark_level - 1 << " ];";
     if ( interruptible() ) {
         ss << "    if ( sipe_data->inp_cont ) goto *sipe_data->inp_cont;";
     }
@@ -229,7 +226,7 @@ int CppEmitter::test( const std::vector<Lexer::TestData> &tds ) {
             ss << "        int res = RET_CONT;";
             ss << "        HpipeData hd;";
             ss << "        for( unsigned i = 0; i < size; ++i ) {";
-            ss << "            Hpipe::Buffer *buf = Hpipe::Buffer::New( 1 );";
+            ss << "            Hpipe::Buffer *buf = HPIPE_BUFFER::New( 17 );";
             ss << "            buf->data[ 0 ] = data[ i ];";
             ss << "            buf->used = 1;";
             ss << "            ";
@@ -240,7 +237,7 @@ int CppEmitter::test( const std::vector<Lexer::TestData> &tds ) {
             ss << "                break;";
             ss << "        }";
             ss << "        if ( not size ) {";
-            ss << "            Hpipe::Buffer *buf = Hpipe::Buffer::New( 0 );";
+            ss << "            Hpipe::Buffer *buf = HPIPE_BUFFER::New( 0 );";
             ss << "            res = parse( &hd, buf, true );";
             ss << "            HPIPE_BUFFER::dec_ref( buf );";
             ss << "        }";

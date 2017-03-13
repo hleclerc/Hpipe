@@ -5,7 +5,7 @@ read_dec[ num = "num" ] =
 number_hex = '0x'
     ( digit { num =            *data - '0'; } ) | ( 'A' .. 'F' { num =            *data - 'A'; } ) | ( 'a' .. 'f' { num =            *data - 'a'; } )
     ( digit { num = 16 * num + *data - '0'; } ) | ( 'A' .. 'F' { num = 16 * num + *data - 'A'; } ) | ( 'a' .. 'f' { num = 16 * num + *data - 'a'; } )**
-    { os << num << " "; }
+    { os << 'x' << num << " "; }
 
 number_flt =
     read_dec[ "nfl" ]
@@ -14,32 +14,44 @@ number_flt =
         ( '+'? read_dec[ "num" ] { nfl *= std::pow( 10.0,  num ); } ) |
         ( '-'  read_dec[ "num" ] { nfl *= std::pow( 10.0, -num ); } )
     )??
-    { os << nfl << " "; }
+    { os << 'f' << nfl << " "; }
 
 number_dec =
     read_dec[ "num" ]
-    { os << num << " "; }
+    { os << 'd' << num << " "; }
 
 main =
     add_include[ "Hpipe/TypeConfig.h" ]
     add_include[ "cmath" ]
     (
-        # ( eof -> out ) |
-        number_hex |
         number_flt |
+        number_hex |
         number_dec |
         any
-    )** # <- out
-
+    )**
 
 beg_methods
     Hpipe::SI64 num;
     double nfl, mul;
 end_methods
 
+beg_test only a float
+    input
+        2.78e17
+    output
+        f2.78e+17  status=OK
+end_test
+
+beg_test only a hex
+    input
+        0x42
+    output
+        x66  status=OK
+end_test
+
 beg_test preproc
     input
         17 + 2.78e17 * 0x42 - 2.78e-17
     output
-        17 2.78e+17 66 2.78e-17  status=OK
+        d17 f2.78e+17 x66 f2.78e-17  status=OK
 end_test

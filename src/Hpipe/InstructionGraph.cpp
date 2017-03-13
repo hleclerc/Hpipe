@@ -29,11 +29,15 @@ InstructionGraph::InstructionGraph( CharGraph *cg, const std::vector<std::string
     ok = inst_pool << new InstructionOK( cx_ok );
     ko = inst_pool << new InstructionKO( cx_ko );
     cache[ cx_ok ] = ok;
-    cache[ cx_ko ] = ok;
+    cache[ cx_ko ] = ko;
 
     // first graph
     make_init();
     disp_if( disp, disp_inst_pred, disp_trans_freq, "init" );
+
+    // remove marks if not used
+    simplify_marks();
+    disp_if( disp, disp_inst_pred, disp_trans_freq, "mark" );
 
     // clean up
     remove_unused( init );
@@ -83,9 +87,23 @@ int InstructionGraph::display_dot( CharGraph *cg, bool disp_inst_pred, bool disp
         cg->root()->write_dot_rec( os );
     }
 
-    ++Instruction::cur_op_id;
-    if ( init )
-        init->write_dot_rec( os, disp_inst_pred, disp_trans_freq, disp_rc_item );
+    if ( init ) {
+        std::map<InstructionMark *,Vec<Instruction *>> insts_by_mark;
+        init->apply( [&]( Instruction *inst ) {
+            insts_by_mark[ inst->mark ] << inst;
+        } );
+
+        ++Instruction::cur_op_id;
+        // init->write_dot_rec( os, disp_inst_pred, disp_trans_freq, disp_rc_item );
+        for( auto &p : insts_by_mark ) {
+            //            os << "  subgraph cluster_" << p.first << " {\n";
+            //            os << "  label = \"mark_" << p.first << "\";\n";
+            //            os << "  color = red;\n";
+            for( Instruction *inst : p.second )
+                inst->write_dot_rec( os, disp_inst_pred, disp_trans_freq, disp_rc_item, false );
+            //            os << "  }\n";
+        }
+    }
 
     os << "}\n";
 
@@ -108,12 +126,8 @@ void InstructionGraph::make_init() {
     pending_trans.emplace_back( init, 0, init->cx.forward( cg->root() ) );
 
     // make all the remaining transitions
-    int cpt = 0;
     while ( pending_trans.size() || pending_trans_mark.size() || pending_rewinds.size() ) {
-        //        if ( ++cpt == 50 )
-        //            break;
-
-        // only rewinds => make rewind data (exec, ncx, ...) and add the new transitions
+        // if only rewinds => make rewind data (exec, ncx, ...) and add the new transitions
         if ( pending_trans.empty() && pending_trans_mark.empty() ) {
             while ( pending_rewinds.size() ) {
                 InstructionRewind *rw = pending_rewinds.front();
@@ -128,20 +142,6 @@ void InstructionGraph::make_init() {
         //
         std::deque<PendingTrans> &pt_list = pending_trans_mark.size() ? pending_trans_mark : pending_trans;
         PendingTrans &pt = pt_list.front();
-        //        if ( pt.inst->mark && ( CharGraph::leads_to_ok( pt.cx.pos ) || pt.cx.pos.empty() ) && no_code_ambiguity( pt.inst->mark, pt.inst, pt.rcitem ) ) {
-        //            // make a rewind inst
-        //            InstructionRewind *rwnd = inst_pool << new InstructionRewind( pt.cx );
-        //            pt.inst->mark->rewinds << rwnd;
-
-        //            // add it in the graph
-        //            pt.inst->next.secure_set( pt.num_edge, { rwnd, pt.rcitem } );
-        //            rwnd->prev.emplace_back( pt.inst, pt.rcitem );
-
-        //            // update pending trans
-        //            pt.num_edge = 0;
-        //            pt.inst     = rwnd;
-        //            pt.rcitem   = range_vec( unsigned( pt.rcitem.size() ) );
-        //        }
 
         // make instruction with associated new pending transitions
         std::deque<PendingTrans> loc_pending_trans;
@@ -164,21 +164,19 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
     return make_transitions( pending_trans, pt, pt.cx );
 }
 
-Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pending_trans, const PendingTrans &pt, const Context &cx, bool cache_allowed ) {
+Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pending_trans, const PendingTrans &pt, const Context &cx ) {
     // normalization
     if ( ( cx.flags & Context::FL_OK ) && CharGraph::leads_to_ok( cx.pos ) )
         return make_transitions( pending_trans, pt, cx.without_flag( Context::FL_OK ) );
 
-    // we already hay way(s) to go to cx ?
-    if ( cache_allowed ) {
-        Tcache::iterator iter = cache.find( cx );
-        if ( iter != cache.end() )
-            return iter->second;
-    }
+    // we already have way(s) to go to cx ?
+    Tcache::iterator iter = cache.find( cx );
+    if ( iter != cache.end() )
+        return iter->second;
 
     // helper funcs
     auto reg = [&]( auto *inst ) {
-        cache[ cx ] = ( inst_pool << inst );
+        cache.insert( iter, std::make_pair( cx, inst_pool << inst ) );
         return inst;
     };
     auto tra = [&]( Instruction *inst, unsigned num_edge, const Context::PC &pc ) {
@@ -187,19 +185,11 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
     };
 
     // we can cancel a mark ?
-    if ( cx.mark && CharGraph::leads_to_ok( cx.pos ) ) {
+    if ( cx.mark && ( CharGraph::leads_to_ok( cx.pos ) || cx.pos.empty() ) ) {
         if ( cx.code_path.contains( cx.mark->num_active_item ) == false ||
              cx.code_path.only_has( cx.mark->num_active_item ) ) {
             return inst_pool << new InstructionRewind( cx );
         }
-        //            InstructionRewind *res = reg( new InstructionRewind( cx ) );
-        //            // return tra( res, 0, cx.mark->next[ 0 ].inst->next[ 0 ].inst->cx.without_mark( cx.code_path ) );
-        //        }
-        //        if ( cx.code_path.only_has( cx.mark->num_active_item ) ) {
-        //            InstructionRewind *res = reg( new InstructionRewind( cx ) );
-        //            res->code_seq << static_cast<InstructionWithCode *>( cx.mark->next[ 0 ].inst );
-        //            return tra( res, 0, cx.mark->next[ 0 ].inst->next[ 0 ].inst->cx.without_mark( cx.code_path ) );
-        //        }
     }
 
     // dead end ?
@@ -340,38 +330,56 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
         if ( first_leads_to_ok >= 0 ) { // result will be an OK instruction, with an edge enabling a rewind
             Context ncx_ok( cg->char_item_ok, cx.flags | Context::FL_EOF );
             tra( res, 1, Context::PC{ ncx_ok, first_leads_to_ok } ); // if no next char
-        } else
+        } else {
             tra( res, 1, cx.without_flag( Context::FL_EOF ).only_with( CharItem::OK ) ); // if no next char
+        }
     }
     return res;
 }
 
-//bool InstructionGraph::hook_wo_ambiguity( Instruction *inst, const Vec<unsigned> &rcitem, Instruction *hook ) {
-//    if ( rcitem.empty() )
-//        return true;
+void remove_mark_rec( Instruction *inst, InstructionMark *mark ) {
+    if ( inst->mark != mark )
+        return;
+    inst->mark = 0;
 
-//    // the proposition is add use hook after inst. We do it if it does not introduce ambiguities to code items
-//    for( int i = 0; i < rcitem.size(); ++i ) {
-//        std::set<std::pair<Instruction *,unsigned>> possible_instructions;
-//        get_possible_inst_rec( possible_instructions, inst, rcitem[ i ], inst->mark );
-//        get_possible_inst_rec( possible_instructions, hook, i, inst->mark );
+    if ( InstructionWithCode *wc = dynamic_cast<InstructionWithCode *>( inst ) )
+        wc->remove();
 
-//        //
-//        std::map<InstructionWithCode *,bool> possible_with_code; // true => active
-//        for( auto &p : possible_instructions ) {
-//            if ( InstructionWithCode *code = dynamic_cast<InstructionWithCode *>( p.first ) ) {
-//                std::map<InstructionWithCode *,bool>::iterator iter = possible_with_code.find( code );
-//                bool active = p.second == code->num_active_item;
-//                if ( iter == possible_with_code.end() )
-//                    possible_with_code.insert( iter, std::make_pair( code, active ) );
-//                else if ( iter->second != active )
-//                    return false;
-//            }
-//        }
-//    }
+    for( Transition &p : inst->next )
+        remove_mark_rec( p.inst, mark );
+}
 
-//    return true;
-//}
+void InstructionGraph::simplify_marks() {
+    // get all the marks
+    Vec<InstructionMark *> marks;
+    root()->apply( [&]( Instruction *inst ) {
+        if ( InstructionMark *mc = dynamic_cast<InstructionMark *>( inst ) )
+            marks << mc;
+    } );
+
+    // find marks that can be removed
+    for( InstructionMark *mark : marks ) {
+        bool need_mark = false;
+        for( InstructionRewind *rw : mark->rewinds ) {
+            if ( rw->need_rw || rw->use_data_in_code_seq() ) {
+                need_mark = true;
+                break;
+            }
+        }
+
+        if ( ! need_mark ) {
+            for( InstructionRewind *rw : mark->rewinds ) {
+                if ( rw->no_code_at_all() )
+                    rw->remove();
+                else
+                    rw->mark = 0;
+            }
+            for( Transition &p : mark->next )
+                remove_mark_rec( p.inst, mark );
+            mark->remove();
+        }
+    }
+}
 
 void InstructionGraph::train( bool only_cont ) {
     Vec<Lexer::TrainingData> tds = cg->training_data();
@@ -401,7 +409,8 @@ void InstructionGraph::remove_unused( Instruction *&root ) {
     // list of instructions that can be removed from the graph
     Vec<Instruction *> to_remove;
     ++Instruction::cur_op_id;
-    root->get_unused_rec( to_remove, root );
+    if ( root )
+        root->get_unused_rec( to_remove, root );
 
     // remove them
     for( Instruction *inst : to_remove )
@@ -421,8 +430,10 @@ void InstructionGraph::opt_stop_char( int stop_char ) {
         // we want all prev to be a NextChar, prev->ok to be mc, and all prev->ko to be the same
         if ( mc->prev.empty() )
             continue;
-        bool same_ko = true;
         InstructionNextChar *fc = dynamic_cast<InstructionNextChar *>( mc->prev[ 0 ].inst );
+        if ( ! fc )
+            continue;
+        bool same_ko = true;
         Instruction *ko = fc->next.size() >= 2 ? fc->next[ 1 ].inst : 0;
         for( int i = 0; i < mc->prev.size(); ++i ) {
             InstructionNextChar *nc = dynamic_cast<InstructionNextChar *>( mc->prev[ i ].inst );
@@ -431,7 +442,7 @@ void InstructionGraph::opt_stop_char( int stop_char ) {
                 break;
             }
         }
-        if( ! same_ko )
+        if ( ! same_ko )
             continue;
 
         // remove nc->ko
@@ -466,24 +477,15 @@ void InstructionGraph::optimize_conditions() {
 }
 
 void InstructionGraph::merge_eq_pred( Instruction *&root ) {
-    // get sub graphs
-    Vec<InstructionRewind *> rewinds;
-    root->apply( [&]( Instruction *inst ) {
-        if ( InstructionRewind *rw = dynamic_cast<InstructionRewind *>( inst ) )
-            rewinds << rw;
-    } );
-
-    //    // merge_eq_pred in sub graphs
-    //    for( InstructionRewind *rw : rewinds )
-    //        if ( rw->exec )
-    //            merge_eq_pred( rw->exec );
+    if ( ! root )
+        return;
 
     // set inst->_cache_code_repr to avoid ++Instruction::cur_op_id inside the find_rec
     root->apply( []( Instruction *inst ) {
         inst->code_repr();
     } );
 
-    //
+    // while possible to merge something
     while ( true ) {
         ++Instruction::cur_op_id;
         if ( not root->find_rec( [ &root ]( Instruction *inst ) { return inst->merge_predecessors( &root ); } ) )
@@ -815,21 +817,13 @@ void InstructionGraph::get_possible_inst_rec( std::set<std::pair<Instruction *,u
             get_possible_inst_rec( possible_instructions, p.inst, p.rcitem[ pos ], mark );
 }
 
-//void remove_mark_rec( Instruction *inst, Instruction *mark ) {
-//    if ( inst->op_id == Instruction::cur_op_id )
-//        return;
-//    inst->op_id = Instruction::cur_op_id;
-
-//    if ( not inst->with_code() )
-//        inst->mark = 0;
-
-//    for( Transition &p : inst->prev )
-//        if ( p.inst != mark )
-//            remove_mark_rec( p.inst, mark );
-//}
-
 void InstructionGraph::make_rewind_data( InstructionRewind *rewind ) {
     make_rewind_exec( rewind->mark, rewind );
+
+    if ( ! rewind->exec ) {
+        rewind->ncx = rewind->cx.without_mark();
+        return;
+    }
 
     // simplifications
     remove_unused( rewind->exec );
@@ -844,42 +838,47 @@ void InstructionGraph::make_rewind_data( InstructionRewind *rewind ) {
         if ( InstructionNextChar *nc = dynamic_cast<InstructionNextChar *>( inst ) ) {
             if ( nc->next.size() >= 2 )
                 break;
-            ++offset_beg;
+            if ( ! nc->beg )
+                ++offset_beg;
         } else if ( InstructionWithCode *wc = dynamic_cast<InstructionWithCode *>( inst ) ) {
-            // if ambiguity
-            if ( wc->cx.pos.size() >= 2 ) {
+            // if ambiguity or in a loop
+            if ( wc->cx.pos.size() >= 2 || inst->prev.size() >= 1 + ( inst != rewind->exec ) ) {
                 rewind->offset_for_ncx = offset_beg;
                 rewind->need_rw = true;
                 break;
             }
-            rewind->code_seq_beg.emplace_back( offset_beg, wc );
+            rewind->code_seq_beg.emplace_back( wc->data_code() ? offset_beg : -1, wc );
             wc->in_code_seq = true;
-        } else if ( inst->next.size() != 1 || inst->prev.size() >= 2 )
+        } else if ( inst->next.size() != 1 || inst->prev.size() >= 1 + ( inst != rewind->exec ) )
             break;
 
         inst = inst->next[ 0 ].inst;
     }
 
     // instruction from the end (from OK instruction)
-    InstructionOK *ok;
-    unsigned offset_end = 0;
-    rewind->exec->apply( [&]( Instruction *inst ) {
-        if ( InstructionOK *tr = dynamic_cast<InstructionOK *>( inst ) )
-            ok = tr;
-    } );
-    for( Instruction *inst = rewind->exec; ; ) {
-        if ( InstructionNextChar *nc = dynamic_cast<InstructionNextChar *>( inst ) ) {
-            if ( nc->next.size() >= 2 )
+    if ( ! rewind->need_rw ) {
+        InstructionOK *ok = 0;
+        unsigned offset_end = 0;
+        rewind->exec->apply( [&]( Instruction *inst ) {
+            if ( InstructionOK *tr = dynamic_cast<InstructionOK *>( inst ) )
+                ok = tr;
+        } );
+        for( Instruction *inst = ok; ; ) {
+            if ( InstructionNextChar *nc = dynamic_cast<InstructionNextChar *>( inst ) ) {
+                if ( nc->next.size() >= 2 )
+                    break;
+                if ( ! nc->beg )
+                    ++offset_end;
+            } else if ( InstructionWithCode *wc = dynamic_cast<InstructionWithCode *>( inst ) ) {
+                if ( wc->in_code_seq || wc->cx.pos.size() >= 2 )
+                    break;
+                rewind->code_seq_end.emplace_back( wc->data_code() ? offset_end : -1, wc );
+                wc->in_code_seq = true;
+            } else if ( inst->next.size() >= 2 || inst->prev.size() != 1 )
                 break;
-            ++offset_end;
-        } else if ( InstructionWithCode *wc = dynamic_cast<InstructionWithCode *>( inst ) ) {
-            if ( wc->in_code_seq || wc->cx.pos.size() >= 2 )
-                break;
-            rewind->code_seq_end.emplace_back( offset_beg, wc );
-            wc->in_code_seq = true;
-        } else if ( inst->next.size() >= 2 || inst->prev.size() != 1 )
-            break;
-        inst = inst->prev[ 0 ].inst;
+
+            inst = inst->prev[ 0 ].inst;
+        }
     }
 
     // test if there are some instructions between code_seq_beg and code_seq_end

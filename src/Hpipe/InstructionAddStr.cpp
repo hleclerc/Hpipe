@@ -33,14 +33,16 @@ void InstructionAddStr::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
 }
 
 void InstructionAddStr::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter, std::string repl_data ) {
-    if ( not save ) {
-        PRINTLE( "bing" );
-        return;
-    }
-    if ( cpp_emitter->interruptible() && cpp_emitter->rewind_rec_level == 0 )
-        ss << "sipe_data->" << var << " += sipe_data->__save[ " << save->num_save << " ];";
-    else
-        ss << "sipe_data->" << var << " += save[ " << save->num_save << " ];";
+    ss << "sipe_data->" << var << " += *" << ( repl_data.size() ? repl_data : "data" ) << ";";
+
+    //    if ( not save ) {
+    //        PRINTLE( "bing" );
+    //        return;
+    //    }
+    //    if ( cpp_emitter->interruptible() )
+    //        ss << "sipe_data->" << var << " += sipe_data->__save[ " << save->num_save << " ];";
+    //    else
+    //        ss << "sipe_data->" << var << " += save[ " << save->num_save << " ];";
 }
 
 bool InstructionAddStr::data_code() const {

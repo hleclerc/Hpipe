@@ -77,7 +77,7 @@ void InstructionCode::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmit
 
 void InstructionCode::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter, std::string repl_data ) {
     if ( save )
-        repl_data = "( " + std::string( cpp_emitter->rewind_rec_level or not cpp_emitter->interruptible() ? "" : "sipe_data->__" ) + "save + " + to_string( save->num_save ) + " )";
+        repl_data = "( " + std::string( not cpp_emitter->interruptible() ? "" : "sipe_data->__" ) + "save + " + to_string( save->num_save ) + " )";
 
     write_code( ss, cpp_emitter, code, repl_data );
 }

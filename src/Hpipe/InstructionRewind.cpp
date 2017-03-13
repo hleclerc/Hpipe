@@ -1,11 +1,13 @@
 #include "InstructionWithCode.h"
 #include "InstructionRewind.h"
 #include "InstructionSave.h"
+#include "InstructionMark.h"
 #include "CppEmitter.h"
 
 namespace Hpipe {
 
 InstructionRewind::InstructionRewind( const Context &cx ) : Instruction( cx ), exec( 0 ) {
+    cx.mark->rewinds << this;
 }
 
 void InstructionRewind::write_dot( std::ostream &os, std::vector<std::string> *edge_labels ) const {
@@ -15,7 +17,7 @@ void InstructionRewind::write_dot( std::ostream &os, std::vector<std::string> *e
         for( const CodeSeqItem &item : code_seq_beg )
             item.code->write_dot( os << "\nB" << item.offset );
 
-    if ( code_seq_end.size() && ! restart_before )
+    if ( code_seq_end.size() )
         for( const CodeSeqItem &item : code_seq_end )
             item.code->write_dot( os << "\nE" << item.offset );
 
@@ -77,19 +79,19 @@ void InstructionRewind::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
         if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER ) {
             ss << "data   = sipe_data->rw_ptr;";
             ss << "buf    = sipe_data->rw_buf;";
-            ss << "end_m1 = buf->data - 1 + buf->used;";
+            ss << "end_m1 = buf->data + buf->used - 1;";
         } else
-            ss << "data = rw_ptr[ 0 ];";
+            ss << "data = rw_ptr;";
 
         // code_seq_beg
         unsigned old_offset = 0;
         for( const CodeSeqItem &item : code_seq_beg ) {
             // need to skip some bytes ?
-            if ( unsigned diff = item.offset - old_offset ) {
+            if ( item.offset >= 0 && item.offset != old_offset ) {
                 if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER )
-                    ss << "HPIPE_BUFFER::skip( buf, data, " << diff << " );";
+                    ss << "if ( HPIPE_BUFFER::skip( buf, data, " << item.offset - old_offset << " ) ) end_m1 = buf->data + buf->used - 1;";
                 else
-                    ss << "data += " << diff << ";";
+                    ss << "data += " << item.offset - old_offset << ";";
                 old_offset = item.offset;
             }
             item.code->write_cpp_code_seq( ss, es, cpp_emitter );
@@ -99,91 +101,82 @@ void InstructionRewind::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
         if ( use_of_ncx == USE_NCX_END ) {
             HPIPE_TODO;
         } else {
-            if ( unsigned diff = offset_for_ncx - old_offset ) {
+            if ( offset_for_ncx != old_offset ) {
                 if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER )
-                    ss << "HPIPE_BUFFER::skip( buf, data, " << diff << " );";
+                    ss << "if ( HPIPE_BUFFER::skip( buf, data, " << offset_for_ncx - old_offset << " ) ) end_m1 = buf->data + buf->used - 1;";
                 else
-                    ss << "data += " << diff << ";";
+                    ss << "data += " << offset_for_ncx - old_offset << ";";
             }
         }
     } else {
+        // do code_seq_beg
         unsigned old_offset = 0;
         for( const CodeSeqItem &item : code_seq_beg ) {
             // need to skip some bytes ?
-            if ( unsigned diff = item.offset - old_offset ) {
+            if ( item.offset >= 0 && item.offset != old_offset ) {
                 if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER )
-                    ss << "HPIPE_BUFFER::skip( sipe_data->rw_buf, sipe_data->rw_ptr, " << diff << " );";
+                    ss << "HPIPE_BUFFER::skip( sipe_data->rw_buf, sipe_data->rw_ptr, " << item.offset - old_offset << " );";
                 else
-                    ss << "rw_ptr[ 0 ] += " << diff << ";";
+                    ss << "rw_ptr += " << item.offset - old_offset << ";";
                 old_offset = item.offset;
             }
+
+            // do the code
             if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER )
                 item.code->write_cpp_code_seq( ss, es, cpp_emitter, "sipe_data->rw_ptr" );
             else
-                item.code->write_cpp_code_seq( ss, es, cpp_emitter, "rw_ptr[ 0 ]" );
+                item.code->write_cpp_code_seq( ss, es, cpp_emitter, "rw_ptr" );
         }
 
-        if ( code_seq_end.size() )
-            HPIPE_TODO;
-        else {
-            if ( mark && cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER ) {
-                ss << "sipe_data->rw_buf->dec_ref_upto( buf );";
+        // do code_seq_end
+        if ( code_seq_end.size() ) {
+            // need to skip some bytes ?
+            int off = -1;
+            for( const CodeSeqItem &item : code_seq_end )
+                off = std::max( off, item.offset );
+
+            // if no positionnal code, simply write the code
+            if ( off < 0 ) {
+                for( const CodeSeqItem &item : code_seq_end )
+                    item.code->write_cpp_code_seq( ss, es, cpp_emitter );
+            } else {
+                // else, jump to position for the first code to be executed
+                if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER )
+                    ss << "HPIPE_BUFFER::skip( sipe_data->rw_buf, sipe_data->rw_ptr, HPIPE_BUFFER::size_between( sipe_data->rw_buf, sipe_data->rw_ptr, buf, data ) - " << off << " );";
+                else
+                    ss << "rw_ptr = data - " << off << ";";
+
+                // do the code
+                for( unsigned num_item = code_seq_end.size(); num_item--; ) {
+                    const CodeSeqItem &item = code_seq_end[ num_item ];
+
+                    // need to skip some bytes ?
+                    if ( item.offset >= 0 && item.offset != off ) {
+                        if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER )
+                            ss << "HPIPE_BUFFER::skip( sipe_data->rw_buf, sipe_data->rw_ptr, " << off - item.offset << " );";
+                        else
+                            ss << "rw_ptr += " << off - item.offset << ";";
+                        off = item.offset;
+                    }
+
+                    // do the code
+                    if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER )
+                        item.code->write_cpp_code_seq( ss, es, cpp_emitter, "sipe_data->rw_ptr" );
+                    else
+                        item.code->write_cpp_code_seq( ss, es, cpp_emitter, "rw_ptr" );
+                }
+
             }
         }
-        //        if ( use_of_ncx == USE_NCX_END )
-        //            for( const CodeSeqItem &item : code_seq_end )
-        //                item.code->write_cpp_code_seq( ss, es, cpp_emitter );
+
+        if ( mark && cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER )
+            ss << "sipe_data->rw_buf->dec_ref_upto( buf );";
     }
 
-
-
-
-    //    if ( need_rw ) {
-    //        // ss << "// beg rewind";
-    //        if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER ) {
-    //            ss << "data   = " << ( cpp_emitter->rewind_rec_level or not cpp_emitter->interruptible() ? "rw_ptr[ " + to_string( cpp_emitter->rewind_rec_level - cpp_emitter->interruptible() ) + " ]" : "sipe_data->rw_ptr" ) << ";";
-    //            ss << "buf    = " << ( cpp_emitter->rewind_rec_level or not cpp_emitter->interruptible() ? "rw_buf[ " + to_string( cpp_emitter->rewind_rec_level - cpp_emitter->interruptible() ) + " ]" : "sipe_data->rw_buf" ) << ";";
-    //            ss << "end_m1 = buf->data - 1 + buf->used;";
-    //        } else
-    //            ss << "data = " << ( cpp_emitter->rewind_rec_level or not cpp_emitter->interruptible() ? "rw_ptr[ " + to_string( cpp_emitter->rewind_rec_level - cpp_emitter->interruptible() ) + " ]" : "sipe_data->rw_ptr" ) << ";";
-
-    //        Instruction *old_inst_to_go_if_ok = cpp_emitter->inst_to_go_if_ok;
-    //        cpp_emitter->inst_to_go_if_ok = next[ 0 ].inst;
-    //        ++cpp_emitter->rewind_rec_level;
-
-    //        cpp_emitter->write_parse_body( ss, exec );
-
-    //        --cpp_emitter->rewind_rec_level;
-    //        cpp_emitter->inst_to_go_if_ok = old_inst_to_go_if_ok;
-    //    } else {
-    //        for( InstructionWithCode *inst : code_seq )
-    //            inst->write_cpp_code_seq( ss, es, cpp_emitter );
-    //        // free mark
-    //        //        if ( mark && cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER && cpp_emitter->rewind_rec_level == 0 )
-    //        //            ss << "sipe_data->rw_buf->dec_ref_upto( buf );";
-
-    //        write_trans( ss, cpp_emitter );
-    //    }
-}
-
-void InstructionRewind::optimize_conditions( PtrPool<Instruction> &inst_pool ) {
-    if ( op_id == Instruction::cur_op_id )
-        return;
-    op_id = Instruction::cur_op_id;
-
-    for( Transition &t : next )
-        t.inst->optimize_conditions( inst_pool );
-
-    //    if ( need_rw )
-    //        exec->optimize_conditions( inst_pool );
+    write_trans( ss, cpp_emitter );
 }
 
 Transition *InstructionRewind::train( std::string::size_type &s, std::string::size_type &m, const std::string &inp, double freq, bool use_contiguous ) {
-    //    if ( need_rw ) {
-    //        s = m;
-    //        std::string::size_type nm;
-    //        exec->train_rec( s, nm, inp, freq, use_contiguous );
-    //    }
     return &next[ 0 ];
 }
 
@@ -197,43 +190,44 @@ void InstructionRewind::reg_var( std::function<void(std::string, std::string)> f
 }
 
 void InstructionRewind::get_code_repr( std::ostream &os ) {
-    //    if ( need_rw ) {
-    //        os << "RW_EXEC";
-    //        // get instructions in the graph
-    //        Vec<Instruction *> insts;
-    //        exec->apply( [&]( Instruction *inst ) {
-    //            inst->op_mp = insts.size();
-    //            insts << inst;
-    //        } );
-    //        os << " " << insts.size();
-    //        // for each inst, write code repr + links
-    //        for( Instruction *inst : insts ) {
-    //            std::string ss = inst->code_repr();
-    //            os << " " << ss.size() << " " << ss << " " << inst->next.size();
-    //            for( Transition &trans : inst->next )
-    //                os << " " << trans.inst->op_mp;
-    //        }
-    //    } else {
-    os << "RW_SEQ " << code_seq_beg.size() << " " << code_seq_end.size();
-    //    for( InstructionWithCode *inst : code_seq ) {
-    //        if ( inst->save )
-    //            os << " S" << inst->save->num_save;
-    //        else
-    //            os << " N";
+    if ( need_rw ) {
+        os << "RW " << code_seq_beg.size() << " " << offset_for_ncx << " " << use_of_ncx;
+        for( CodeSeqItem &item : code_seq_beg ) {
+            std::string ss = item.code->code_repr();
+            os << " " << item.offset << " " << ss.size() << " " << ss;
+        }
+    } else {
+        os << "FM " << code_seq_beg.size() << " " << code_seq_end.size();
+        for( CodeSeqItem &item : code_seq_beg ) {
+            std::string ss = item.code->code_repr();
+            os << " " << item.offset << " " << ss.size() << " " << ss;
+        }
+        for( CodeSeqItem &item : code_seq_end ) {
+            std::string ss = item.code->code_repr();
+            os << " " << item.offset << " " << ss.size() << " " << ss;
+        }
+    }
+}
 
-    //        std::string ss = inst->code_repr();
-    //        os << " " << ss.size() << " " << ss;
-    //    }
-    //        if ( mark )
-    //            os << "FM";
-    //    }
+bool InstructionRewind::use_data_in_code_seq() const {
+    for( const CodeSeqItem &item : code_seq_beg )
+        if ( item.offset >= 0 )
+            return true;
+    for( const CodeSeqItem &item : code_seq_end )
+        if ( item.offset >= 0 )
+            return true;
+    return false;
+}
+
+bool InstructionRewind::no_code_at_all() const {
+    return code_seq_beg.empty() && code_seq_end.empty();
 }
 
 void InstructionRewind::write_dot_add( std::ostream &os, bool disp_inst_pred, bool disp_trans_freq, bool disp_rc_item ) const {
-    if ( mark )
-        os << "  node_" << this << " -> node_" << mark << " [color=green];\n";
+    //    if ( mark )
+    //        os << "  node_" << this << " -> node_" << mark << " [color=green];\n";
 
-    if ( exec ) { // need_rw
+    if ( need_rw && exec ) {
         // os << "  node_" << this << " -> node_" << rewind_exec << " [style=dashed,color=red,rank=same];\n";
         os << "subgraph cluster_" << this << " {\n";
         os << "  label = \"RW_" << get_display_id() << ( need_rw ? " need_rw" : "" ) << " orx=" << offset_for_ncx << "\";\n";

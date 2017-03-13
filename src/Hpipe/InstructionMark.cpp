@@ -4,6 +4,7 @@
 namespace Hpipe {
 
 InstructionMark::InstructionMark( const Context &cx, unsigned num_active_item ) : Instruction( cx ), num_active_item( num_active_item ) {
+    mark = this;
 }
 
 void InstructionMark::write_dot( std::ostream &os, std::vector<std::string> *edge_labels ) const {
@@ -15,19 +16,16 @@ bool InstructionMark::is_a_mark() const {
 }
 
 void InstructionMark::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
-    int rewind_rec_level = cpp_emitter->rewind_rec_level;
-    if ( cpp_emitter->interruptible() and not rewind_rec_level ) {
+    if ( cpp_emitter->interruptible() ) {
         if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER ) {
             ss << "sipe_data->pending_buf = buf;";
             ss << "sipe_data->rw_buf = buf;";
         }
         ss << "sipe_data->rw_ptr = data;";
     } else {
-        rewind_rec_level -= cpp_emitter->interruptible();
-
-        ss << "rw_ptr[ " << rewind_rec_level << " ] = data;";
+        ss << "rw_ptr = data;";
         if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER )
-            ss << "rw_buf[ " << rewind_rec_level << " ] = buf;";
+            ss << "rw_buf = buf;";
     }
 }
 

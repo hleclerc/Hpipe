@@ -52,11 +52,6 @@ void InstructionCond::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmit
 
 Instruction *InstructionCond::make_cond( const BranchSet::Node *node, PtrPool<Instruction> &inst_pool, const Cond &not_in, bool in_a_cycle, InstructionMark *mark, int off_data ) {
     if ( node->ok ) {
-        // < => 3.75651 (no reorder)
-        // > => 4.46    (no reorder)
-
-        // < => 4.46981
-
         bool use_neg = node->ok->freq < node->ko->freq;
         if ( node->use_equ ) {
             Cond cond( node->beg, node->beg );
@@ -67,6 +62,7 @@ Instruction *InstructionCond::make_cond( const BranchSet::Node *node, PtrPool<In
                 res->next << Transition( ko, {}, node->ko->freq ); ko->prev << res;
                 res->next << Transition( ok, {}, node->ok->freq ); ok->prev << res;
                 res->in_a_cycle = in_a_cycle;
+                res->mark = mark;
                 return res;
             }
             Instruction *res = inst_pool << new InstructionCond( {}, cond, off_data, not_in );
@@ -75,6 +71,7 @@ Instruction *InstructionCond::make_cond( const BranchSet::Node *node, PtrPool<In
             res->next << Transition( ok, {}, node->ok->freq ); ok->prev << res;
             res->next << Transition( ko, {}, node->ko->freq ); ko->prev << res;
             res->in_a_cycle = in_a_cycle;
+            res->mark = mark;
             return res;
         }
         Cond cond( node->beg, 255 );
@@ -85,6 +82,7 @@ Instruction *InstructionCond::make_cond( const BranchSet::Node *node, PtrPool<In
             res->next << Transition( ko, {}, node->ko->freq ); ko->prev << res;
             res->next << Transition( ok, {}, node->ok->freq ); ok->prev << res;
             res->in_a_cycle = in_a_cycle;
+            res->mark = mark;
             return res;
         }
         Instruction *res = inst_pool << new InstructionCond( {}, ~ cond, off_data, not_in );
@@ -93,6 +91,7 @@ Instruction *InstructionCond::make_cond( const BranchSet::Node *node, PtrPool<In
         res->next << Transition( ok, {}, node->ok->freq ); ok->prev << res;
         res->next << Transition( ko, {}, node->ko->freq ); ko->prev << res;
         res->in_a_cycle = in_a_cycle;
+        res->mark = mark;
         return res;
     }
     return node->inst;

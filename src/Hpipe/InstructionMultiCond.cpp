@@ -138,7 +138,7 @@ void InstructionMultiCond::optimize_conditions( PtrPool<Instruction> &inst_pool 
 
     // if succession of cond seams to be a better solution, use them
     BranchSet best_bs( ranges );
-    repl_in_preds( InstructionCond::make_cond( best_bs.root.ptr(), inst_pool, {}, in_a_cycle, 0, off_data ) );
+    repl_in_preds( InstructionCond::make_cond( best_bs.root.ptr(), inst_pool, {}, in_a_cycle, mark, off_data ) );
     for( Transition &t : next )
         t.inst->prev.remove_first_checking( [&]( Transition &p ) { return p.inst == this; } );
 

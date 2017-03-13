@@ -3,51 +3,21 @@ read[ name ] =
     ( any - ' ' )**
     end_str[ name ]
 
-# main = read[ "url" ] { os << url; }
-# main = 
-#     'U'
-#     # "C"??
-#     # beg_str[ "name" ]
-#     # { url_data = data; }
-#     any*
-#     # end_str[ "name" ]
-#     { os << *data; }
-#     'AB'
+main = 'U' { os << *data; } '.' { os << *data; } '.'+ 'C' { os << *data; } 'A'
 
-main = 'U' any* { os << *data; } 'AB'
-
-# main = ( {1} '1' ) | ( {2} '2' )
-
-# main = 'GET ' read[ "url" ] any* eol (
-#     any
-# )* eol eol { os << "url"; }
-
-# beg_methods
-#     Hpipe::SI64 name       = 0;
-#     Hpipe::SI64 number     = 0;
-#     Hpipe::SI64 punctuator = 0;
-#     Hpipe::SI64 sp         = 0;
-#     Hpipe::SI64 err        = 0;
-# end_methods
-
-beg_test UAB
+beg_test U...CA
     input
-        UAB
+        U...CA
     output
-        U status=OK
+        U.C status=OK
 end_test
 
-beg_test U123AB
-    input
-        U123AB
-    output
-        3 status=OK
-end_test
+# main = 'U' { os << *data; } '.'+ { os << *data; } 'A'
 
-beg_test UAAB
-    input
-        UAAB
-    output
-        A status=OK
-end_test
+# beg_test U..A
+#     input
+#         U...A
+#     output
+#         .A status=OK
+# end_test
 

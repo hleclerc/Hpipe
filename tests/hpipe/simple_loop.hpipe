@@ -1,4 +1,3 @@
-# main = '<' ( ( any { os << *data; } ) | "a" )* '>'
 main = '<' ( any { os << *data; } )* '>'
 
 beg_test basic include read
@@ -6,6 +5,13 @@ beg_test basic include read
         <foo>
     output
         foo status=OK
+end_test
+
+beg_test KO
+    input
+        <foo
+    output
+        status=KO
 end_test
 
 beg_training

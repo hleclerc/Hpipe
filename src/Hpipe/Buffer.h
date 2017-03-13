@@ -8,15 +8,22 @@ namespace Hpipe {
 */
 class Buffer {
 public:
-    enum { default_size = 2048 - 3 * sizeof( unsigned ) - sizeof( Buffer * ) };
     using PI8 = unsigned char;
-    using PT  = unsigned;
+    using PT = size_t;
 
-    static Buffer *New( unsigned size = default_size, Buffer *prev = 0 ) {
+    enum {
+        default_size = 2048 - 2 * sizeof( PT ) - sizeof( Buffer * ) - sizeof( int )
+    };
+
+    static Buffer *New( PT size = default_size, Buffer *prev = 0 ) {
         #ifdef HPIPE_CHECK_ALIVE_BUF
         ++nb_alive_bufs;
         #endif // HPIPE_CHECK_ALIVE_BUF
-        Buffer *res = (Buffer *)malloc( sizeof( Buffer ) + size - 4 );
+
+        // update size for alignment
+        size = ( size + sizeof( PT ) - 1 ) & ~( sizeof( PT ) - 1 );
+
+        Buffer *res = (Buffer *)malloc( sizeof( Buffer ) - 4 + size );
         if ( prev ) prev->next = res;
         res->cpt_use = 0;
         res->used    = 0;
@@ -25,24 +32,47 @@ public:
         return res;
     }
 
-    static void operator delete( void *ptr ) {
+    static void Free( Buffer *buf ) {
         #ifdef HPIPE_CHECK_ALIVE_BUF
         --nb_alive_bufs;
         #endif // HPIPE_CHECK_ALIVE_BUF
-        free( ptr );
+        free( (Buffer *)buf );
     }
 
-    static void skip( Buffer *&buf, const PI8 *&data, unsigned nb_to_skip ) {
+
+    /// return true if buf has changed
+    static bool skip( Buffer *&buf, const PI8 *&data, PT nb_to_skip ) {
+        if ( ! buf )
+            return false;
+
+        bool change = false;
         while ( nb_to_skip >= buf->data + buf->used - data ) {
             nb_to_skip -= buf->data + buf->used - data;
             Buffer *old = buf;
             buf = buf->next;
             dec_ref( old );
             if ( ! buf )
-                return;
+                return true;
             data = buf->data;
+            change = true;
         }
         data += nb_to_skip;
+        return change;
+    }
+
+    static PT size_between( Buffer *beg_buf, const PI8 *beg_data, Buffer *end_buf, const PI8 *end_data ) {
+        if ( beg_buf == end_buf )
+            return end_data - beg_data;
+
+        PT res = beg_buf->data + beg_buf->used - beg_data;
+        while ( true ) {
+            beg_buf = beg_buf->next;
+            if ( beg_buf == end_buf ) {
+                res += end_data - end_buf->data;
+                return res;
+            }
+            res += beg_buf->used;
+        }
     }
 
     static const Buffer *inc_ref( const Buffer *p ) {
@@ -57,10 +87,10 @@ public:
 
     static void dec_ref( const Buffer *p ) {
         if ( --p->cpt_use < 0 )
-            delete p; // delete has been surdefined
+            Free( (Buffer *)p );
     }
 
-    unsigned room() const {
+    PT room() const {
         return size - used;
     }
 
@@ -104,10 +134,10 @@ public:
     }
 
     // attributes
-    mutable int cpt_use;   ///< destroyed if < 0
-    unsigned    used;      ///< nb items stored in data
+    PT          used;      ///< nb items stored in data
+    PT          size;      ///< real size of data[]
     Buffer     *next;      ///<
-    unsigned    size;      ///< real size of data[]
+    mutable int cpt_use;   ///< destroyed if < 0
     PI8         data[ 4 ]; ///<
     #ifdef HPIPE_CHECK_ALIVE_BUF
     static int  nb_alive_bufs;

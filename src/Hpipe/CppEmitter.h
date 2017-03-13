@@ -36,7 +36,7 @@ public:
 
     // data filled by the constructor, from analysis of the graph
     Instruction      *inst_to_go_if_ok;
-    unsigned          max_mark_level;
+    unsigned          need_mark;
     unsigned          size_save_glo;
     unsigned          size_save_loc;
     VariableMap       variables;
@@ -51,7 +51,6 @@ public:
     // contextual variables
     unsigned          nb_id_gen;
     unsigned          nb_cont_label;
-    unsigned          rewind_rec_level;
 
 protected:
     void              get_ordering        ( Vec<Instruction *> &ordering, Instruction *inst );
