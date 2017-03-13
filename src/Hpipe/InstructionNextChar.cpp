@@ -189,7 +189,7 @@ void InstructionNextChar::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, Cpp
 
         // c_... (code when there is no data left in the buffer)
         es.rm_beg( 2 ) << "c_" << cont_label << ":" << ( cpp_emitter->trace_labels ? " std::cout << \"c_" + to_string( cont_label ) + " \" << __LINE__ << std::endl;" : "" );
-        if ( mark )
+        if ( need_buf_next() )
             es << "while ( buf->next ) { buf = buf->next; if ( buf->used ) { data = buf->data; end_m1 = buf->data + buf->used - 1; goto l_" << next[ 0 ].inst->get_id_gen( cpp_emitter ) << "; } }";
         else
             es << "while ( buf->next ) { HPIPE_BUFFER *old = buf; buf = buf->next; HPIPE_BUFFER::dec_ref( old ); if ( buf->used ) { data = buf->data; end_m1 = buf->data + buf->used - 1; goto l_" << next[ 0 ].inst->get_id_gen( cpp_emitter ) << "; } }";
@@ -197,7 +197,7 @@ void InstructionNextChar::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, Cpp
         if ( next.size() >= 2 )
             es << "if ( last_buf ) goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << ";";
 
-        if ( mark ) {
+        if ( need_buf_next() ) {
             es << "sipe_data->inp_cont = &&e_" << cont_label << ";";
             es << "HPIPE_BUFFER::inc_ref( buf );";
             es << "return RET_CONT;";

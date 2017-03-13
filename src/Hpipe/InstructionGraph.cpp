@@ -55,9 +55,6 @@ InstructionGraph::InstructionGraph( CharGraph *cg, const std::vector<std::string
     disp_if( disp, disp_inst_pred, disp_trans_freq, "boyer", false );
 
     // +1( MC, KO ) => +1[ no test ]( MC( 0 => KO, ... ) )
-    // js, wo => 3.57
-    // js, wi => 3.47
-    // js, wi, prof => 2.71
     if ( stop_char >= 0 )
         opt_stop_char( stop_char );
     disp_if( disp, disp_inst_pred, disp_trans_freq, "stop_char", false );
@@ -68,6 +65,10 @@ InstructionGraph::InstructionGraph( CharGraph *cg, const std::vector<std::string
 
     // merge (again) similar predecessors
     merge_eq_pred( init );
+    disp_if( disp, disp_inst_pred, disp_trans_freq, "merge2", false );
+
+    // update need_next
+    update_need_next();
     disp_if( disp, disp_inst_pred, disp_trans_freq, "final", false );
 }
 
@@ -808,6 +809,44 @@ bool InstructionGraph::no_code_ambiguity( InstructionMark *mark, Instruction *in
         }
     }
     return true;
+}
+
+void InstructionGraph::update_need_next() {
+    ++Instruction::cur_op_id;
+    update_need_next_rec( init, {} );
+}
+
+void InstructionGraph::update_need_next_rec( Instruction *inst, const std::set<std::string> &running_str ) {
+    if ( inst->op_id == Instruction::cur_op_id && inst->running_str == running_str )
+        return;
+    inst->op_id = Instruction::cur_op_id;
+
+    for( const std::string &str : running_str )
+        inst->running_str.insert( str );
+
+    if ( InstructionBegStr *bs = dynamic_cast<InstructionBegStr *>( inst ) ) {
+        inst->running_str.insert( bs->var );
+    } else if ( InstructionEndStr *bs = dynamic_cast<InstructionEndStr *>( inst ) ) {
+        inst->running_str.erase( bs->var );
+    } else if ( InstructionRewind *rw = dynamic_cast<InstructionRewind *>( inst ) ) {
+        for( InstructionRewind::CodeSeqItem &item : rw->code_seq_beg ) {
+            if ( InstructionBegStr *bs = dynamic_cast<InstructionBegStr *>( item.code ) )
+                inst->running_str.insert( bs->var );
+            else if ( InstructionEndStr *bs = dynamic_cast<InstructionEndStr *>( item.code ) )
+                inst->running_str.erase( bs->var );
+        }
+        if ( ! rw->need_rw ) {
+            for( InstructionRewind::CodeSeqItem &item : rw->code_seq_end ) {
+                if ( InstructionBegStr *bs = dynamic_cast<InstructionBegStr *>( item.code ) )
+                    inst->running_str.insert( bs->var );
+                else if ( InstructionEndStr *bs = dynamic_cast<InstructionEndStr *>( item.code ) )
+                    inst->running_str.erase( bs->var );
+            }
+        }
+    }
+
+    for( const Transition &p : inst->next )
+        update_need_next_rec( p.inst, inst->running_str );
 }
 
 void InstructionGraph::get_possible_inst_rec( std::set<std::pair<Instruction *,unsigned>> &possible_instructions, Instruction *inst, unsigned pos, const Instruction *mark ) {

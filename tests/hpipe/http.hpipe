@@ -1,4 +1,5 @@
 read[ name ] = 
+    any - ' '
     beg_str[ name ]
     ( any - ' ' )**
     end_str[ name ]
@@ -12,7 +13,3 @@ beg_test U trucmuche
     output
         trucmuche status=OK
 end_test
-
-beg_methods
-    Hpipe::CbString pouet;
-end_methods

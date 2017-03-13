@@ -209,6 +209,10 @@ int CppEmitter::test( const std::vector<Lexer::TestData> &tds ) {
     ss << "#include <Hpipe/Print.h>";
     ss << "#include <iostream>";
     ss << "#include <sstream>";
+
+    ss << "#include <Hpipe/CbString.cpp>";
+    ss << "#include <Hpipe/Assert.cpp>";
+
     write_preliminaries( ss );
 
     ss << "";
@@ -225,7 +229,7 @@ int CppEmitter::test( const std::vector<Lexer::TestData> &tds ) {
         switch ( buffer_type ) {
         case HPIPE_BUFFER:
             ss << "        int res = RET_CONT;";
-            ss << "        HpipeData hd;";
+            ss << "        { HpipeData hd;";
             ss << "        for( unsigned i = 0; i < size; ++i ) {";
             ss << "            Hpipe::Buffer *buf = HPIPE_BUFFER::New( 17 );";
             ss << "            buf->data[ 0 ] = data[ i ];";
@@ -247,7 +251,7 @@ int CppEmitter::test( const std::vector<Lexer::TestData> &tds ) {
             ss << "        case RET_OK  : if ( os.str().size() ) os << ' '; os << \"status=OK\" ; break;";
             ss << "        case RET_KO  : if ( os.str().size() ) os << ' '; os << \"status=KO\" ; break;";
             ss << "        }";
-            ss << "        if ( Hpipe::Buffer::nb_alive_bufs ) os << \" nb_remaining_bufs=\" << Hpipe::Buffer::nb_alive_bufs;";
+            ss << "        } if ( Hpipe::Buffer::nb_alive_bufs ) os << \" nb_remaining_bufs=\" << Hpipe::Buffer::nb_alive_bufs;";
             break;
         case BEGEND:
             ss << "        HpipeData hd;";

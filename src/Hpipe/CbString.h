@@ -35,7 +35,7 @@ public:
 
     CbString( const std::string &bs );
 
-    CbString( Buffer *beg_buff, Buffer::PI8 *beg_data, Buffer *end_buff, Buffer::PI8 *end_data ); ///< this constructor does not inc_ref the buffers
+    CbString( Buffer *beg_buff, const Buffer::PI8 *beg_data, Buffer *end_buff, const Buffer::PI8 *end_data ); ///< this constructor does not inc_ref the buffers
     CbString( Buffer *buff, PT off, PT len ); ///< this constructor does not inc_ref the buffers
 
     void inc_length_wo_cr() { ++end; } ///< dangerous (ref count is managerd elsewhere)
@@ -157,8 +157,9 @@ public:
     void write_to_stream( std::ostream &os ) const {
         int cpt = 0;
         visitor( [ &os, &cpt ]( const Buffer *b, PT beg, PT end ) {
-            for( PT i = beg; i < end; ++i )
-                os << ( cpt++ ? " " : "" ) << unsigned( b->data[ i ] );
+            os.write( (const char *)b->data + beg, end - beg );
+            //for( PT i = beg; i < end; ++i )
+            //    os << ( cpt++ ? " " : "" ) << unsigned( b->data[ i ] );
             //        static const char *c = "0123456789abcdef";
             //        for( PT i = beg; i < end; ++i )
             //            os << ( cpt++ ? " " : "" ) << c[ b->data[ i ] / 16 ] << c[ b->data[ i ] % 16 ];

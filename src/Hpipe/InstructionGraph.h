@@ -70,6 +70,8 @@ protected:
     unsigned                        nb_multi_conds       ();
     Instruction                    *make_boyer_moore_rec ( const Vec<std::pair<Vec<Cond>, Instruction *> > &front, InstructionNextChar *next_char, int orig_front_size );
     bool                            no_code_ambiguity    ( InstructionMark *mark, Instruction *inst, const Vec<unsigned> &rcitem );
+    void                            update_need_next     ();
+    void                            update_need_next_rec ( Instruction *inst, const std::set<std::string> &running_str );
 
     Instruction                    *init;
     Instruction                    *ok;

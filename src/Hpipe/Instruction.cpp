@@ -65,6 +65,9 @@ void Instruction::write_dot_rec( std::ostream &os, bool disp_inst_pred, bool dis
             ss << v;
     }
 
+    for( std::string str : running_str )
+        ss << "\nrs: " << str;
+
     // ss << "in=" << cx.in << " ";
 
     dot_out( os, ss.str() );
@@ -472,7 +475,7 @@ void Instruction::update_in_a_branch() {
 //    }
 //}
 
-void Instruction::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter, std::string repl_data ) {
+void Instruction::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter, std::string repl_data, std::string repl_buf ) {
     PRINTLE( "save_seq", *this );
     HPIPE_TODO;
 }
@@ -559,6 +562,10 @@ void Instruction::boyer_moore_opt( PtrPool<Instruction> &inst_pool, Instruction 
 }
 
 void Instruction::merge_eq_next( PtrPool<Instruction> &inst_pool ) {
+}
+
+bool Instruction::need_buf_next() const {
+    return mark || ! running_str.empty();
 }
 
 bool Instruction::has_ret_cont() const {

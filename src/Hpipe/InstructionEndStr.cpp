@@ -28,8 +28,11 @@ void InstructionEndStr::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
     write_trans( ss, cpp_emitter );
 }
 
-void InstructionEndStr::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter, std::string repl_data ) {
-    ss << "sipe_data->" << var << " = { __beg_" << var << "_buf, __beg_" << var << "_data, buf, data };";
+void InstructionEndStr::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter, std::string repl_data, std::string repl_buf ) {
+    if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER )
+        ss << "sipe_data->" << var << " = Hpipe::CbString{ sipe_data->__beg_" << var << "_buf, sipe_data->__beg_" << var << "_data, " << repl_buf << ", " << repl_data << " + 1 };";
+    else
+        HPIPE_TODO;
 }
 
 bool InstructionEndStr::data_code() const {

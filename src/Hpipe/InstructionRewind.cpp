@@ -123,9 +123,9 @@ void InstructionRewind::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
 
             // do the code
             if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER )
-                item.code->write_cpp_code_seq( ss, es, cpp_emitter, "sipe_data->rw_ptr" );
+                item.code->write_cpp_code_seq( ss, es, cpp_emitter, "sipe_data->rw_ptr", "sipe_data->rw_buf" );
             else
-                item.code->write_cpp_code_seq( ss, es, cpp_emitter, "rw_ptr" );
+                item.code->write_cpp_code_seq( ss, es, cpp_emitter, "rw_ptr", "rw_buf" );
         }
 
         // do code_seq_end
@@ -161,11 +161,10 @@ void InstructionRewind::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
 
                     // do the code
                     if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER )
-                        item.code->write_cpp_code_seq( ss, es, cpp_emitter, "sipe_data->rw_ptr" );
+                        item.code->write_cpp_code_seq( ss, es, cpp_emitter, "sipe_data->rw_ptr", "sipe_data->rw_buf" );
                     else
-                        item.code->write_cpp_code_seq( ss, es, cpp_emitter, "rw_ptr" );
+                        item.code->write_cpp_code_seq( ss, es, cpp_emitter, "rw_ptr", "rw_buf" );
                 }
-
             }
         }
 

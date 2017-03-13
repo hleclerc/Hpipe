@@ -25,8 +25,9 @@ void InstructionBegStr::get_code_repr( std::ostream &os ) {
 
 void InstructionBegStr::reg_var( std::function<void (std::string, std::string)> f, CppEmitter *cpp_emitter ) {
     if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER ) {
-        f( "HPIPE_BUFFER *",  "__beg_" + var + "_buf" );
-        f( "HpipeData *",  "__beg_" + var + "_data" );
+        f( "const unsigned char *",  "__beg_" + var + "_data" );
+        f( "HPIPE_BUFFER *"       ,  "__beg_" + var + "_buf"  );
+        f( "Hpipe::CbString"      ,  var                      );
     } else {
         HPIPE_TODO;
     }
@@ -37,9 +38,10 @@ void InstructionBegStr::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
     write_trans( ss, cpp_emitter );
 }
 
-void InstructionBegStr::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter, std::string repl_data ) {
-    ss << "sipe_data->__beg_" << var << "_buf = buf;";
-    ss << "sipe_data->__beg_" << var << "_data = data;";
+void InstructionBegStr::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter, std::string repl_data, std::string repl_buf ) {
+    ss << "sipe_data->__beg_" << var << "_data = " << repl_data << ";";
+    ss << "sipe_data->__beg_" << var << "_buf = " << repl_buf << ";";
+    ss << "HPIPE_BUFFER::inc_ref( " << repl_buf << " );";
 }
 
 bool InstructionBegStr::data_code() const {
