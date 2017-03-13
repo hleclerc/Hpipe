@@ -89,7 +89,7 @@ public:
         if ( off == beg->used ) {
             const Buffer *o = beg;
             beg = beg->next;
-            dec_ref( o );
+            Buffer::dec_ref( o );
             off = 0;
         }
         return res;
@@ -160,7 +160,7 @@ public:
         for( const Buffer *n = buf_writer->next; n; ) {
             const Buffer *o = n;
             n = n->next;
-            dec_ref( o );
+            Buffer::dec_ref( o );
         }
 
         // update the last one

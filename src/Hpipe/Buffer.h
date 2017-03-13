@@ -1,6 +1,5 @@
 #pragma once
 
-#include "inc_and_dec_ref.h"
 #include <stdlib.h>
 
 namespace Hpipe {
@@ -33,6 +32,34 @@ public:
         free( ptr );
     }
 
+    static void skip( Buffer *&buf, const PI8 *&data, unsigned nb_to_skip ) {
+        while ( nb_to_skip >= buf->data + buf->used - data ) {
+            nb_to_skip -= buf->data + buf->used - data;
+            Buffer *old = buf;
+            buf = buf->next;
+            dec_ref( old );
+            if ( ! buf )
+                return;
+            data = buf->data;
+        }
+        data += nb_to_skip;
+    }
+
+    static const Buffer *inc_ref( const Buffer *p ) {
+        ++p->cpt_use;
+        return p;
+    }
+
+    static Buffer *inc_ref( Buffer *p ) {
+        ++p->cpt_use;
+        return p;
+    }
+
+    static void dec_ref( const Buffer *p ) {
+        if ( --p->cpt_use < 0 )
+            delete p; // delete has been surdefined
+    }
+
     unsigned room() const {
         return size - used;
     }
@@ -46,7 +73,7 @@ public:
 
     void dec_ref_rec() {
         for( Buffer *buf = this; buf; ) {
-            Hpipe::Buffer *old = buf;
+            Buffer *old = buf;
             buf = buf->next;
             dec_ref( old );
         }
@@ -54,7 +81,7 @@ public:
 
     void dec_ref_upto( Buffer *dst ) {
         for( Buffer *buf = this; buf != dst; ) {
-            Hpipe::Buffer *old = buf;
+            Buffer *old = buf;
             buf = buf->next;
             dec_ref( old );
         }

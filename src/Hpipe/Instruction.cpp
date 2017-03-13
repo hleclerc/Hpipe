@@ -474,7 +474,7 @@ void Instruction::update_in_a_branch() {
 //    }
 //}
 
-void Instruction::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
+void Instruction::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter, std::string repl_data ) {
     PRINTLE( "save_seq", *this );
     HPIPE_TODO;
 }

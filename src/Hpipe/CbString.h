@@ -68,13 +68,13 @@ public:
     PI8 read_byte() {
         PI8 res = beg->data[ off++ ];
         if ( off == end ) {
-            dec_ref( beg );
+            Buffer::dec_ref( beg );
         } else if ( off == beg->used ) {
             const Buffer *o = beg;
             end -= beg->used; // != 0 because we know that end > off (previous test)
             beg = beg->next;
             off = 0;
-            dec_ref( o );
+            Buffer::dec_ref( o );
         }
         return res;
     }
@@ -203,7 +203,7 @@ protected:
             unsigned used = b->used;
             const Buffer *o = b;
             b = b->next;
-            dec_ref( o );
+            Buffer::dec_ref( o );
             if ( e <= used )
                 break;
             e -= used;

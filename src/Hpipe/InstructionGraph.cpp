@@ -113,7 +113,7 @@ void InstructionGraph::make_init() {
         //        if ( ++cpt == 50 )
         //            break;
 
-        // only rewinds
+        // only rewinds => make rewind data (exec, ncx, ...) and add the new transitions
         if ( pending_trans.empty() && pending_trans_mark.empty() ) {
             while ( pending_rewinds.size() ) {
                 InstructionRewind *rw = pending_rewinds.front();

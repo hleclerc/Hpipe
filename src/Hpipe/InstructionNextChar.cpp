@@ -224,14 +224,14 @@ void InstructionNextChar::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, Cpp
         if ( mark and cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER )
             es << "if ( buf->next ) { HPIPE_BUFFER *old = buf; buf = buf->next; data = buf->data - 1; end_m1 = data + buf->used; goto l_" << get_id_gen( cpp_emitter ) << "; }";
         else
-            es << "if ( buf->next ) { HPIPE_BUFFER *old = buf; buf = buf->next; Hpipe::dec_ref( old ); data = buf->data - 1; end_m1 = data + buf->used; goto l_" << get_id_gen( cpp_emitter ) << "; }";
+            es << "if ( buf->next ) { HPIPE_BUFFER *old = buf; buf = buf->next; HPIPE_BUFFER::dec_ref( old ); data = buf->data - 1; end_m1 = data + buf->used; goto l_" << get_id_gen( cpp_emitter ) << "; }";
 
         if ( next.size() >= 2 )
             es << "if ( last_buf ) goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << ";";
 
         if ( mark and cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER ) {
             es << "sipe_data->inp_cont = &&e_" << cpp_emitter->nb_cont_label << ";";
-            es << "Hpipe::inc_ref( buf );";
+            es << "HPIPE_BUFFER::inc_ref( buf );";
             es << "return RET_CONT;";
 
             // e_... (come back code)

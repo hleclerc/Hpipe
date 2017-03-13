@@ -17,7 +17,7 @@ CbQueue::~CbQueue() {
     for( const Buffer *b = beg; b; ) {
         const Buffer *o = b;
         b = b->next;
-        dec_ref( o );
+        Buffer::dec_ref( o );
     }
 }
 
@@ -47,12 +47,12 @@ void CbQueue::clear() {
             off = 0;
             for( Buffer *o; n; n = o ) {
                 o = n->next;
-                dec_ref( n );
+                Buffer::dec_ref( n );
             }
             return;
         }
         // dec_ref is not going to delete `b`, meaning that `b->next` is ok after that
-        dec_ref( b );
+        Buffer::dec_ref( b );
     }
 
     // init (because we haven't found any reusable buffer)
@@ -64,7 +64,7 @@ void CbQueue::free() {
     // dec_ref all the buffers
     for( const Buffer *b = beg, *n; b; b = n ) {
         n = b->next;
-        dec_ref( b );
+        Buffer::dec_ref( b );
     }
 
     // re-init
@@ -146,7 +146,7 @@ void CbQueue::write_some( CbQueue &&cq ) {
     if ( cq.off ) {
         write_some( cq.beg->data + cq.off, cq.beg->used - cq.off );
         Buffer *n = cq.beg->next;
-        dec_ref( cq.beg );
+        Buffer::dec_ref( cq.beg );
         cq.beg = n;
     }
 
@@ -256,7 +256,7 @@ void CbQueue::read_some( void *data, PT size ) {
         beg = b->next;
         off = 0;
 
-        dec_ref( b );
+        Buffer::dec_ref( b );
         return true;
     } );
 }
@@ -270,7 +270,7 @@ void CbQueue::skip_some( PT size ) {
         }
 
         beg = b->next;
-        dec_ref( b );
+        Buffer::dec_ref( b );
         size -= lm;
         off = 0;
         return true;
@@ -289,7 +289,7 @@ void CbQueue::skip_some_sr( ssize_t &size ) {
         }
 
         beg = b->next;
-        dec_ref( b );
+        Buffer::dec_ref( b );
         size -= lm;
         off = 0;
         return true;

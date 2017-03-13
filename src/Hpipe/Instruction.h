@@ -49,7 +49,7 @@ public:
     void                 update_in_a_branch ();
     void                 update_in_a_cycle  ();
     // void              get_boyer_moore_seq( Vec<std::pair<Vec<Cond>, Instruction *> > &front );
-    virtual void         write_cpp_code_seq ( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter );
+    virtual void         write_cpp_code_seq ( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter, std::string repl_data = {} );
     virtual bool         merge_predecessors ( Instruction **init = 0 );
     virtual std::string  code_repr          ();
     virtual void         get_code_repr      ( std::ostream &os ) = 0;

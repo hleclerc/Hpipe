@@ -32,7 +32,7 @@ void InstructionIf::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitte
     write_trans( ss, cpp_emitter, 1 );
 }
 
-void InstructionIf::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
+void InstructionIf::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter, std::string repl_data ) {
     HPIPE_TODO;
     //    if ( not save ) {
     //        PRINTL( "bing" );

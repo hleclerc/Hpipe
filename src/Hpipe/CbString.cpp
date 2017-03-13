@@ -11,7 +11,7 @@ CbString::CbString( const CbString &bs, PT b_off, PT b_len ) : beg( 0 ), off( 0 
         PT sd = ed - bd;
         // we have to take this buffer ?
         if ( b_off < sd ) {
-            inc_ref( b );
+            Buffer::inc_ref( b );
 
             // first buffer in this ?
             if ( not beg ) {
@@ -32,7 +32,7 @@ CbString::CbString( const CbString &bs, PT b_off, PT b_len ) : beg( 0 ), off( 0 
 
 CbString::CbString( const CbString &bs ) : beg( bs.beg ), off( bs.off ), end( bs.end ) {
     bs.visitor( []( const Buffer *b, PT, PT ) {
-        inc_ref( b );
+        Buffer::inc_ref( b );
         return true;
     } );
 }
@@ -44,7 +44,7 @@ CbString::CbString( const CbStringPtr &bs, PT b_off, PT b_len ) : beg( 0 ), off(
         PT sd = ed - bd;
         // we have to take this buffer ?
         if ( b_off < sd ) {
-            inc_ref( b );
+            Buffer::inc_ref( b );
 
             // first buffer in this ?
             if ( not beg ) {
@@ -65,7 +65,7 @@ CbString::CbString( const CbStringPtr &bs, PT b_off, PT b_len ) : beg( 0 ), off(
 
 CbString::CbString( const CbStringPtr &bs ) : beg( bs.beg ), off( bs.off ), end( bs.end ) {
     bs.visitor( []( const Buffer *b, PT, PT ) {
-        inc_ref( b );
+        Buffer::inc_ref( b );
         return true;
     } );
 }
@@ -88,7 +88,7 @@ CbString::CbString( const CbQueue &bs, PT s_off, PT s_len ) : beg( bs.beg ), off
         }
     }
     visitor( []( const Buffer *b, PT, PT ) {
-        inc_ref( b );
+        Buffer::inc_ref( b );
         return true;
     } );
 }
@@ -99,7 +99,7 @@ CbString::CbString( CbQueue &&bs, PT off, PT len ) {
 
 CbString::CbString( const CbQueue &bs ) : beg( bs.beg ), off( bs.off ), end( off + bs.size() ) {
     bs.visitor( []( const Buffer *b, PT, PT ) {
-        inc_ref( b );
+        Buffer::inc_ref( b );
         return true;
     } );
 }
@@ -107,7 +107,7 @@ CbString::CbString( const CbQueue &bs ) : beg( bs.beg ), off( bs.off ), end( off
 CbString::CbString( IKnowWhatIDo, Buffer *buff, PT off, PT len ) : beg( buff ), off( off ), end( off + len ) {
     HPIPE_ASSERT_IF_DEBUG( buff->next == 0 );
     if ( len )
-        inc_ref( buff );
+        Buffer::inc_ref( buff );
 }
 
 CbString::CbString( const std::string &bs ) {
@@ -165,13 +165,13 @@ void CbString::read_some( void *data, PT size ) {
             end -= b->used;
             beg = b->next;
             off = 0;
-            dec_ref( b );
+            Buffer::dec_ref( b );
             return true;
         }
 
         end = 0;
         off = 0;
-        dec_ref( b );
+        Buffer::dec_ref( b );
         return true;
     } );
 }
@@ -191,13 +191,13 @@ CbString &CbString::skip_some( PT size ) {
             end -= b->used;
             beg = b->next;
             off = 0;
-            dec_ref( b );
+            Buffer::dec_ref( b );
             return true;
         }
 
         end = 0;
         off = 0;
-        dec_ref( b );
+        Buffer::dec_ref( b );
         return false;
     } );
     return *this;
@@ -220,13 +220,13 @@ CbString &CbString::skip_some_sr( ssize_t &size ) {
             end -= b->used;
             beg = b->next;
             off = 0;
-            dec_ref( b );
+            Buffer::dec_ref( b );
             return true;
         }
 
         end = 0;
         off = 0;
-        dec_ref( b );
+        Buffer::dec_ref( b );
         return false;
     } );
     return *this;

@@ -30,7 +30,7 @@ void InstructionClrStr::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
     write_trans( ss, cpp_emitter );
 }
 
-void InstructionClrStr::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
+void InstructionClrStr::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter, std::string repl_data ) {
     ss << "sipe_data->" << var << ".clear();";
 }
 

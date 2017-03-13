@@ -20,7 +20,7 @@ public:
     virtual void             get_code_repr( std::ostream &os ) override;
 
     Vec<InstructionRewind *> rewinds;
-    unsigned                 num_active_item;
+    unsigned                 num_active_item; ///< index in cx.pos of item that caused the mark
 };
 
 } // namespace Hpipe

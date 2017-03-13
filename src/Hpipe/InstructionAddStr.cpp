@@ -32,7 +32,7 @@ void InstructionAddStr::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
     write_trans( ss, cpp_emitter );
 }
 
-void InstructionAddStr::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
+void InstructionAddStr::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter, std::string repl_data ) {
     if ( not save ) {
         PRINTLE( "bing" );
         return;

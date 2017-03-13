@@ -56,6 +56,13 @@ void CppEmitter::write_preliminaries( StreamSepMaker &ss ) {
     }
     for( const std::string &prel : sg->cg->preliminaries )
         ss << prel;
+
+    switch ( buffer_type ) {
+    case HPIPE_BUFFER:
+        ss << "#ifndef HPIPE_BUFFER";
+        ss << "#define HPIPE_BUFFER Hpipe::Buffer";
+        ss << "#endif";
+    }
 }
 
 void CppEmitter::write_hpipe_data( StreamSepMaker &ss, const std::string &name ) {
@@ -63,8 +70,8 @@ void CppEmitter::write_hpipe_data( StreamSepMaker &ss, const std::string &name )
     if ( interruptible() ) {
         ss << "    " << name << "() : inp_cont( 0 ) {}";
         if ( max_mark_level ) {
-            ss << "    Hpipe::Buffer       *pending_buf; ///< if we need to add the current buffer to a previous one";
-            ss << "    Hpipe::Buffer       *rw_buf;";
+            ss << "    HPIPE_BUFFER        *pending_buf; ///< if we need to add the current buffer to a previous one";
+            ss << "    HPIPE_BUFFER        *rw_buf;";
             ss << "    const unsigned char *rw_ptr;";
         }
         if ( size_save_glo )
@@ -85,9 +92,6 @@ void CppEmitter::write_parse_decl( StreamSepMaker &ss, const std::string &hpipe_
 
     switch ( buffer_type ) {
     case HPIPE_BUFFER:
-        ss << "#ifndef HPIPE_BUFFER";
-        ss << "#define HPIPE_BUFFER Hpipe::Buffer";
-        ss << "#endif";
         if ( in_class )
             ss << "unsigned " << func_name << "( HPIPE_BUFFER *buf, bool last_buf" << ( additional_args ? additional_args : "" ) << ", const unsigned char *data = 0, const unsigned char *end_m1 = 0 );";
         else
@@ -230,7 +234,7 @@ int CppEmitter::test( const std::vector<Lexer::TestData> &tds ) {
             ss << "            buf->used = 1;";
             ss << "            ";
             ss << "            res = parse( &hd, buf, i + 1 == size );";
-            ss << "            Hpipe::dec_ref( buf );";
+            ss << "            HPIPE_BUFFER::dec_ref( buf );";
             ss << "            ";
             ss << "            if ( res != RET_CONT )";
             ss << "                break;";
@@ -238,7 +242,7 @@ int CppEmitter::test( const std::vector<Lexer::TestData> &tds ) {
             ss << "        if ( not size ) {";
             ss << "            Hpipe::Buffer *buf = Hpipe::Buffer::New( 0 );";
             ss << "            res = parse( &hd, buf, true );";
-            ss << "            Hpipe::dec_ref( buf );";
+            ss << "            HPIPE_BUFFER::dec_ref( buf );";
             ss << "        }";
             ss << "        switch ( res ) {";
             ss << "        case RET_CONT: if ( os.str().size() ) os << ' '; os << \"status=CNT\"; break;"; //
@@ -333,7 +337,7 @@ bool CppEmitter::bench( const std::vector<Lexer::TrainingData> &tds, int type ) 
             ss << "            parse( &hd, buf, true );";
             ss << "        }";
             ss << "        auto t1 = std::clock();";
-            ss << "        Hpipe::dec_ref( buf );";
+            ss << "        HPIPE_BUFFER::dec_ref( buf );";
             break;
         case BEGEND:
             ss << "        auto t0 = std::clock();";
