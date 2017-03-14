@@ -235,9 +235,10 @@ int CppEmitter::test( const std::vector<Lexer::TestData> &tds ) {
         switch ( buffer_type ) {
         case HPIPE_BUFFER:
             ss << "        int res = RET_CONT;";
-            ss << "        { HpipeData hd;";
+            ss << "        {";
+            ss << "        HpipeData hd;";
             ss << "        for( unsigned i = 0; i < size; ++i ) {";
-            ss << "            Hpipe::Buffer *buf = HPIPE_BUFFER::New( 17 );";
+            ss << "            Hpipe::Buffer *buf = HPIPE_BUFFER::New( 1 );";
             ss << "            buf->data[ 0 ] = data[ i ];";
             ss << "            buf->used = 1;";
             ss << "            ";
@@ -257,7 +258,8 @@ int CppEmitter::test( const std::vector<Lexer::TestData> &tds ) {
             ss << "        case RET_OK  : if ( os.str().size() ) os << ' '; os << \"status=OK\" ; break;";
             ss << "        case RET_KO  : if ( os.str().size() ) os << ' '; os << \"status=KO\" ; break;";
             ss << "        }";
-            ss << "        } if ( Hpipe::Buffer::nb_alive_bufs ) os << \" nb_remaining_bufs=\" << Hpipe::Buffer::nb_alive_bufs;";
+            ss << "        }";
+            ss << "        if ( Hpipe::Buffer::nb_alive_bufs ) os << \" nb_remaining_bufs=\" << Hpipe::Buffer::nb_alive_bufs;";
             break;
         case BEGEND:
             ss << "        HpipeData hd;";
