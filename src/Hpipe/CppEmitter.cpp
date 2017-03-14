@@ -217,6 +217,7 @@ int CppEmitter::test( const std::vector<Lexer::TestData> &tds ) {
     ss << "#include <sstream>";
 
     ss << "#include <Hpipe/CbString.cpp>";
+    ss << "#include <Hpipe/CmString.cpp>";
     ss << "#include <Hpipe/Assert.cpp>";
 
     write_preliminaries( ss );

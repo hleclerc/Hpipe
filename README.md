@@ -181,6 +181,7 @@ when the end machine is written twice.
 * `eof`: ok if end of file.
 * `beg_str[ "A" ]`: beginning of a string named `A`. If the corresponding `end_str` is in a succeeding path, `A` will contain (referenced) data between `beg_str` and `end_str`.
 * `end_str[ "A" ]`: end of a string named `A`.
+* `end_str_incl[ "A" ]`: end of a string named `A`. The current char will be included in `A`.
 * `add_str[ "A" ]`: shortcut to write a code that will append the current char value to a string named A (that will be automatically declared in the generated HpipeData structure). `add_str` enables specific optimizations. For instance contiguous `add_str` may be transformed to an "add mark" and a "use mark" instructions, enabling effective zero copy.
 * `clr_str[ "A" ]`: shortcut to write a code that will clear the string named A.
 

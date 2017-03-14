@@ -64,23 +64,23 @@ void CharItem::get_possible_paths( Vec<Vec<CharItem *>> &paths, std::function<bo
 void CharItem::write_to_stream( std::ostream &os ) const {
     os << "(" << compact_repr() << ")";
     switch ( type ) {
-    case CharItem::NEXT_CHAR: os << "+1"; break;
-    case CharItem::ADD_STR:   os << "AS(" << str << ")"; break;
-    case CharItem::CLR_STR:   os << "CL(" << str << ")"; break;
-    case CharItem::BEG_STR:   os << "BS(" << str << ")"; break;
-    case CharItem::END_STR:   os << "ES(" << str << ")"; break;
-    case CharItem::BEGIN:     os << "B"; break;
-    case CharItem::PIVOT:     os << "P"; break;
-    case CharItem::LABEL:     os << "LABEL"; break;
-    case CharItem::COND:      os << cond; break;
-    case CharItem::CODE:      os << ( str.size() > 9 ? str.substr( 0, 6 ) + "..." : str ); break;
-    case CharItem::_EOF:      os << "EOF"; break;
-    case CharItem::_IF:       os << "IF"; break;
-    case CharItem::KO:        os << "KO"; break;
-    case CharItem::OK:        os << "OK"; break;
-    default:                  os << "?";
+    case CharItem::END_STR_INCL: os << "EI(" << str << ")"; break;
+    case CharItem::NEXT_CHAR:    os << "+1"; break;
+    case CharItem::ADD_STR:      os << "AS(" << str << ")"; break;
+    case CharItem::CLR_STR:      os << "CL(" << str << ")"; break;
+    case CharItem::BEG_STR:      os << "BS(" << str << ")"; break;
+    case CharItem::END_STR:      os << "ES(" << str << ")"; break;
+    case CharItem::BEGIN:        os << "B"; break;
+    case CharItem::PIVOT:        os << "P"; break;
+    case CharItem::LABEL:        os << "LABEL"; break;
+    case CharItem::COND:         os << cond; break;
+    case CharItem::CODE:         os << ( str.size() > 9 ? str.substr( 0, 6 ) + "..." : str ); break;
+    case CharItem::_EOF:         os << "EOF"; break;
+    case CharItem::_IF:          os << "IF"; break;
+    case CharItem::KO:           os << "KO"; break;
+    case CharItem::OK:           os << "OK"; break;
+    default:                     os << "?";
     }
-    //    if ( ending ) os << "(E)";
 }
 
 std::string CharItem::compact_repr() const {
@@ -125,7 +125,7 @@ void CharItem::write_dot_rec( std::ostream &os ) const {
 }
 
 bool CharItem::code_like() const {
-    return type == CODE or type == ADD_STR or type == CLR_STR or type == BEG_STR or type == END_STR;
+    return type == CODE or type == ADD_STR or type == CLR_STR or type == BEG_STR or type == END_STR or type == END_STR_INCL;
 }
 
 bool CharItem::advancer() const {

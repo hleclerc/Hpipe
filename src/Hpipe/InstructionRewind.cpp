@@ -183,12 +183,11 @@ Transition *InstructionRewind::train( std::string::size_type &s, std::string::si
 }
 
 void InstructionRewind::reg_var( std::function<void(std::string, std::string)> f, CppEmitter *cpp_emitter ) {
-    if ( not need_rw ) {
-        for( CodeSeqItem &item : code_seq_beg )
-            item.code->reg_var( f, cpp_emitter );
+    for( CodeSeqItem &item : code_seq_beg )
+        item.code->reg_var( f, cpp_emitter );
+    if ( ! need_rw )
         for( CodeSeqItem &item : code_seq_end )
             item.code->reg_var( f, cpp_emitter );
-    }
 }
 
 void InstructionRewind::get_code_repr( std::ostream &os ) {
@@ -199,6 +198,10 @@ void InstructionRewind::get_code_repr( std::ostream &os ) {
             os << " " << item.offset << " " << ss.size() << " " << ss;
         }
     } else {
+        // if only one non positionnal code
+        if ( code_seq_beg.size() == 1 && code_seq_beg[ 0 ].offset == -1 && code_seq_end.size() == 0 )
+            return code_seq_beg[ 0 ].code->get_code_repr( os );
+
         os << "FM " << code_seq_beg.size() << " " << code_seq_end.size();
         for( CodeSeqItem &item : code_seq_beg ) {
             std::string ss = item.code->code_repr();

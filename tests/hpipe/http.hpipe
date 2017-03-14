@@ -1,23 +1,27 @@
-read[ name ] = 
-    beg_str[ name ]
-    # { stuff; }
-    any* ' '
-    # { smurf; }
-    end_str[ name ]
+read[ name, end ] = any beg_str[ name ] any* end end_str[ name ]
 
-main = 
-    read[ "pouet" ] { os << pouet; }
+get_line = 
+    # ( 's: ' read[ 's', eol ] ) |
+    ( any* eol { os << "1"; } )
 
-beg_test truc muche
-    input
-        truc muche
-    output
-        truc status=OK
-end_test
+get =
+    'GET ' read[ 'url', ' ' ] # get_line
+    { os << url << " "; }
+
+main = get
 
 beg_training
     input
-        smurf smurf
+        GET /smurf HTTP/1.1
+        s: 17
+
     freq
         1
 end_training
+
+beg_test GET /smurf HTTP/1.1
+    input
+        GET /smurf HTTP/1.1
+    output
+        /smurf  status=OK
+end_test

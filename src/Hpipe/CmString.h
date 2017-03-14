@@ -14,6 +14,7 @@ namespace Hpipe {
 class CmString {
 public:
     CmString                  ( const void *beg, const void *end ) : beg( (const PI8 *)beg ), end( (const PI8 *)end ) {}
+    CmString                  () : beg( 0 ), end( 0 ) {}
 
     CmString   slice          ( ST off, ST len ) { return { std::max( beg + off, beg ), std::min( beg + off + len, end ) }; }
 
