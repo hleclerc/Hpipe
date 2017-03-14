@@ -1,15 +1,23 @@
 read[ name ] = 
-    any - ' '
     beg_str[ name ]
-    ( any - ' ' )**
+    # { stuff; }
+    any* ' '
+    # { smurf; }
     end_str[ name ]
 
 main = 
-    'U ' read[ "pouet" ] { os << pouet; }
+    read[ "pouet" ] { os << pouet; }
 
-beg_test U trucmuche 
+beg_test truc muche
     input
-        U trucmuche 
+        truc muche
     output
-        trucmuche status=OK
+        truc status=OK
 end_test
+
+beg_training
+    input
+        smurf smurf
+    freq
+        1
+end_training

@@ -23,15 +23,20 @@ void InstructionEndStr::get_code_repr( std::ostream &os ) {
     os << "END_STR " << var.size() << " " << var;
 }
 
+void InstructionEndStr::update_running_strings( std::set<std::string> &strs ) const {
+    strs.erase( var );
+}
+
 void InstructionEndStr::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
     write_cpp_code_seq( ss, es, cpp_emitter );
     write_trans( ss, cpp_emitter );
 }
 
 void InstructionEndStr::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter, std::string repl_data, std::string repl_buf ) {
-    if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER )
-        ss << "sipe_data->" << var << " = Hpipe::CbString{ sipe_data->__beg_" << var << "_buf, sipe_data->__beg_" << var << "_data, " << repl_buf << ", " << repl_data << " + 1 };";
-    else
+    if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER ) {
+        ss << "HPIPE_BUFFER::inc_ref( " << repl_buf << " );";
+        ss << "sipe_data->" << var << " = Hpipe::CbString{ Hpipe::CbString::NoIncRef(), sipe_data->__beg_" << var << "_buf, sipe_data->__beg_" << var << "_data, " << repl_buf << ", " << repl_data << " };";
+    } else
         HPIPE_TODO;
 }
 

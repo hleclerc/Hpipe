@@ -70,8 +70,6 @@ public:
     Instruction          *orig;         ///< if is a clone (for a rewind)
     InstructionMark      *mark;         ///<
 
-    std::set<std::string> running_str;  ///<
-
     // for code generation
     int                   num_ordering;
     unsigned              id_gen;

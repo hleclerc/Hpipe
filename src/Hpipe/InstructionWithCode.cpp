@@ -15,5 +15,8 @@ bool InstructionWithCode::can_be_deleted() const {
     return mark; // cx.pos.size() > 1;
 }
 
+void InstructionWithCode::update_running_strings( std::set<std::string> &strs ) const {
+}
+
 
 } // namespace Hpipe

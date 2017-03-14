@@ -75,9 +75,9 @@ protected:
     void                    clone          ( Lexem *&beg, Lexem *&end, const std::string &name, const Lexem *l, Vec<Arg> cargs, const Vec<Arg> &args );
     static void             repl_all       ( std::string &str, const std::string &src, const std::string &dst );
     bool                    in_wait_goto   ( CharItem *item ) const;
-    void                    update_beg_strs();
-    void                    mark_beg_str   ( CharItem *item, CharItem *beg_str );
-    void                    check_end_str  ( CharItem *item, CharItem *end_str );
+    // void                    update_beg_strs();
+    // void                    mark_beg_str   ( CharItem *item, CharItem *beg_str );
+    // void                    check_end_str  ( CharItem *item, CharItem *end_str );
 
     Lexer                  &lexer;
     CharItem                base;

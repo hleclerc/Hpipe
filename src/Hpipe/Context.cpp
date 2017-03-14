@@ -21,7 +21,9 @@ struct PcMaker {
 
     void add( const CharItem *item, unsigned ind, bool with_mark = true ) {
         if ( with_mark && orig->mark )
-            res.first.code_path << orig->code_path[ ind ];
+            res.first.paths_to_mark << orig->paths_to_mark[ ind ];
+        for( const auto &p : orig->paths_to_strings )
+            res.first.paths_to_strings[ p.first ] << p.second[ ind ];
         res.first.pos << item;
         res.second << ind;
     }
@@ -45,7 +47,6 @@ struct PcMaker {
 }
 
 Context::Context( const CharItem *item, int flags ) : flags( flags ), mark( 0 ) {
-    code_path << false;
     pos << item;
 }
 
@@ -53,7 +54,7 @@ Context::Context( int flags ) : flags( flags ), mark( 0 ) {
 }
 
 bool Context::operator<( const Context &that ) const {
-    return std::tie( pos, mark, code_path, flags ) < std::tie( that.pos, that.mark, that.code_path, that.flags );
+    return std::tie( pos, mark, paths_to_mark, paths_to_strings, flags ) < std::tie( that.pos, that.mark, that.paths_to_mark, that.paths_to_strings, that.flags );
 }
 
 void Context::write_to_stream( std::ostream &os ) const {
@@ -179,7 +180,7 @@ Context::PC Context::with_mark( InstructionMark *mark ) const {
     PcMaker pm( this );
 
     for( unsigned i = 0; i < pos.size(); ++i ) {
-        pm.res.first.code_path << i;
+        pm.res.first.paths_to_mark << i;
         pm.add( pos[ i ], i );
     }
 
@@ -209,6 +210,30 @@ Context Context::with_flag(int val) const {
     Context res( *this );
     res.flags |= val;
     return res;
+}
+
+Context Context::without_string( const std::string &str ) const {
+    Context res( *this );
+    if ( ! res.paths_to_strings.count( str ) )
+        std::cerr << "Error: " << str << " is already removed from the context";
+    res.paths_to_strings.erase( str );
+    return res;
+}
+
+Context Context::with_string( const std::string &str ) const {
+    Context res( *this );
+    if ( res.paths_to_strings.count( str ) )
+        std::cerr << "Error: " << str << " is already in the context";
+    res.paths_to_strings[ str ] = range_vec( unsigned( pos.size() ) );
+    return res;
+}
+
+void Context::add_string( const std::string &str ) {
+    paths_to_strings[ str ] = range_vec( unsigned( pos.size() ) );
+}
+
+void Context::rem_string( const std::string &str ) {
+    paths_to_strings.erase( str );
 }
 
 bool Context::only_has( int char_item_type ) const {

@@ -60,6 +60,29 @@ public:
         return change;
     }
 
+    /// return true if buf has changed
+    static bool skip( Buffer *&buf, const PI8 *&data, PT nb_to_skip, unsigned nb_to_keep ) {
+        if ( ! buf )
+            return false;
+
+        bool change = false;
+        while ( nb_to_skip >= buf->data + buf->used - data ) {
+            nb_to_skip -= buf->data + buf->used - data;
+            Buffer *old = buf;
+            buf = buf->next;
+            if ( nb_to_keep )
+                inc_ref( old, nb_to_keep - 1 );
+            else
+                dec_ref( old );
+            if ( ! buf )
+                return true;
+            data = buf->data;
+            change = true;
+        }
+        data += nb_to_skip;
+        return change;
+    }
+
     static PT size_between( Buffer *beg_buf, const PI8 *beg_data, Buffer *end_buf, const PI8 *end_data ) {
         if ( beg_buf == end_buf )
             return end_data - beg_data;
@@ -82,6 +105,11 @@ public:
 
     static Buffer *inc_ref( Buffer *p ) {
         ++p->cpt_use;
+        return p;
+    }
+
+    static Buffer *inc_ref( Buffer *p, unsigned n ) {
+        p->cpt_use += n;
         return p;
     }
 
@@ -114,6 +142,18 @@ public:
             Buffer *old = buf;
             buf = buf->next;
             dec_ref( old );
+        }
+    }
+
+    /// nb_to_keep = 0 <=> dec_ref_upto( dst ) ()
+    void dec_ref_upto( Buffer *dst, unsigned nb_to_keep ) {
+        for( Buffer *buf = this; buf != dst; ) {
+            Buffer *old = buf;
+            buf = buf->next;
+            if ( nb_to_keep )
+                inc_ref( old, nb_to_keep - 1 );
+            else
+                dec_ref( old );
         }
     }
 

@@ -15,6 +15,8 @@ class CbStringPtr;
 */
 class CbString {
 public:
+    struct NoIncRef {};
+
     CbString( const CbString    &bs, PT off, PT len );
     CbString( const CbString    &bs );
 
@@ -35,7 +37,7 @@ public:
 
     CbString( const std::string &bs );
 
-    CbString( Buffer *beg_buff, const Buffer::PI8 *beg_data, Buffer *end_buff, const Buffer::PI8 *end_data ); ///< this constructor does not inc_ref the buffers
+    CbString( NoIncRef, Buffer *beg_buff, const Buffer::PI8 *beg_data, Buffer *end_buff, const Buffer::PI8 *end_data ); ///< this constructor does not inc_ref the buffers
     CbString( Buffer *buff, PT off, PT len ); ///< this constructor does not inc_ref the buffers
 
     void inc_length_wo_cr() { ++end; } ///< dangerous (ref count is managerd elsewhere)

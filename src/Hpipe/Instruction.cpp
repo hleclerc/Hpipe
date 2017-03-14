@@ -59,16 +59,15 @@ void Instruction::write_dot_rec( std::ostream &os, bool disp_inst_pred, bool dis
     std::vector<std::string> edge_labels;
     write_dot( ss, &edge_labels );
 
-    if ( mark ) {
-        ss << "\n";
-        for( bool v : cx.code_path )
-            ss << v;
+    if ( disp_rc_item ) {
+        if ( mark )
+            ss << "\n[" << cx.paths_to_mark << "]";
+        for( const auto &p : cx.paths_to_strings )
+            ss << "\n" << p.first << ":[" << p.second << "]";
+    } else {
+        for( const auto &p : cx.paths_to_strings )
+            ss << "\n" << p.first;
     }
-
-    for( std::string str : running_str )
-        ss << "\nrs: " << str;
-
-    // ss << "in=" << cx.in << " ";
 
     dot_out( os, ss.str() );
 
@@ -565,7 +564,7 @@ void Instruction::merge_eq_next( PtrPool<Instruction> &inst_pool ) {
 }
 
 bool Instruction::need_buf_next() const {
-    return mark || ! running_str.empty();
+    return mark;
 }
 
 bool Instruction::has_ret_cont() const {

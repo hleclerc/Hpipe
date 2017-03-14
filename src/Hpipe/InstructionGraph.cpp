@@ -65,10 +65,6 @@ InstructionGraph::InstructionGraph( CharGraph *cg, const std::vector<std::string
 
     // merge (again) similar predecessors
     merge_eq_pred( init );
-    disp_if( disp, disp_inst_pred, disp_trans_freq, "merge2", false );
-
-    // update need_next
-    update_need_next();
     disp_if( disp, disp_inst_pred, disp_trans_freq, "final", false );
 }
 
@@ -189,8 +185,8 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
 
     // we can cancel a mark ?
     if ( cx.mark && ( CharGraph::leads_to_ok( cx.pos ) || cx.pos.empty() ) ) {
-        if ( cx.code_path.contains( cx.mark->num_active_item ) == false ||
-             cx.code_path.only_has( cx.mark->num_active_item ) ) {
+        if ( cx.paths_to_mark.contains( cx.mark->num_active_item ) == false ||
+             cx.paths_to_mark.only_has( cx.mark->num_active_item ) ) {
             return inst_pool << new InstructionRewind( cx );
         }
     }
@@ -209,11 +205,11 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
         return ok;
 
     // EOF test ?
-    for( const CharItem *i : cx.pos ) {
-        if ( i->type == CharItem::_EOF ) {
+    for( const CharItem *item : cx.pos ) {
+        if ( item->type == CharItem::_EOF ) {
             InstructionEof *res = reg( new InstructionEof( cx, cx.beg() ) );
-            tra( res, 0, cx.with_flag( Context::FL_NOT_EOF ).without( i ) );
-            tra( res, 1, cx.with_flag( Context::FL_EOF  ).forward( i ) );
+            tra( res, 0, cx.with_flag( Context::FL_NOT_EOF ).without( item ) );
+            tra( res, 1, cx.with_flag( Context::FL_EOF  ).forward( item ) );
             return res;
         }
     }
@@ -234,7 +230,7 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
             case CharItem::CODE:    res = reg( new InstructionCode  ( cx, item->str, ind ) ); break;
             case CharItem::ADD_STR: res = reg( new InstructionAddStr( cx, item->str, ind ) ); break;
             case CharItem::CLR_STR: res = reg( new InstructionClrStr( cx, item->str, ind ) ); break;
-            case CharItem::BEG_STR: res = reg( new InstructionBegStr( cx, item->str, ind ) ); break;
+            case CharItem::BEG_STR: res = reg( new InstructionBegStr( cx, item->str, ind ) ); if ( cx.mark ) break; return tra( res, 0, cx.with_string( item->str ).forward( item ) );
             case CharItem::END_STR: res = reg( new InstructionEndStr( cx, item->str, ind ) ); break;
             default: HPIPE_TODO;
             }
@@ -811,44 +807,6 @@ bool InstructionGraph::no_code_ambiguity( InstructionMark *mark, Instruction *in
     return true;
 }
 
-void InstructionGraph::update_need_next() {
-    ++Instruction::cur_op_id;
-    update_need_next_rec( init, {} );
-}
-
-void InstructionGraph::update_need_next_rec( Instruction *inst, const std::set<std::string> &running_str ) {
-    if ( inst->op_id == Instruction::cur_op_id && inst->running_str == running_str )
-        return;
-    inst->op_id = Instruction::cur_op_id;
-
-    for( const std::string &str : running_str )
-        inst->running_str.insert( str );
-
-    if ( InstructionBegStr *bs = dynamic_cast<InstructionBegStr *>( inst ) ) {
-        inst->running_str.insert( bs->var );
-    } else if ( InstructionEndStr *bs = dynamic_cast<InstructionEndStr *>( inst ) ) {
-        inst->running_str.erase( bs->var );
-    } else if ( InstructionRewind *rw = dynamic_cast<InstructionRewind *>( inst ) ) {
-        for( InstructionRewind::CodeSeqItem &item : rw->code_seq_beg ) {
-            if ( InstructionBegStr *bs = dynamic_cast<InstructionBegStr *>( item.code ) )
-                inst->running_str.insert( bs->var );
-            else if ( InstructionEndStr *bs = dynamic_cast<InstructionEndStr *>( item.code ) )
-                inst->running_str.erase( bs->var );
-        }
-        if ( ! rw->need_rw ) {
-            for( InstructionRewind::CodeSeqItem &item : rw->code_seq_end ) {
-                if ( InstructionBegStr *bs = dynamic_cast<InstructionBegStr *>( item.code ) )
-                    inst->running_str.insert( bs->var );
-                else if ( InstructionEndStr *bs = dynamic_cast<InstructionEndStr *>( item.code ) )
-                    inst->running_str.erase( bs->var );
-            }
-        }
-    }
-
-    for( const Transition &p : inst->next )
-        update_need_next_rec( p.inst, inst->running_str );
-}
-
 void InstructionGraph::get_possible_inst_rec( std::set<std::pair<Instruction *,unsigned>> &possible_instructions, Instruction *inst, unsigned pos, const Instruction *mark ) {
     auto iter = possible_instructions.find( { inst, pos } );
     if ( iter != possible_instructions.end() )
@@ -938,6 +896,25 @@ void InstructionGraph::make_rewind_data( InstructionRewind *rewind ) {
         rewind->ncx = restart_cx->without_mark();
         rewind->offset_for_ncx = offset_beg;
     }
+
+    // stuff that may change restart context
+    for( const InstructionRewind::CodeSeqItem &csi : rewind->code_seq_beg ) {
+        if ( InstructionBegStr *bs = dynamic_cast<InstructionBegStr *>( csi.code ) )
+            rewind->ncx.first.add_string( bs->var );
+        else if ( InstructionEndStr *es = dynamic_cast<InstructionEndStr *>( csi.code ) )
+            rewind->ncx.first.rem_string( es->var );
+    }
+    if ( ! rewind->need_rw ) {
+        for( unsigned i = rewind->code_seq_end.size(); i--; ) {
+            const InstructionRewind::CodeSeqItem &csi = rewind->code_seq_end[ i ];
+            if ( InstructionBegStr *bs = dynamic_cast<InstructionBegStr *>( csi.code ) )
+                rewind->ncx.first.add_string( bs->var );
+            else if ( InstructionEndStr *es = dynamic_cast<InstructionEndStr *>( csi.code ) )
+                rewind->ncx.first.rem_string( es->var );
+        }
+
+    }
+
 
     // information needed for simplifications
     //    rewind->exec->update_in_a_branch();

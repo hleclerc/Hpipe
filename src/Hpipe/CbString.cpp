@@ -120,7 +120,7 @@ CbString::CbString( const std::string &bs ) {
     off = 0;
 }
 
-CbString::CbString( Buffer *beg_buff, const Buffer::PI8 *beg_data, Buffer *end_buff, const Buffer::PI8 *end_data ) {
+CbString::CbString( NoIncRef, Buffer *beg_buff, const Buffer::PI8 *beg_data, Buffer *end_buff, const Buffer::PI8 *end_data ) {
     beg = beg_buff;
     off = beg_data - beg_buff->data;
     if ( end_buff == beg_buff ) {

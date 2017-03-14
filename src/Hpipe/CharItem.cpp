@@ -80,8 +80,6 @@ void CharItem::write_to_stream( std::ostream &os ) const {
     case CharItem::OK:        os << "OK"; break;
     default:                  os << "?";
     }
-    for( CharItem *str : beg_strs )
-        os << "#" << str->str;
     //    if ( ending ) os << "(E)";
 }
 
