@@ -50,10 +50,9 @@ int main( int argc, char **argv ) {
         CppEmitter cp( &sg );
         cp.trace_labels = trace_labels;
 
-        if      ( strcmp( style, "BUFFER_IN_CLASS" ) == 0 ) { cp.buffer_type = CppEmitter::HPIPE_BUFFER; cp.in_class = true; }
-        else if ( strcmp( style, "BUFFER"          ) == 0 ) { cp.buffer_type = CppEmitter::HPIPE_BUFFER; }
-        else if ( strcmp( style, "BEG_END"         ) == 0 ) { cp.buffer_type = CppEmitter::BEGEND; }
-        else if ( strcmp( style, "C_STR"           ) == 0 ) { cp.buffer_type = CppEmitter::C_STR; }
+        if      ( strcmp( style, "BUFFER"  ) == 0 ) { cp.buffer_type = CppEmitter::HPIPE_BUFFER; }
+        else if ( strcmp( style, "BEG_END" ) == 0 ) { cp.buffer_type = CppEmitter::BEGEND; }
+        else if ( strcmp( style, "C_STR"   ) == 0 ) { cp.buffer_type = CppEmitter::C_STR; }
         else { std::cerr << "Unknown parse style ( " << style << " ). Possible values are BUFFER, BEG_END or C_STR" << std::endl; return 1; }
 
         if ( benchmark )

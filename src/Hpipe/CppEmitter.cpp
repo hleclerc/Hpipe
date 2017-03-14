@@ -94,16 +94,22 @@ void CppEmitter::write_parse_decl( StreamSepMaker &ss, const std::string &hpipe_
 
     switch ( buffer_type ) {
     case HPIPE_BUFFER:
-        if ( in_class )
-            ss << "unsigned " << func_name << "( HPIPE_BUFFER *buf, bool last_buf" << ( additional_args ? additional_args : "" ) << ", const unsigned char *data = 0, const unsigned char *end_m1 = 0 );";
-        else
-            ss << "unsigned " << func_name << "( " << hpipe_data_name << " *sipe_data, HPIPE_BUFFER *buf, bool last_buf" << ( additional_args ? additional_args : "" ) << ", const unsigned char *data = 0, const unsigned char *end_m1 = 0 );";
+        ss << "unsigned " << func_name << "( " << hpipe_data_name << " *sipe_data, HPIPE_BUFFER *buf, bool last_buf" << ( additional_args ? additional_args : "" ) << ", const unsigned char *data = 0, const unsigned char *end_m1 = 0 );";
+        ss << "#ifdef HPIPE_DATA_IN_CLASS";
+        ss << "unsigned " << func_name << "( HPIPE_BUFFER *buf, bool last_buf" << ( additional_args ? additional_args : "" ) << ", const unsigned char *data = 0, const unsigned char *end_m1 = 0 ) { return " << func_name << "( &hpipe_data, buf, last_buf" << ( additional_args ? additional_args : "" ) << ", data, end_m1 ); }";
+        ss << "#endif // HPIPE_DATA_IN_CLASS";
         break;
     case BEGEND:
         ss << "unsigned " << func_name << "( " << hpipe_data_name << " *sipe_data, const unsigned char *data, const unsigned char *end_m1" << ( additional_args ? additional_args : "" ) << " );";
+        ss << "#ifdef HPIPE_DATA_IN_CLASS";
+        ss << "unsigned " << func_name << "( " << hpipe_data_name << " *sipe_data, const unsigned char *data, const unsigned char *end_m1" << ( additional_args ? additional_args : "" ) << " ) { return unsigned " << func_name << "( &hpipe_data, data, end_m1" << ( additional_args ? additional_args : "" ) << " ); }";
+        ss << "#endif // HPIPE_DATA_IN_CLASS";
         break;
     case C_STR:
         ss << "unsigned " << func_name << "( " << hpipe_data_name << " *sipe_data, const unsigned char *data" << ( additional_args ? additional_args : "" ) << " );";
+        ss << "#ifdef HPIPE_DATA_IN_CLASS";
+        ss << "unsigned " << func_name << "( " << hpipe_data_name << " *sipe_data, const unsigned char *data" << ( additional_args ? additional_args : "" ) << " ) { return unsigned " << func_name << "( &hpipe_data, data" << ( additional_args ? additional_args : "" ) << " ); }";
+        ss << "#endif // HPIPE_DATA_IN_CLASS";
         break;
     }
 }
@@ -318,14 +324,15 @@ bool CppEmitter::bench( const std::vector<Lexer::TrainingData> &tds, int type ) 
     ss << "#include <sstream>";
     ss << "#include <ctime>";
     ss << "";
+    write_preliminaries( ss );
     // ss << "#define HPIPE_TEST";
     { // for( buffer_type = 0; buffer_type < 3; ++buffer_type )
         ss << "";
         ss << "struct Bench_" << buffer_type << " {";
 
-        write_constants ( ns );
-        write_hpipe_data( ns );
-        write_parse_decl( ns );
+        write_constants    ( ns );
+        write_hpipe_data   ( ns );
+        write_parse_decl   ( ns );
 
         ss << "    void exec( const unsigned char *name, const unsigned char *data, unsigned size, const char *display ) {";
         switch ( buffer_type ) {
@@ -391,7 +398,8 @@ bool CppEmitter::bench( const std::vector<Lexer::TrainingData> &tds, int type ) 
                _exec( gpp + " -fprofile-instr-use"      ) && _exec( "./bench 'with profile'" );
     }
 
-    std::string gpp = "g++ -O6 -g3 -fno-reorder-blocks -march=native -std=c++14 -Isrc/ -o bench bench.cpp";
+    //std::string gpp = "g++ -O6 -g3 -fno-reorder-blocks -march=native -std=c++14 -Isrc/ -o bench bench.cpp";
+    std::string gpp = "g++ -O6 -g3 -march=native -std=c++14 -Isrc/ -o bench bench.cpp";
     return _exec( gpp ) && _exec( "./bench 'without profile'" )
         && _exec( gpp + " -fprofile-generate" ) && _exec( "./bench" )
         && _exec( gpp + " -fprofile-use"      ) && _exec( "./bench 'with profile'" )

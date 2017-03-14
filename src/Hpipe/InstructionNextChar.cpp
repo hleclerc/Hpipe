@@ -177,7 +177,7 @@ bool InstructionNextChar::always_need_id_gen( CppEmitter *cpp_emitter ) const {
 }
 
 void InstructionNextChar::get_code_repr( std::ostream &os ) {
-    os << "NEXT_CHAR " << beg;
+    os << "NEXT_CHAR " << beg << " " << bool( mark );
 }
 
 void InstructionNextChar::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {

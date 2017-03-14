@@ -30,24 +30,23 @@ Transition *InstructionCond::train( std::string::size_type &s, std::string::size
 }
 
 void InstructionCond::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
+    const double dm = 2.1; // multi between freq to use a __builtin_expect
     if ( next[ 1 ].inst->num_ordering == num_ordering + 1 ) {
-        ss << "if ( " << cond.ok_cpp( "data[ " + to_string( off_data ) + " ]", &not_in ) << " ) goto l_" << next[ 0 ].inst->get_id_gen( cpp_emitter ) << ";";
+        if ( next[ 0 ].freq > dm * next[ 1 ].freq )
+            ss << "if ( __builtin_expect( " << cond.ok_cpp( "data[ " + to_string( off_data ) + " ]", &not_in ) << ", 1 ) ) goto l_" << next[ 0 ].inst->get_id_gen( cpp_emitter ) << ";";
+        else if ( next[ 1 ].freq > dm * next[ 0 ].freq )
+            ss << "if ( __builtin_expect( " << cond.ok_cpp( "data[ " + to_string( off_data ) + " ]", &not_in ) << ", 0 ) ) goto l_" << next[ 0 ].inst->get_id_gen( cpp_emitter ) << ";";
+        else
+            ss << "if ( " << cond.ok_cpp( "data[ " + to_string( off_data ) + " ]", &not_in ) << " ) goto l_" << next[ 0 ].inst->get_id_gen( cpp_emitter ) << ";";
     } else {
-        ss << "if ( " << cond.ko_cpp( "data[ " + to_string( off_data ) + " ]", &not_in ) << " ) goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << ";";
+        if ( next[ 0 ].freq > dm * next[ 1 ].freq )
+            ss << "if ( __builtin_expect( " << cond.ko_cpp( "data[ " + to_string( off_data ) + " ]", &not_in ) << ", 0 ) ) goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << ";";
+        else if ( next[ 1 ].freq > dm * next[ 0 ].freq )
+            ss << "if ( __builtin_expect( " << cond.ko_cpp( "data[ " + to_string( off_data ) + " ]", &not_in ) << ", 1 ) ) goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << ";";
+        else
+            ss << "if ( " << cond.ko_cpp( "data[ " + to_string( off_data ) + " ]", &not_in ) << " ) goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << ";";
         write_trans( ss, cpp_emitter );
     }
-
-    //    // if (the most frequent) transition is for the next inst, or (the most frequent) transition goes to the past
-    //    if ( transitions[ 0 ].inst->num_ordering == num_ordering + 1 ) {
-    //        ss << "if ( " << cond.ko_cpp( "data[" + to_string( off_data ) + "]", &covered ) << " ) goto l_" << transitions[ 1 ].inst->get_id_gen( cpp_emitter ) << ";";
-    //    } else if ( transitions[ 0 ].inst->num_ordering <= num_ordering or transitions[ 1 ].inst->num_ordering <= num_ordering ) {
-    //        ss << "if ( " << cond.ok_cpp( "data[" + to_string( off_data ) + "]", &covered ) << " ) goto l_" << transitions[ 0 ].inst->get_id_gen( cpp_emitter ) << ";";
-    //        if ( transitions[ 1 ].inst->num_ordering != num_ordering + 1 )
-    //            ss << "goto l_" << transitions[ 1 ].inst->get_id_gen( cpp_emitter ) << ";";
-    //    } else {
-    //        ss << "if ( " << cond.ko_cpp( "data[" + to_string( off_data ) + "]", &covered ) << " ) goto l_" << transitions[ 1 ].inst->get_id_gen( cpp_emitter ) << ";";
-    //        ss << "goto l_" << transitions[ 0 ].inst->get_id_gen( cpp_emitter ) << ";";
-    //    }
 }
 
 Instruction *InstructionCond::make_cond( const BranchSet::Node *node, PtrPool<Instruction> &inst_pool, const Cond &not_in, bool in_a_cycle, InstructionMark *mark, int off_data ) {
