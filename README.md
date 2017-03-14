@@ -3,16 +3,16 @@ What is Hpipe ?
 
 Hpipe is the acronym of "High Performance Incremental Parser Engine".
 
-It generates optimized code to evaluate regular expressions with embedded actions.
+It generates optimized code to evaluate regular expressions with embedded actions (code executed in succeeding paths, with handling of priority).
 
 *Incremental* means that the crunching of the incoming data can be stopped/restarted at any point, with proper and automated handling of buffers. It is a prerequisite for different types of data coming from the network or for instance from huge files that do not fit into memory. It is the first difference compared to tools like re2c.
 
-Moreover, Hpipe is designed for performance. Hpipe support zero copy and tries to read the data only once. Besides, training data and multi-character representations allow to obtain significant speedup over what we can find with usual solutions.
+All other things being equal, Hpipe is designed for performance. Hpipe support zero copy and tries to read the data only once. Besides, training data and multi-character representations allow to obtain significant speedup over what we can find with usual solutions.
 
 Show me an example
 ==================
 
-The following code is an example of a "machine" that sums the last digits of 'bar[0-9]', and that count the number of 'foo' and 'bar' not followed by a digit (which can be EOF or the beginning of something else...).
+The following code is an example of a "machine" that sums the last digit of each 'bar[0-9]', and that counts the number of 'foo' and 'bar' not followed by a digit (which can be EOF or the beginning of something else...).
 
 ```python
 main = (
@@ -23,7 +23,7 @@ main = (
 )**
 ```
 
-If the input is "bar5", `bar += 1` is not going to be executed: a user code is executed only if the belonging path _succeeds_; the `|` operator indicates priority (of the left hand side over the right one): if the lhs succeeds, the rhs is discarded... and codes are executed only when the ambiguities have disappeared.
+If the input is "bar5", `bar += 1` is not going to be executed: a user code is executed only if the belonging path _succeeds_ and it won't be the case for `( 'bar' { b += 1; } )` because there is a priority for `( 'bar' '0' .. '9' { a += *data - '0'; } )`.
 
 It produces code like
 
