@@ -37,16 +37,18 @@ public:
     CharItem( int type );
     CharItem( Cond cond );
 
-    bool              apply_rec         ( std::function<bool( CharItem * )> f );
-    void              get_possible_paths( Vec<Vec<CharItem *>> &paths, std::function<bool( CharItem *item )> f );
-    void              write_to_stream   ( std::ostream &os ) const;
-    std::string       compact_repr      () const;
-    void              write_dot_rec     ( std::ostream &os ) const;
-    bool              code_like         () const;
-    bool              advancer          () const;
+    bool              apply_rec             ( std::function<bool( CharItem * )> f );
+    void              get_possible_paths    ( Vec<Vec<CharItem *>> &paths, std::function<bool( CharItem *item )> f );
+    void              write_to_stream       ( std::ostream &os ) const;
+    std::string       compact_repr          () const;
+    void              write_dot_rec         ( std::ostream &os ) const;
+    bool              code_like             () const;
+    bool              advancer              () const;
+    bool              next_are_with_prev_s_1( int type ) const;
 
     int               type;
     Vec<CharEdge>     edges;
+    Vec<CharItem *>   prev;
     Cond              cond;       ///< used if type==COND
     std::string       str;        ///< if type==CODE, str = the code. if ADD_STR, CLR_STR, ...
     mutable unsigned  op_id;

@@ -31,6 +31,18 @@ std::string left_shifted( const std::string &str ) {
     return res;
 }
 
+//void advance( CharItem *item ) {
+//    CharItem *next = item->edges[ 0 ].item;
+//    for( CharItem *prev : item->prev )
+//        for( CharEdge &edge : prev->edges )
+//            if ( edge.item == item )
+//                edge.item = next;
+//    item->edges = next->edges;
+//    next->edges = CharEdge{ item };
+//    next->prev  = item->prev;
+//    item->prev  = next;
+//}
+
 }
 
 CharGraph::CharGraph( Lexer &lexer, const Lexem *lexem ) : ok( true ), lexer( lexer ), base( CharItem::BEGIN ) {
@@ -103,6 +115,42 @@ CharGraph::CharGraph( Lexer &lexer, const Lexem *lexem ) : ok( true ), lexer( le
             if ( p.first->edges.empty() )
                 throw "Item is going nowhere";
         }
+    }
+
+    // update prev
+    apply( []( CharItem *item ) {
+        for( CharEdge &edge : item->edges )
+            edge.item->prev << item;
+    } );
+
+    // foo_NEXT +1 -> +1 foo... (execute machine with less uncertainties)
+    for( bool change = false; ; change = false ) {
+        apply( [&]( CharItem *item ) {
+            // END_STR_NEXT ( -> +1 )*
+            if ( item->type == CharItem::END_STR_NEXT && item->next_are_with_prev_s_1( CharItem::NEXT_CHAR ) ) {
+                item->type = CharItem::NEXT_CHAR;
+                for( CharEdge &edge : item->edges ) {
+                    edge.item->type = CharItem::END_STR;
+                    edge.item->str = item->str;
+                }
+                change = true;
+                return;
+            }
+
+            // END_STR_NEXT ( -> cond )*
+            if ( item->type == CharItem::END_STR && item->next_are_with_prev_s_1( CharItem::COND ) ) {
+                item->cond = item->edges[ 0 ].item->cond;
+                item->type = CharItem::COND;
+                for( CharEdge &edge : item->edges ) {
+                    edge.item->type = CharItem::END_STR;
+                    edge.item->str = item->str;
+                }
+                change = true;
+                return;
+            }
+        } );
+        if ( ! change )
+            break;
     }
 }
 

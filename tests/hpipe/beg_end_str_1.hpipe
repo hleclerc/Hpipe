@@ -1,8 +1,8 @@
-main = # 'A' 
+main = 'A' 
     beg_str_next[ "url" ]
     any*
     end_str_next[ "url" ]
-    ' '
+    ' ' | "PU"
     { os << url; }
 
 # beg_training

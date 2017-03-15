@@ -133,4 +133,17 @@ bool CharItem::advancer() const {
     return type == NEXT_CHAR;
 }
 
+bool CharItem::next_are_with_prev_s_1( int type ) const {
+    if ( edges.empty() )
+        return false;
+    for( const CharEdge &t : edges )
+        if ( t.item == 0 || t.item->type != type || t.item->prev.size() != 1 )
+            return false;
+    if ( type == COND )
+        for( unsigned i = 1; i < edges.size(); ++i )
+            if ( edges[ 0 ].item->cond != edges[ i ].item->cond )
+                return false;
+    return true;
+}
+
 } // namespace Hpipe
