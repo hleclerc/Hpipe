@@ -14,9 +14,22 @@ main = # 'A'
 #         1
 # end_training
 
-beg_test ...
+beg_test complete
     input
         smurf .
     output
         smurf status=OK
+end_test
+
+beg_test KO
+    input
+        s
+    output
+        status=KO
+end_test
+
+beg_test KO2
+    input
+    output
+        status=KO
 end_test

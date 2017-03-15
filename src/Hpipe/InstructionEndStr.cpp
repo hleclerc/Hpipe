@@ -6,6 +6,7 @@
 namespace Hpipe {
 
 InstructionEndStr::InstructionEndStr( const Context &cx, const std::string &var, int num_active_item, bool want_next_char ) : InstructionWithCode( cx, num_active_item ), var( var ), want_next_char( want_next_char ) {
+    running_strs.erase( var );
 }
 
 void InstructionEndStr::write_dot( std::ostream &os, std::vector<std::string> *edge_labels ) const {

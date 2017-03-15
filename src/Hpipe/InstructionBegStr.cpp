@@ -9,7 +9,7 @@ InstructionBegStr::InstructionBegStr( const Context &cx, const std::string &var,
 }
 
 void InstructionBegStr::write_dot( std::ostream &os, std::vector<std::string> *edge_labels ) const {
-    os << "BEG_STR(" << var << ")";
+    os << "BEG_STR(" << var << "," << want_next_char << ")";
 }
 
 Instruction *InstructionBegStr::clone( PtrPool<Instruction> &inst_pool, const Context &ncx, const Vec<unsigned> &keep_ind ) {
@@ -20,7 +20,7 @@ Instruction *InstructionBegStr::clone( PtrPool<Instruction> &inst_pool, const Co
 }
 
 void InstructionBegStr::get_code_repr( std::ostream &os ) {
-    os << "BEG_STR " << var.size() << " " << var;
+    os << "BEG_STR " << var.size() << " " << var << " " << want_next_char;
 }
 
 void InstructionBegStr::update_running_strings( std::set<std::string> &strs ) const {

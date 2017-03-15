@@ -42,7 +42,7 @@ public:
 
     /// return true if buf has changed
     static bool skip( Buffer *&buf, const PI8 *&data, PT nb_to_skip ) {
-        if ( ! buf )
+        if ( ! buf || ! nb_to_skip )
             return false;
 
         bool change = false;

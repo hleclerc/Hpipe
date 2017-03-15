@@ -1,6 +1,7 @@
 #include "InstructionTestContiguous.h"
 #include "InstructionMultiCond.h"
 #include "InstructionNextChar.h"
+#include "InstructionFreeStr.h"
 #include "InstructionRewind.h"
 #include "InstructionAddStr.h"
 #include "InstructionClrStr.h"
@@ -168,18 +169,25 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
     if ( ( cx.flags & Context::FL_OK ) && CharGraph::leads_to_ok( cx.pos ) )
         return make_transitions( pending_trans, pt, cx.without_flag( Context::FL_OK ) );
 
+    // helper func
+    auto tra = [&]( Instruction *inst, unsigned num_edge, const Context::PC &pc ) {
+        pending_trans.emplace_back( inst, num_edge, pc.first, pc.second );
+        return inst;
+    };
+
+    // this transition is going to cancel a BEG_STR ?
+    Vec<std::string> strs = pt.inst->strs_not_in( cx );
+    if ( ! strs.empty() )
+        return tra( new InstructionFreeStr( cx, strs ), 0, { cx, range_vec( unsigned( cx.pos.size() ) ) } );
+
     // we already have way(s) to go to cx ?
     Tcache::iterator iter = cache.find( cx );
     if ( iter != cache.end() )
         return iter->second;
 
-    // helper funcs
+    // helper func
     auto reg = [&]( auto *inst ) {
         cache.insert( iter, std::make_pair( cx, inst_pool << inst ) );
-        return inst;
-    };
-    auto tra = [&]( Instruction *inst, unsigned num_edge, const Context::PC &pc ) {
-        pending_trans.emplace_back( inst, num_edge, pc.first, pc.second );
         return inst;
     };
 

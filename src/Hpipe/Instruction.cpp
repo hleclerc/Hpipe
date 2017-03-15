@@ -15,6 +15,9 @@ Instruction::Instruction( Context cx ) : cx( cx ), display_id( 0 ), op_id( 0 ) {
     mark         = cx.mark;
     orig         = nullptr;
     cum_freq     = 0;
+
+    for( const auto &p : cx.paths_to_strings )
+        running_strs.insert( p.first );
 }
 
 Instruction::~Instruction() {
@@ -65,8 +68,8 @@ void Instruction::write_dot_rec( std::ostream &os, bool disp_inst_pred, bool dis
         for( const auto &p : cx.paths_to_strings )
             ss << "\n" << p.first << ":[" << p.second << "]";
     } else {
-        for( const auto &p : cx.paths_to_strings )
-            ss << "\n" << p.first;
+        for( const std::string &str : running_strs )
+            ss << "\n" << str;
     }
 
     dot_out( os, ss.str() );
@@ -565,6 +568,14 @@ void Instruction::merge_eq_next( PtrPool<Instruction> &inst_pool ) {
 
 unsigned Instruction::need_buf_next() const {
     return bool( mark ) + cx.paths_to_strings.size();
+}
+
+Vec<std::string> Instruction::strs_not_in( const Context &cx ) const {
+    Vec<std::string> res;
+    for( const std::string &str : running_strs )
+        if ( ! cx.paths_to_strings.count( str ) )
+            res << str;
+    return res;
 }
 
 bool Instruction::has_ret_cont() const {

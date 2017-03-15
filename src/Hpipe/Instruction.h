@@ -56,6 +56,7 @@ public:
     virtual void          boyer_moore_opt    ( PtrPool<Instruction> &inst_pool, Instruction **init = 0 );
     virtual void          merge_eq_next      ( PtrPool<Instruction> &inst_pool );
     unsigned              need_buf_next      () const;
+    Vec<std::string>      strs_not_in        ( const Context &cx ) const;
 
     Context               cx;
     Vec<double>           freq;         ///< freq by char
@@ -69,6 +70,7 @@ public:
     bool                  in_a_cycle;
     Instruction          *orig;         ///< if is a clone (for a rewind)
     InstructionMark      *mark;         ///<
+    std::set<std::string> running_strs; ///<
 
     // for code generation
     int                   num_ordering;
