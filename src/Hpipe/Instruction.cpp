@@ -65,8 +65,15 @@ void Instruction::write_dot_rec( std::ostream &os, bool disp_inst_pred, bool dis
     if ( disp_rc_item ) {
         if ( mark )
             ss << "\n[" << cx.paths_to_mark << "]";
-        for( const auto &p : cx.paths_to_strings )
-            ss << "\n" << p.first << ":[" << p.second << "]";
+        if ( cx.paths_to_strings.empty() ) {
+            for( const std::string &str : running_strs )
+                ss << "\n" << str;
+        } else {
+            for( const auto &p : cx.paths_to_strings )
+                ss << "\n" << p.first << ":[" << p.second << "]";
+            for( const std::string &str : running_strs )
+                ss << "\n" << str;
+        }
     } else {
         for( const std::string &str : running_strs )
             ss << "\n" << str;
@@ -567,7 +574,7 @@ void Instruction::merge_eq_next( PtrPool<Instruction> &inst_pool ) {
 }
 
 unsigned Instruction::need_buf_next() const {
-    return bool( mark ) + cx.paths_to_strings.size();
+    return mark ? bool( mark ) : cx.paths_to_strings.size();
 }
 
 Vec<std::string> Instruction::strs_not_in( const Context &cx ) const {

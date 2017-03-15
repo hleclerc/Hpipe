@@ -36,4 +36,8 @@ bool InstructionFreeStr::data_code() const {
     return true;
 }
 
+bool InstructionFreeStr::can_be_deleted() const {
+    return mark;
+}
+
 } // namespace Hpipe

@@ -30,10 +30,10 @@ It produces code like
 ```C++
 l_2:
   // as in the Boyer-Moore algorithm, hpipe may decide to test several
-  // chars ahead if it leads on average to reduction of the overall execution time
+  // chars ahead if it leads to reduction of the overall execution time
   if ( data + 3 > end_m1 ) goto l_1;
   data += 3;
-  // partition and ordering of tests depends on the result of "training"
+  // partition and ordering of tests depend on the result of "training"
   // (see the paragraph on performance)
   if ( data[ 0 ] == 'a' ) goto l_19;
   if ( data[ 0 ] != 'o' ) goto l_20;
@@ -45,6 +45,7 @@ l_3:
 l_21:
   if ( data[ -1 ] != 'f' ) goto l_2;
 l_6:
+  // end of the buffer (different styles are possible)
   if ( data >= end_m1 ) goto c_2;
   ++data;
 l_22:

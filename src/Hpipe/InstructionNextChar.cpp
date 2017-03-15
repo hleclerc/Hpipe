@@ -189,8 +189,9 @@ void InstructionNextChar::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, Cpp
 
         // c_... (code when there is no data left in the buffer)
         es.rm_beg( 2 ) << "c_" << cont_label << ":" << ( cpp_emitter->trace_labels ? " std::cout << \"c_" + to_string( cont_label ) + " \" << __LINE__ << std::endl;" : "" );
+        // es << "while ( buf->next ) {" << ( need_buf_next() > 1 ? " HPIPE_BUFFER::inc_ref( buf, " + to_string( need_buf_next() - 1 ) + " );" : "" ) << " buf = buf->next; if ( buf->used ) { data = buf->data; end_m1 = buf->data + buf->used - 1; goto l_" << next[ 0 ].inst->get_id_gen( cpp_emitter ) << "; } }";
         if ( need_buf_next() )
-            es << "while ( buf->next ) {" << ( need_buf_next() > 1 ? " HPIPE_BUFFER::inc_ref( buf, " + to_string( need_buf_next() - 1 ) + " );" : "" ) << " buf = buf->next; if ( buf->used ) { data = buf->data; end_m1 = buf->data + buf->used - 1; goto l_" << next[ 0 ].inst->get_id_gen( cpp_emitter ) << "; } }";
+            es << "while ( buf->next ) { HPIPE_BUFFER::inc_ref( buf, " << need_buf_next() - 1 << " ); buf = buf->next; if ( buf->used ) { data = buf->data; end_m1 = buf->data + buf->used - 1; goto l_" << next[ 0 ].inst->get_id_gen( cpp_emitter ) << "; } }";
         else
             es << "while ( buf->next ) { HPIPE_BUFFER *old = buf; buf = buf->next; HPIPE_BUFFER::dec_ref( old ); if ( buf->used ) { data = buf->data; end_m1 = buf->data + buf->used - 1; goto l_" << next[ 0 ].inst->get_id_gen( cpp_emitter ) << "; } }";
 

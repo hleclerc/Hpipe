@@ -266,7 +266,7 @@ int CppEmitter::test( const std::vector<Lexer::TestData> &tds ) {
             ss << "        case RET_KO  : if ( os.str().size() ) os << ' '; os << \"status=KO\" ; break;";
             ss << "        }";
             ss << "        }";
-            ss << "        if ( Hpipe::Buffer::nb_alive_bufs ) os << \" nb_remaining_bufs=\" << Hpipe::Buffer::nb_alive_bufs;";
+            ss << "        if ( Hpipe::Buffer::nb_alive_bufs ) { os << \" nb_remaining_bufs=\" << Hpipe::Buffer::nb_alive_bufs; Hpipe::Buffer::nb_alive_bufs = 0; }";
             break;
         case BEGEND:
             ss << "        HpipeData hd;";

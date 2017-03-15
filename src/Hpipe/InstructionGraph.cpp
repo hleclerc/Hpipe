@@ -176,9 +176,11 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
     };
 
     // this transition is going to cancel a BEG_STR ?
-    Vec<std::string> strs = pt.inst->strs_not_in( cx );
-    if ( ! strs.empty() )
-        return tra( new InstructionFreeStr( cx, strs ), 0, { cx, range_vec( unsigned( cx.pos.size() ) ) } );
+    if ( ! cx.mark ) {
+        Vec<std::string> strs = pt.inst->strs_not_in( cx );
+        if ( ! strs.empty() )
+            return tra( new InstructionFreeStr( cx, strs ), 0, { cx, range_vec( unsigned( cx.pos.size() ) ) } );
+    }
 
     // we already have way(s) to go to cx ?
     Tcache::iterator iter = cache.find( cx );
@@ -195,7 +197,9 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
     if ( cx.mark && ( CharGraph::leads_to_ok( cx.pos ) || cx.pos.empty() ) ) {
         if ( cx.paths_to_mark.contains( cx.mark->num_active_item ) == false ||
              cx.paths_to_mark.only_has( cx.mark->num_active_item ) ) {
-            return inst_pool << new InstructionRewind( cx );
+            InstructionRewind *res = inst_pool << new InstructionRewind( cx );
+            res->running_strs = pt.inst->running_strs;
+            return res;
         }
     }
 
@@ -711,6 +715,9 @@ Instruction *InstructionGraph::make_rewind_inst(Vec<PendingRewindTrans> &pending
     const Vec<unsigned> &keep_ind = possible_inst.find( orig )->second;
     for( unsigned ind : keep_ind )
         cx.pos << orig->cx.pos[ ind ];
+    for( const auto &p : orig->cx.paths_to_strings )
+        for( unsigned ind : keep_ind )
+            cx.paths_to_strings[ p.first ] << p.second[ ind ];
 
     Instruction *res;
     if ( orig == rewind ) {
@@ -722,6 +729,7 @@ Instruction *InstructionGraph::make_rewind_inst(Vec<PendingRewindTrans> &pending
                 ind_keeped_instr << ind;
 
         res = orig->clone( inst_pool, cx, ind_keeped_instr );
+        res->running_strs = orig->running_strs;
 
         // need a mark ?
         //        if ( InstructionWithCode *code = dynamic_cast<InstructionWithCode *>( res ) ) {
@@ -918,6 +926,8 @@ void InstructionGraph::make_rewind_data( InstructionRewind *rewind ) {
 
     // stuff that may change restart context
     for( const InstructionRewind::CodeSeqItem &csi : rewind->code_seq_beg ) {
+        csi.code->update_running_strings( rewind->running_strs );
+
         if ( InstructionBegStr *bs = dynamic_cast<InstructionBegStr *>( csi.code ) )
             rewind->ncx.first.add_string( bs->var );
         else if ( InstructionEndStr *es = dynamic_cast<InstructionEndStr *>( csi.code ) )
@@ -926,6 +936,8 @@ void InstructionGraph::make_rewind_data( InstructionRewind *rewind ) {
     if ( ! rewind->need_rw ) {
         for( unsigned i = rewind->code_seq_end.size(); i--; ) {
             const InstructionRewind::CodeSeqItem &csi = rewind->code_seq_end[ i ];
+            csi.code->update_running_strings( rewind->running_strs );
+
             if ( InstructionBegStr *bs = dynamic_cast<InstructionBegStr *>( csi.code ) )
                 rewind->ncx.first.add_string( bs->var );
             else if ( InstructionEndStr *es = dynamic_cast<InstructionEndStr *>( csi.code ) )

@@ -16,6 +16,7 @@ public:
     virtual bool         data_code             () const override;
     virtual Instruction *clone                 ( PtrPool<Instruction> &inst_pool, const Context &ncx, const Vec<unsigned> &keep_ind ) override;
     virtual void         get_code_repr         ( std::ostream &os ) override;
+    virtual bool         can_be_deleted        () const override;
 
     Vec<std::string>     strs;
 };

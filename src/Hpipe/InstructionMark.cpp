@@ -16,6 +16,11 @@ bool InstructionMark::is_a_mark() const {
 }
 
 void InstructionMark::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
+    //    ss << "// mark";
+    //    ss << "PRINT( *data, Hpipe::Buffer::nb_alive_bufs );";
+    //    ss << "for( Hpipe::Buffer *b = buf; b; b = b->next )";
+    //    ss << "  PRINT( *b->data, b->cpt_use + 1 );";
+
     if ( cpp_emitter->interruptible() ) {
         if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER ) {
             ss << "sipe_data->pending_buf = buf;";
