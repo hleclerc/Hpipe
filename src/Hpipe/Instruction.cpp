@@ -563,8 +563,8 @@ void Instruction::boyer_moore_opt( PtrPool<Instruction> &inst_pool, Instruction 
 void Instruction::merge_eq_next( PtrPool<Instruction> &inst_pool ) {
 }
 
-bool Instruction::need_buf_next() const {
-    return mark;
+unsigned Instruction::need_buf_next() const {
+    return bool( mark ) + cx.paths_to_strings.size();
 }
 
 bool Instruction::has_ret_cont() const {

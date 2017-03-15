@@ -128,14 +128,14 @@ Here is a comparison of the performance of a basic js scanner, written with [re2
 | w/o profile opt  |     6.06785s     |     3.26868s     |    2.15281s    | (2.49x) 1.52x  |
 | with profile opt |     6.36135s     |     3.26959s     |    1.82015s    | (3.49x) 1.80x  |
 
-re2c is not meant to work on interrupted streams, but the base techniques are roughly the same, hence the relevance.
+re2c is not meant to work on interrupted streams, but the base techniques are roughly the same, hence the relevance of the test.
 
 Boyer-Moore like optimizations
 ------------------------------
 
 Like in the Boyer-Moore algorithm it may be beneficial to test several chars ahead, in particular if the test leads most of the time to paths where it is of no use to test the chars before.
 
-For instance. with
+For instance, with
 
 ```python
 main = (
@@ -161,37 +161,39 @@ Operators
 * `'a' .. 'v'` (range): look for a byte value between 'a' and 'v' inclusive. Range works also with numerical values (e.g. `'a' .. 105`).
 * `A - B` (substraction): look for a byte value in `A` but not in `B`.
 * `A B` (concatenation): test for `A`, and if there's a match for machine `A`, advance in the buffer and look for `B`.
-* `{ something in C/C++ }` (execution): execute the code between the `{}` if the previous machines in the lane have a match and _if there is at least one ending path through the following machines_ (which can be guessed or tested). For example, if the machine is `'A' {foo();} 'B'` and the text is 'AC', `foo` won't be executed (`'B'` is not matched). Sometimes, it is not necessary to test the coming machines because there is at least a *sure* path (e.g. with *non mandatory* things like `A*`). If it is necessary to test the coming machines, Hpipe may add a marker to keep the data available until there is an "up to the end" path.
-* `A | B` (priority or): test `A`; if `A` does not work, test `B` with the same input data. Of course, internally it works as a state machine, and while `A` is tested, we keep an eye on `B` to avoid buffering of the incoming data, as much as possible. Nevertheless, sometimes, it can be mandatory, specifically when there are execution machines (`{...}`) which depend on the data and tests to be made (leading to "data dependent" postponed execution).
-* `A*` (loop, not having the priority): test for 0 or any number of successive matches for `A`. If there is a following machine, it will have the priority on `A`. Ex: with `( 'a' 'b' | 'c' {bar();} )* any 'c' {foo();}`, "ababac" will call `foo` two time and `bar` once because `any 'c'` have priority over the machine between the `()`.
-* `A**` (priority loop): test for as much as possible (0 or any number of successive) matches for `A`. `A` has the priority over the eventual following machines. In the preceding example, `foo` would be called three times and `bar` zero.
+* `{ something in the target language }` (execution): execute the code between the `{}` if the previous machines in the lane have a match and _if there is at least one ending path through the following machines_ (which can be guessed or tested). For example, if the machine is `'A' {foo();} 'B'` and the text is 'AC', `foo` won't be executed (`'B'` is not matched). Sometimes, it is not necessary to test the coming machines because there is at least a *sure* path (e.g. with *non mandatory* things like `A*`). If it is necessary to test the coming machines, Hpipe may add a marker to keep the data available until there is an "up to the end" path.
+* `A | B` (priority or): test `A`; if `A` does not work, test `B` with the same input data. Of course, internally, it works as a state machine, and while `A` is tested, we keep an eye on `B` to avoid buffering of the incoming data, as much as possible. Nevertheless, sometimes, it can be mandatory, specifically when there are execution machines (`{...}`) which depend on the data and tests to be made (leading to "data dependent" postponed execution).
+* `A*` (loop, not having the priority): test for 0 or any number of successive matches for `A`. If there is a following machine, it will have the priority on `A`.
+ <!--Ex: with `( 'a' 'b' | 'c' {bar();} )* any 'c' {foo();}`, "ababac" will call `foo` two time and `bar` once because `any 'c'` have priority over the machine between the `()`.-->
+* `A**` (priority loop): test for as much as possible (0 or any number of successive) matches for `A`. `A` has the priority over the eventual following machines.
+ <!--In `( 'a' 'b' | 'c' {bar();} )** any 'c' {foo();}` with "ababac", `foo` would be called three times and `bar` zero.-->
 * `A+` (one or more, not having the priority): test for 1 or more successive matches for `A`. If there is a following machine, it will have the priority on `A`.
 * `A++` (one or more with priority): test for as much as possible matches for `A`, provided that there is at least one match.
 * `A?`(option, not having the priority): test for zero or one match of `A`.  For example, the `eol` machine is equivalent to `cr? lf` to take into account optional dos end lines. If there is a following machine, the following machine have priority.
 * `A??`(option with priority): test for zero or one match of `A`. If  `A` matches, it has the priority.
-* `-> label ... <- label` (goto): `-> label` means "jump to label". `<- label` is to define the label. It allows notably to exit loops with complex priority patterns. For instance, we can find C strings using
+* `-> label ... <- label` (goto): `-> label` means "jump to label". `<- label` is to define the label. It allows notably to exit loops with complex priority patterns. For instance, we can scan C strings using
 ```python
 '"' ( '\\' | '\"' | ( '"' -> out_string ) | any )** <- out_string
 ```
 in place of
 ```python
-'"' ( '\\' | '\"' | any - '"' )** '"' <- out_string
+'"' ( '\\' | '\"' | any - '"' )** '"'
 ```
-when the end machine is written twice.
+where the end machine is written twice (please note that there is no escaping in hpipe strings).
 * `eof`: ok if end of file.
-* `beg_str[ "A" ]`: beginning of a string named `A`. If the corresponding `end_str` is in a succeeding path, `A` will contain (referenced) data between `beg_str` and `end_str`.
-* `end_str[ "A" ]`: end of a string named `A`.
-* `end_str_incl[ "A" ]`: end of a string named `A`. The current char will be included in `A`.
-* `add_str[ "A" ]`: shortcut to write a code that will append the current char value to a string named A (that will be automatically declared in the generated HpipeData structure). `add_str` enables specific optimizations. For instance contiguous `add_str` may be transformed to an "add mark" and a "use mark" instructions, enabling effective zero copy.
+* `beg_str[ "A" ]`: beginning of a string named `A`. If the corresponding `end_str` is in a succeeding path, `A` will contain (referenced) data between `beg_str` and `end_str`. This machine will register an attribute in `HpipeData`. Type of this attribute will depend on the buffer type.
+* `end_str[ "A" ]`: end of a string named `A`. To be used in conjunction with beg_str.
+* `end_str_incl[ "A" ]`: end of a string named `A`, current char being be included in `A`.
+* `add_str[ "A" ]`: shortcut to write a code that will append the current char value to a string named A (that will be automatically declared in the generated `HpipeData` structure). `add_str` enables specific optimizations. For instance contiguous `add_str` may be transformed to an "add mark" and a "use mark" instructions, enabling effective zero copy.
 * `clr_str[ "A" ]`: shortcut to write a code that will clear the string named A.
 
-There are some internal predefined machine to help generate code:
+There are some internal predefined machine to help generate code (mostly for test purpose):
 * `add_include[ 'my_include.h' ]` will add `#include <my_include.h>` (only once) in the preliminary of the generated code
 * `add_prel[ 'some_code' ]` or `add_preliminary[ 'some_code' ]` will add `some_code` (only once) in the preliminary of the generated code
-* `add_attr[ 'some_code' ]` will add `some_code` (only once) in the attributes of the generated class
+* `add_attr[ 'some_code' ]` will add `some_code` (only once) in the attributes of the generated class.
 
-Helper section
---------------
+Helper sections
+---------------
 
 It is possible to define test(s) inside machine definition, using:
 
@@ -234,12 +236,12 @@ will add some code inside the _declaration_ section (which may be in a class or 
 Buffer style
 ============
 
-By default, hpipe generate a `parse` function with a signature like:
+By default (but there are other choices), hpipe generate a `parse` function with a signature like:
 
 ```C++
-unsigned parse( HpipeData* hpipe_data, Hpipe::Buffer* buf, bool last_buf = false )
+unsigned parse( HpipeData* hpipe_data, Hpipe::Buffer* buf, bool last_buf = false );
 ```
-`Hpipe::Buffer` is basically a data chunk with a reference counter and a `next` field for strings made from several data chunks (`Hpipe::CbString` and `Hpipe::CbStringPtr` enable to handle those lists as more or less regular strings). A standard reading pattern using `Hpipe::Buffer` would be
+`Hpipe::Buffer` is basically a data chunk with a reference counter and a `next` field for strings made from several data chunks (`Hpipe::CbString` and `Hpipe::CbStringPtr` enable to handle those lists regular strings). A standard reading pattern using `Hpipe::Buffer` would be
 
 ```C++
 Buffer *inp_buff = Buffer::New( Buffer::default_size );

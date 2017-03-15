@@ -55,7 +55,7 @@ public:
     virtual void          get_code_repr      ( std::ostream &os ) = 0;
     virtual void          boyer_moore_opt    ( PtrPool<Instruction> &inst_pool, Instruction **init = 0 );
     virtual void          merge_eq_next      ( PtrPool<Instruction> &inst_pool );
-    bool                  need_buf_next      () const;
+    unsigned              need_buf_next      () const;
 
     Context               cx;
     Vec<double>           freq;         ///< freq by char

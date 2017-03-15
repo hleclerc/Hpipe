@@ -2,10 +2,10 @@ read[ name, end ] = any beg_str[ name ] any* end end_str[ name ]
 
 get_line = 
     # ( 's: ' read[ 's', eol ] ) |
-    ( any* eol { os << "1"; } )
+    ( any* 'P' { os << "1"; } )
 
 get =
-    'GET ' read[ 'url', ' ' ] # get_line
+    'GET ' read[ 'url', ' ' ] get_line
     { os << url << " "; }
 
 main = get
