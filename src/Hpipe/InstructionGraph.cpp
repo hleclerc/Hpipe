@@ -214,6 +214,15 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
         }
     }
 
+    // BEG_STR (we're not going to add a mark for a BEG_STR, even if there is an ambiguity)
+    if ( ! cx.mark ) {
+        for( unsigned ind = 0; ind < cx.pos.size(); ++ind ) {
+            const CharItem *item = cx.pos[ ind ];
+            if ( item->type == CharItem::BEG_STR || item->type == CharItem::BEG_STR_NEXT )
+                return tra( new InstructionBegStr( cx, item->str, ind, item->type == CharItem::BEG_STR_NEXT ), 0, cx.with_string( item->str ).forward( item ) );
+        }
+    }
+
     // we have a code ?
     for( unsigned ind = 0; ind < cx.pos.size(); ++ind ) {
         const CharItem *item = cx.pos[ ind ];
@@ -230,9 +239,10 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
             case CharItem::CODE        : res = reg( new InstructionCode  ( cx, item->str, ind ) ); break;
             case CharItem::ADD_STR     : res = reg( new InstructionAddStr( cx, item->str, ind ) ); break;
             case CharItem::CLR_STR     : res = reg( new InstructionClrStr( cx, item->str, ind ) ); break;
-            case CharItem::BEG_STR     : res = reg( new InstructionBegStr( cx, item->str, ind    ) ); if ( cx.mark ) break; return tra( res, 0, cx.with_string   ( item->str ).forward( item ) );
+            case CharItem::BEG_STR     : res = reg( new InstructionBegStr( cx, item->str, ind, 0 ) ); break;
+            case CharItem::BEG_STR_NEXT: res = reg( new InstructionBegStr( cx, item->str, ind, 1 ) ); break;
             case CharItem::END_STR     : res = reg( new InstructionEndStr( cx, item->str, ind, 0 ) ); if ( cx.mark ) break; return tra( res, 0, cx.without_string( item->str ).forward( item ) );
-            case CharItem::END_STR_INCL: res = reg( new InstructionEndStr( cx, item->str, ind, 1 ) ); if ( cx.mark ) break; return tra( res, 0, cx.without_string( item->str ).forward( item ) );
+            case CharItem::END_STR_NEXT: res = reg( new InstructionEndStr( cx, item->str, ind, 1 ) ); if ( cx.mark ) break; return tra( res, 0, cx.without_string( item->str ).forward( item ) );
             default: HPIPE_TODO;
             }
 

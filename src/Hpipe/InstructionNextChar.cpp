@@ -198,6 +198,7 @@ void InstructionNextChar::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, Cpp
             es << "if ( last_buf ) goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << ";";
 
         if ( need_buf_next() ) {
+            es << "sipe_data->pending_buf = buf;";
             es << "sipe_data->inp_cont = &&e_" << cont_label << ";";
             es << "HPIPE_BUFFER::inc_ref( buf, " << need_buf_next() << " );";
             es << "return RET_CONT;";

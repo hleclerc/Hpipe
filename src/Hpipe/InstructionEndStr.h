@@ -8,7 +8,7 @@ namespace Hpipe {
 */
 class InstructionEndStr : public InstructionWithCode {
 public:
-    InstructionEndStr( const Context &cx, const std::string &var, int num_active_item, bool included );
+    InstructionEndStr( const Context &cx, const std::string &var, int num_active_item, bool want_next_char );
 
     virtual void         write_dot             ( std::ostream &os, std::vector<std::string> *edge_labels = 0 ) const;
     virtual void         write_cpp             ( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) override;
@@ -19,7 +19,7 @@ public:
     virtual void         update_running_strings( std::set<std::string> &strs ) const override;
 
     std::string          var;
-    bool                 included;
+    bool                 want_next_char;
 };
 
 } // namespace Hpipe

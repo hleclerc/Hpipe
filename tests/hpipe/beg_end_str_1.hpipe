@@ -1,0 +1,22 @@
+main = # 'A' 
+    beg_str_next[ "url" ]
+    any*
+    ' '
+    end_str[ "url" ]
+    { os << url; }
+
+# beg_training
+#     input
+#         GET /smurf HTTP/1.1
+#         s: 17
+
+#     freq
+#         1
+# end_training
+
+beg_test ...
+    input
+        smurf .
+    output
+        smurf status=OK
+end_test

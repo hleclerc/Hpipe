@@ -19,9 +19,10 @@ CppEmitter::CppEmitter( InstructionGraph *sg ) : root( sg->root() ), sg( sg ) {
     inst_to_go_if_ok = 0;
 
     // variables to be computed, max_mark_level, size_save_...
-    need_mark     = false;
-    size_save_glo = 0;
-    size_save_loc = 0;
+    need_pending_buf = false;
+    need_mark        = false;
+    size_save_glo    = 0;
+    size_save_loc    = 0;
 }
 
 void CppEmitter::write_constants( StreamSepMaker &ss ) {
@@ -37,8 +38,13 @@ void CppEmitter::write_constants( StreamSepMaker &ss ) {
 void CppEmitter::write_preliminaries( StreamSepMaker &ss ) {
     ++Instruction::cur_op_id;
     root->apply_rec_rewind_l( [&]( Instruction *inst, unsigned rewind_level ) {
-        if ( inst->is_a_mark() )
+        if ( inst->is_a_mark() ) {
             need_mark = true;
+            need_pending_buf = true;
+        }
+        if ( ! inst->cx.paths_to_strings.empty() ) {
+            need_pending_buf = true;
+        }
 
         inst->reg_var( [&]( std::string type, std::string name ) {
             variables[ name ].type = type;
@@ -71,7 +77,7 @@ void CppEmitter::write_hpipe_data( StreamSepMaker &ss, const std::string &name )
     ss << "struct " << name << " {";
     if ( interruptible() ) {
         ss << "    " << name << "() : inp_cont( 0 ) {}";
-        if ( need_mark ) {
+        if ( need_pending_buf ) {
             ss << "    HPIPE_BUFFER        *pending_buf; ///< if we need to add the current buffer to a previous one";
             ss << "    HPIPE_BUFFER        *rw_buf;";
             ss << "    const unsigned char *rw_ptr;";

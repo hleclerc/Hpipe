@@ -15,7 +15,8 @@ namespace Hpipe {
 class CharItem {
 public:
     enum {
-        END_STR_INCL,
+        BEG_STR_NEXT,
+        END_STR_NEXT,
         NEXT_CHAR,    ///< go to next char
         ADD_STR,
         CLR_STR,

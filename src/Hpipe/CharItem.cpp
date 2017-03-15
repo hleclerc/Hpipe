@@ -64,7 +64,8 @@ void CharItem::get_possible_paths( Vec<Vec<CharItem *>> &paths, std::function<bo
 void CharItem::write_to_stream( std::ostream &os ) const {
     os << "(" << compact_repr() << ")";
     switch ( type ) {
-    case CharItem::END_STR_INCL: os << "EI(" << str << ")"; break;
+    case CharItem::BEG_STR_NEXT: os << "BN(" << str << ")"; break;
+    case CharItem::END_STR_NEXT: os << "EN(" << str << ")"; break;
     case CharItem::NEXT_CHAR:    os << "+1"; break;
     case CharItem::ADD_STR:      os << "AS(" << str << ")"; break;
     case CharItem::CLR_STR:      os << "CL(" << str << ")"; break;
@@ -125,7 +126,7 @@ void CharItem::write_dot_rec( std::ostream &os ) const {
 }
 
 bool CharItem::code_like() const {
-    return type == CODE or type == ADD_STR or type == CLR_STR or type == BEG_STR or type == END_STR or type == END_STR_INCL;
+    return type == CODE or type == ADD_STR or type == CLR_STR or type == BEG_STR or type == BEG_STR_NEXT or type == END_STR or type == END_STR_NEXT;
 }
 
 bool CharItem::advancer() const {

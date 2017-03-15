@@ -104,9 +104,6 @@ CharGraph::CharGraph( Lexer &lexer, const Lexem *lexem ) : ok( true ), lexer( le
                 throw "Item is going nowhere";
         }
     }
-
-    //
-    // update_beg_strs();
 }
 
 void CharGraph::read( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> inputs ) {
@@ -300,8 +297,9 @@ void CharGraph::read( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> i
                 { "add_str"     , [&]( const std::string &l ) { return ci_pool.New( CharItem::ADD_STR     , l ); } },
                 { "clr_str"     , [&]( const std::string &l ) { return ci_pool.New( CharItem::CLR_STR     , l ); } },
                 { "beg_str"     , [&]( const std::string &l ) { return ci_pool.New( CharItem::BEG_STR     , l ); } },
+                { "beg_str_next", [&]( const std::string &l ) { return ci_pool.New( CharItem::BEG_STR_NEXT, l ); } },
                 { "end_str"     , [&]( const std::string &l ) { return ci_pool.New( CharItem::END_STR     , l ); } },
-                { "end_str_incl", [&]( const std::string &l ) { return ci_pool.New( CharItem::END_STR_INCL, l ); } },
+                { "end_str_next", [&]( const std::string &l ) { return ci_pool.New( CharItem::END_STR_NEXT, l ); } },
             };
 
             for( const auto &p : fs ) {
@@ -611,7 +609,7 @@ void CharGraph::clone( Lexem *&beg, Lexem *&end, const Lexem *&l, const Vec<Arg>
 
         // function call ( func[ args ] )
         auto is_inline = []( const Lexem *l ) {
-            return l->eq( "add_str" ) or l->eq( "clr_str" ) or l->eq( "beg_str" ) or l->eq( "end_str" )  or l->eq( "end_str_incl" ) or
+            return l->eq( "add_str" ) or l->eq( "clr_str" ) or l->eq( "beg_str" )  or l->eq( "beg_str_next" ) or l->eq( "end_str" )  or l->eq( "end_str_next" ) or
                    l->eq( "add_include" ) or l->eq( "add_prel" ) or l->eq( "add_preliminary" ) or l->eq( "add_attr" );
         };
 

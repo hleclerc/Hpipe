@@ -36,6 +36,7 @@ public:
 
     // data filled by the constructor, from analysis of the graph
     Instruction      *inst_to_go_if_ok;
+    unsigned          need_pending_buf;
     unsigned          need_mark;
     unsigned          size_save_glo;
     unsigned          size_save_loc;
