@@ -2,6 +2,7 @@
 #include "InstructionRewind.h"
 #include "InstructionSave.h"
 #include "InstructionMark.h"
+#include "InstructionOK.h"
 #include "CppEmitter.h"
 
 namespace Hpipe {
@@ -20,10 +21,14 @@ void InstructionRewind::write_dot( std::ostream &os, std::vector<std::string> *e
     if ( code_seq_end.size() )
         for( const CodeSeqItem &item : code_seq_end )
             item.code->write_dot( os << "\nE" << item.offset << ":" );
+
+    for( const std::string &str : strs_to_cancel )
+        os << "\ncancel " << str;
 }
 
 Instruction *InstructionRewind::clone( PtrPool<Instruction> &inst_pool, const Context &ncx, const Vec<unsigned> &keep_ind ) {
-    return inst_pool << new InstructionRewind( ncx );
+    // return inst_pool << new InstructionRewind( ncx );
+    return inst_pool << new InstructionOK( ncx );
 }
 
 void InstructionRewind::apply_rec( std::function<void(Instruction *)> f, bool subgraphs ) {
@@ -65,10 +70,17 @@ void InstructionRewind::apply_rec_rewind_l( std::function<void(Instruction *, un
 }
 
 bool InstructionRewind::with_code() const {
-    return need_rw || code_seq_beg.size() || code_seq_end.size();
+    return need_rw || code_seq_beg.size() || code_seq_end.size() || strs_to_cancel.size();
 }
 
 void InstructionRewind::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
+    ss << "// RW";
+
+    //
+    for( const std::string &str : strs_to_cancel )
+        ss << "sipe_data->__beg_" << str << "_buf->dec_ref_upto( sipe_data->rw_buf );";
+
+
     // running strings
     std::set<std::string> running_strs;
     for( const auto &p : cx.paths_to_strings )
@@ -155,7 +167,7 @@ void InstructionRewind::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
                     // need to skip some bytes ?
                     if ( item.offset >= 0 && item.offset != off ) {
                         if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER )
-                            ss << "HPIPE_BUFFER::skip( sipe_data->rw_buf, sipe_data->rw_ptr, " << off - item.offset << " );";
+                            ss << "HPIPE_BUFFER::skip( sipe_data->rw_buf, sipe_data->rw_ptr, " << off - item.offset << ", " << running_strs.size() << " );";
                         else
                             ss << "rw_ptr += " << off - item.offset << ";";
                         off = item.offset;
@@ -212,6 +224,7 @@ void InstructionRewind::get_code_repr( std::ostream &os ) {
             os << " " << item.offset << " " << ss.size() << " " << ss;
         }
     }
+    os << strs_to_cancel.size() << " " << strs_to_cancel << " " << mark;
 }
 
 bool InstructionRewind::use_data_in_code_seq() const {
@@ -232,7 +245,7 @@ void InstructionRewind::write_dot_add( std::ostream &os, bool disp_inst_pred, bo
     //    if ( mark )
     //        os << "  node_" << this << " -> node_" << mark << " [color=green];\n";
 
-    if ( need_rw && exec ) {
+    if ( exec ) { // need_rw &&
         // os << "  node_" << this << " -> node_" << rewind_exec << " [style=dashed,color=red,rank=same];\n";
         os << "subgraph cluster_" << this << " {\n";
         os << "  label = \"RW_" << get_display_id() << ( need_rw ? " need_rw" : "" ) << " orx=" << offset_for_ncx << "\";\n";

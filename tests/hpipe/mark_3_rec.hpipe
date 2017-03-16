@@ -1,6 +1,6 @@
-main = 'a' { os << '1' << *data; } (
-    ( 'b' { os << '2' << *data; } 'c' ) | ( 'b' any )
-)* 'c' { os << '3' << *data; }
+main = 'a' {os<<'1'<<*data;} (
+    ( 'b' {os<<'2'<<*data;} 'c' ) | ( 'b' any )
+)* 'c' {os<<'3'<<*data;}
 
 beg_test 2
     input

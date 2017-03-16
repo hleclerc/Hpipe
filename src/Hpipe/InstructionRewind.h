@@ -38,9 +38,9 @@ public:
     bool                 no_code_at_all      () const;
 
     Instruction         *exec;                     ///< intermediate representation. Used to update the following attibutes
-
     Vec<CodeSeqItem>     code_seq_beg;             ///< code from mark
     Vec<CodeSeqItem>     code_seq_end;             ///< code from rewind
+    Vec<std::string>     strs_to_cancel;           ///< strings to cancel before the mark
 
     unsigned             offset_for_ncx = 0;
     int                  use_of_ncx = USE_NCX_BEG; ///< USE_NCX_BEG, ...

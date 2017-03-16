@@ -228,8 +228,8 @@ Context Context::with_string( const std::string &str ) const {
     return res;
 }
 
-void Context::add_string( const std::string &str ) {
-    paths_to_strings[ str ] = range_vec( unsigned( pos.size() ) );
+void Context::add_string( const std::string &str, unsigned ind ) {
+    paths_to_strings[ str ] = ind;
 }
 
 void Context::rem_string( const std::string &str ) {

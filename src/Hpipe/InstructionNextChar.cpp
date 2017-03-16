@@ -28,8 +28,6 @@ Transition *InstructionNextChar::train( std::string::size_type &s, std::string::
 }
 
 Instruction *InstructionNextChar::clone( PtrPool<Instruction> &inst_pool, const Context &ncx, const Vec<unsigned> &keep_ind ) {
-    if ( keep_ind.size() == 1 and keep_ind[ 0 ] == 1 )
-        return inst_pool << new InstructionNone( ncx );
     return inst_pool << new InstructionNextChar( ncx, beg );
 }
 

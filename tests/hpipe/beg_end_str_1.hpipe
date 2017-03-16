@@ -1,8 +1,8 @@
-main = 'A' 
+main = 
     beg_str_next[ "url" ]
     any*
     end_str_next[ "url" ]
-    ' ' | "PU"
+    "UR"
     { os << url; }
 
 # beg_training
@@ -14,22 +14,29 @@ main = 'A'
 #         1
 # end_training
 
-beg_test complete
+beg_test OKOK
     input
-        smurf .
+        smurfUR
     output
         smurf status=OK
 end_test
 
-beg_test KO
+beg_test KO_0
     input
-        s
     output
         status=KO
 end_test
 
-beg_test KO2
+beg_test KO_1
     input
+        smu
+    output
+        status=KO
+end_test
+
+beg_test KO_2
+    input
+        smurfU
     output
         status=KO
 end_test

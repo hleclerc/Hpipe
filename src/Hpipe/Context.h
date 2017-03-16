@@ -42,7 +42,7 @@ public:
     Context                    without_string ( const std::string &str ) const;
     Context                    with_string    ( const std::string &str ) const;
 
-    void                       add_string     ( const std::string &str );
+    void                       add_string     ( const std::string &str, unsigned ind );
     void                       rem_string     ( const std::string &str );
 
     bool                       only_has       ( int char_item_type ) const;

@@ -50,6 +50,8 @@ src/Hpipe/InstructionAddStr.cpp
 src/Hpipe/InstructionAddStr.h
 src/Hpipe/InstructionClrStr.cpp
 src/Hpipe/InstructionClrStr.h
+src/Hpipe/InstructionFreeStr.h
+src/Hpipe/InstructionFreeStr.h
 src/Hpipe/InstructionCode.cpp
 src/Hpipe/InstructionCode.h
 src/Hpipe/InstructionCond.cpp

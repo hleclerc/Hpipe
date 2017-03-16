@@ -14,7 +14,7 @@ void InstructionMultiCond::write_dot( std::ostream &os, std::vector<std::string>
     if ( edge_labels )
         for( unsigned i = 0; i < conds.size(); ++i )
             edge_labels->emplace_back( to_string( conds[ i ] ) );
-    else
+    else if ( conds.size() )
         for( unsigned i = 0; i < conds.size() - 1; ++i )
             os << " " << conds[ i ];
     if ( off_data )
@@ -23,11 +23,7 @@ void InstructionMultiCond::write_dot( std::ostream &os, std::vector<std::string>
 }
 
 Instruction *InstructionMultiCond::clone( PtrPool<Instruction> &inst_pool, const Context &ncx, const Vec<unsigned> &keep_ind ) {
-    Vec<Cond> nconds;
-    nconds.reserve( keep_ind.size() );
-    for( unsigned ind : keep_ind )
-        nconds << conds[ ind ];
-    return inst_pool << new InstructionMultiCond( ncx, nconds );
+    return inst_pool << new InstructionMultiCond( ncx, conds );
 }
 
 Transition *InstructionMultiCond::train( std::string::size_type &s, std::string::size_type &m, const std::string &inp, double freq, bool use_contiguous ) {

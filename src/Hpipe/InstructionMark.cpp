@@ -1,4 +1,5 @@
 #include "InstructionMark.h"
+#include "InstructionSkip.h"
 #include "CppEmitter.h"
 
 namespace Hpipe {
@@ -48,7 +49,8 @@ void InstructionMark::get_code_repr( std::ostream &os ) {
 }
 
 Instruction *InstructionMark::clone( PtrPool<Instruction> &inst_pool, const Context &ncx, const Vec<unsigned> &keep_ind ) {
-    return inst_pool << new InstructionMark( ncx, num_active_item );
+    // return inst_pool << new InstructionMark( ncx, num_active_item );
+    return inst_pool << new InstructionSkip( ncx );
 }
 
 } // namespace Hpipe

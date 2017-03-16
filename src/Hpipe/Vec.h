@@ -58,7 +58,10 @@ struct Vec : std::vector<T> {
     const T &operator[]           ( unsigned index ) const { HPIPE_ASSERT_IF_DEBUG( index < this->size() ); return std::vector<T>::operator[]( index ); }
     T       &operator[]           ( unsigned index ) { HPIPE_ASSERT_IF_DEBUG( index < this->size() ); return std::vector<T>::operator[]( index ); }
 
-    void     secure_set                  ( unsigned index, const T &val ) { if ( index >= this->size() ) this->resize( index + 1 ); this->operator[]( index ) = val; }
+    void     secure_set           ( unsigned index, const T &val ) { if ( index >= this->size() ) this->resize( index + 1 ); this->operator[]( index ) = val; }
+
+    template<class U>
+    void     secure_push_back     ( unsigned index, const U &val ) { if ( index >= this->size() ) this->resize( index + 1 ); this->operator[]( index ).push_back( val ); }
 
     bool     contains             ( const T &val ) const { for( unsigned i = 0; i < this->size(); ++i ) if ( this->operator[]( i ) == val ) return true; return false; }
     bool     only_has             ( const T &val ) const { for( unsigned i = 0; i < this->size(); ++i ) if ( this->operator[]( i ) != val ) return false; return true; }

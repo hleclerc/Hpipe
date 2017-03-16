@@ -42,6 +42,8 @@ void Instruction::write_dot_rec( std::ostream &os, bool disp_inst_pred, bool dis
 
     if ( display_id )
         ss << "(" << display_id << ") ";
+    if ( orig && orig->display_id )
+        ss << "(orig=" << orig->display_id << ") ";
 
     if ( disp_rc_item ) {
         ss << "[";
@@ -65,15 +67,17 @@ void Instruction::write_dot_rec( std::ostream &os, bool disp_inst_pred, bool dis
     if ( disp_rc_item ) {
         if ( mark )
             ss << "\n[" << cx.paths_to_mark << "]";
-        if ( cx.paths_to_strings.empty() ) {
-            for( const std::string &str : running_strs )
-                ss << "\n" << str;
-        } else {
-            for( const auto &p : cx.paths_to_strings )
-                ss << "\n" << p.first << ":[" << p.second << "]";
-            for( const std::string &str : running_strs )
-                ss << "\n" << str;
-        }
+        for( const auto &p : cx.paths_to_strings )
+            ss << "\n" << p.first << ":[" << p.second << "]";
+        for( const std::string &str : running_strs )
+            ss << "\n" << str;
+        //        if ( cx.paths_to_strings.empty() ) {
+        //        } else {
+        //            for( const auto &p : cx.paths_to_strings )
+        //                ss << "\n" << p.first << ":[" << p.second << "]";
+        //            for( const std::string &str : running_strs )
+        //                ss << "\n" << str;
+        //        }
     } else {
         for( const std::string &str : running_strs )
             ss << "\n" << str;
@@ -90,36 +94,75 @@ void Instruction::write_dot_rec( std::ostream &os, bool disp_inst_pred, bool dis
 
     write_dot_add( os, disp_inst_pred, disp_trans_freq, disp_rc_item );
 
-    for( unsigned nt = 0; nt < next.size(); ++nt) {
-        const Transition &t = next[ nt ];
-        if ( rec && t.inst )
-            t.inst->write_dot_rec( os, disp_inst_pred, disp_trans_freq, disp_rc_item, rec );
+    if ( orig ) {
+        for( unsigned nr = 0; nr < next_rw.size(); ++nr ) {
+            for( unsigned nt = 0; nt < next_rw[ nr ].size(); ++nt) {
+                const Transition &t = next_rw[ nr ][ nt ];
+                if ( ! t.inst )
+                    continue;
+                if ( rec )
+                    t.inst->write_dot_rec( os, disp_inst_pred, disp_trans_freq, disp_rc_item, rec );
 
-        std::ostringstream label;
-        int cpt = 0;
-        if ( disp_rc_item )
-            label << ( cpt++ ? "\n" : "" ) << t.rcitem;
-        if ( disp_trans_freq and t.freq >= 0 )
-            label << ( cpt++ ? "\n" : "" ) << "f=" << t.freq;
-        if ( nt < edge_labels.size() )
-            label << ( cpt++ ? "\n" : "" ) << edge_labels[ nt ];
+                std::ostringstream label;
+                int cpt = 0;
+                if ( disp_rc_item )
+                    label << ( cpt++ ? "\n" : "" ) << t.rcitem;
+                if ( disp_trans_freq and t.freq >= 0 )
+                    label << ( cpt++ ? "\n" : "" ) << "f=" << t.freq;
+                if ( nr < edge_labels.size() )
+                    label << ( cpt++ ? "\n" : "" ) << edge_labels[ nr ];
 
-        dot_out( os << "  node_" << this << " -> node_" << t.inst << " [label=\"", label.str() ) << "\"";
+                dot_out( os << "  node_" << this << " -> node_" << t.inst << " [label=\"", label.str() ) << "\"";
 
-        //        switch ( nt ) {
-        //        case 0:  break;
-        //        case 1:  os << ",style=dashed"; break;
-        //        default: os << ",style=dotted"; break;
-        //        }
+                //        switch ( nt ) {
+                //        case 0:  break;
+                //        case 1:  os << ",style=dashed"; break;
+                //        default: os << ",style=dotted"; break;
+                //        }
 
-        if ( nt and dynamic_cast<const InstructionNextChar *>( this ) )
-            os << ",color=lightgray";
+                if ( nr and dynamic_cast<const InstructionNextChar *>( this ) )
+                    os << ",color=lightgray";
 
-        os << "];\n";
+                os << "];\n";
+            }
+        }
+    } else {
+        for( unsigned nt = 0; nt < next.size(); ++nt) {
+            const Transition &t = next[ nt ];
+            if ( ! t.inst )
+                continue;
+            if ( rec )
+                t.inst->write_dot_rec( os, disp_inst_pred, disp_trans_freq, disp_rc_item, rec );
+
+            std::ostringstream label;
+            int cpt = 0;
+            if ( disp_rc_item )
+                label << ( cpt++ ? "\n" : "" ) << t.rcitem;
+            if ( disp_trans_freq and t.freq >= 0 )
+                label << ( cpt++ ? "\n" : "" ) << "f=" << t.freq;
+            if ( nt < edge_labels.size() )
+                label << ( cpt++ ? "\n" : "" ) << edge_labels[ nt ];
+
+            dot_out( os << "  node_" << this << " -> node_" << t.inst << " [label=\"", label.str() ) << "\"";
+
+            //        switch ( nt ) {
+            //        case 0:  break;
+            //        case 1:  os << ",style=dashed"; break;
+            //        default: os << ",style=dotted"; break;
+            //        }
+
+            if ( nt and dynamic_cast<const InstructionNextChar *>( this ) )
+                os << ",color=lightgray";
+
+            os << "];\n";
+        }
     }
 
     if ( disp_inst_pred ) {
         for( const Transition &t : prev ) {
+            if ( ! t.inst )
+                continue;
+
             std::ostringstream label;
             int cpt = 0;
             //            if ( t.inst->type == Instruction::COND ) {
@@ -132,6 +175,7 @@ void Instruction::write_dot_rec( std::ostream &os, bool disp_inst_pred, bool dis
             if ( disp_rc_item )
                 label << ( cpt++ ? "\n" : "" ) << t.rcitem;
 
+            t.inst->write_dot_rec( os, disp_inst_pred, disp_trans_freq, disp_rc_item, rec );
             dot_out( os << "  node_" << t.inst << " -> node_" << this << " [label=\"", label.str() ) << "\",color=blue];\n";
         }
     }
@@ -150,6 +194,11 @@ void Instruction::apply( std::function<void (Instruction *)> f, bool subgraphs )
     apply_rec( f, subgraphs );
 }
 
+void Instruction::apply_rw( std::function<void (Instruction *)> f, bool subgraphs ) {
+    ++cur_op_id;
+    apply_rw_rec( f, subgraphs );
+}
+
 void Instruction::apply_rec( std::function<void (Instruction *)> f, bool subgraphs ) {
     if ( op_id == Instruction::cur_op_id )
         return;
@@ -158,7 +207,21 @@ void Instruction::apply_rec( std::function<void (Instruction *)> f, bool subgrap
     f( this );
 
     for( Transition &t : next )
-        t.inst->apply_rec( f, subgraphs );
+        if ( t.inst )
+            t.inst->apply_rec( f, subgraphs );
+}
+
+void Instruction::apply_rw_rec( std::function<void (Instruction *)> f, bool subgraphs ) {
+    if ( op_id == Instruction::cur_op_id )
+        return;
+    op_id = Instruction::cur_op_id;
+
+    f( this );
+
+    for( Vec<Transition> &v : next_rw )
+        for( Transition &t : v )
+            if ( t.inst )
+                t.inst->apply_rw_rec( f, subgraphs );
 }
 
 void Instruction::get_unused_rec( Vec<Instruction *> &to_remove, Instruction *&init ) {
@@ -582,6 +645,15 @@ Vec<std::string> Instruction::strs_not_in( const Context &cx ) const {
     for( const std::string &str : running_strs )
         if ( ! cx.paths_to_strings.count( str ) )
             res << str;
+    return res;
+}
+
+unsigned Instruction::nb_next_rw() const {
+    unsigned res = 0;
+    for( const Vec<Transition> &n : next_rw )
+        for( const Transition &t : n )
+            if ( t.inst )
+                ++res;
     return res;
 }
 

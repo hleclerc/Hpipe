@@ -30,25 +30,26 @@ protected:
     struct PendingTrans {
         PendingTrans( Instruction *inst, unsigned num_edge, const Context &cx, const Vec<unsigned> &rcitem = {} ) : inst( inst ), num_edge( num_edge ), cx( cx ), rcitem( rcitem ) {}
         PendingTrans( Instruction *inst, unsigned num_edge, const Context::PC &pc ) : inst( inst ), num_edge( num_edge ), cx( pc.first ), rcitem( pc.second ) {}
+
         Instruction  *inst;     ///< starting instruction
         unsigned      num_edge; ///< num transition in inst ( inst->next[ num_edge ] )
         Context       cx;       ///< where to go
         Vec<unsigned> rcitem;   ///< how to go to cx
     };
-    struct PendingRewindTrans {
-        PendingRewindTrans( Instruction *inst, unsigned num_edge, unsigned num_trans, InstructionMark *rewind_mark, Instruction *res = 0, bool use_rv = false ) : inst( inst ), num_edge( num_edge ), num_trans( num_trans ), rewind_mark( rewind_mark ), res( res ), use_rv( use_rv ) {}
 
-        Instruction     *inst;
-        unsigned         num_edge;
-        unsigned         num_trans; ///< in inst
-        InstructionMark *rewind_mark;
-        Instruction     *res;
-        bool             use_rv;    ///< use range_vec for nrcitem
+    struct PendingRewindTrans {
+        PendingRewindTrans( Instruction *new_inst, unsigned num_prev, unsigned num_next ) : new_inst( new_inst ), num_prev( num_prev ), num_next( num_next ) {}
+
+        Instruction *new_inst; ///<
+        unsigned     num_prev; ///<
+        unsigned     num_next; ///< num_next in prev
     };
+
     struct RewindContext {
-        bool operator<( const RewindContext &rw ) const { return std::tie( orig, mark ) < std::tie( rw.orig, rw.mark ); }
-        Instruction *orig;
-        Instruction *mark;
+        bool operator<( const RewindContext &rw ) const { return std::tie( orig, keep ) < std::tie( rw.orig, rw.keep ); }
+
+        Instruction  *orig;
+        Vec<unsigned> keep;
     };
     using Tcache = std::map<Context,Instruction *>;
 
@@ -66,18 +67,16 @@ protected:
     void                            disp_if              ( const std::vector<std::string> &disp, bool disp_inst_pred, bool disp_trans_freq, const std::string &name, bool disp_rcitem = true );
     void                            merge_eq_pred        ( Instruction *&root );
     void                            boyer_moore          ();
-    Instruction                    *make_rewind_inst     ( Vec<PendingRewindTrans> &loc_pending_trans, std::map<RewindContext,Instruction *> &instruction_map, std::unordered_map<Instruction *,Vec<unsigned>> possible_inst, InstructionRewind *rewind, Instruction *orig, const PendingRewindTrans &pt ); ///< rewind_mark is a mark in the rewind context
     unsigned                        nb_multi_conds       ();
     Instruction                    *make_boyer_moore_rec ( const Vec<std::pair<Vec<Cond>, Instruction *> > &front, InstructionNextChar *next_char, int orig_front_size );
     bool                            no_code_ambiguity    ( InstructionMark *mark, Instruction *inst, const Vec<unsigned> &rcitem );
 
-    Instruction                    *init;
     Instruction                    *ok;
     Instruction                    *ko;
+    Instruction                    *init;
     Context                         cx_ok;
     Context                         cx_ko;
     Tcache                          cache;
-    // std::set<Context>               forbiden_branching;
     PtrPool<Instruction>            inst_pool;
     bool                            no_training;
 };

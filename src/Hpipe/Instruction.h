@@ -24,7 +24,9 @@ public:
     virtual Instruction  *clone              ( PtrPool<Instruction> &inst_pool, const Context &ncx, const Vec<unsigned> &keep_ind ) = 0;
     unsigned              get_display_id     () const;
     void                  apply              ( std::function<void(Instruction *)> f, bool subgraphs = false );
+    void                  apply_rw           ( std::function<void(Instruction *)> f, bool subgraphs = false );
     virtual void          apply_rec          ( std::function<void(Instruction *)> f, bool subgraphs = false );
+    virtual void          apply_rw_rec       ( std::function<void(Instruction *)> f, bool subgraphs = false );
     virtual void          get_unused_rec     ( Vec<Instruction *> &to_remove, Instruction *&init );
     bool                  find_rec           ( std::function<bool(Instruction *)> f );
     virtual void          apply_rec_rewind_l ( std::function<void(Instruction *, unsigned)> f, unsigned rewind_level = 0 );
@@ -57,20 +59,24 @@ public:
     virtual void          merge_eq_next      ( PtrPool<Instruction> &inst_pool );
     unsigned              need_buf_next      () const;
     Vec<std::string>      strs_not_in        ( const Context &cx ) const;
+    unsigned              nb_next_rw         () const;
 
     Context               cx;
-    Vec<double>           freq;         ///< freq by char
-    double                cum_freq;     ///< tot freq
-    Vec<Transition>       next;         ///< transitions to other states
-    Vec<Transition>       prev;         ///< transitions to other states
+    Vec<double>           freq;          ///< freq by char
+    double                cum_freq;      ///< tot freq
+    Vec<Transition>       next;          ///< transitions to other states
+    Vec<Transition>       prev;          ///< transitions to other states
 
     // helpers for mark/rewind
     int                   num_in_dfs_stack;
     bool                  in_a_branch;
     bool                  in_a_cycle;
-    Instruction          *orig;         ///< if is a clone (for a rewind)
-    InstructionMark      *mark;         ///<
-    std::set<std::string> running_strs; ///<
+    Instruction          *orig;          ///< if is a clone (for a rewind)
+    Vec<unsigned>         orig_keed_ind; ///<
+    Vec<Vec<Transition>>  next_rw;       ///< transitions to other states (with potential undecidability)
+
+    InstructionMark      *mark;          ///<
+    std::set<std::string> running_strs;  ///<
 
     // for code generation
     int                   num_ordering;
