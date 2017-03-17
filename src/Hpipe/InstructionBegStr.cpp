@@ -58,4 +58,12 @@ bool InstructionBegStr::data_code() const {
     return true;
 }
 
+bool InstructionBegStr::works_on_next() const {
+    return want_next_char;
+}
+
+InstructionWithCode *InstructionBegStr::no_works_on_next_clone( PtrPool<Instruction> &inst_pool ) const {
+    return inst_pool << new InstructionBegStr( cx, var, num_active_item, false );
+}
+
 } // namespace Hpipe

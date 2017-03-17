@@ -1,8 +1,15 @@
-main = ( 'a' )** { os << *data; } { os << *data; }
+main = 'a'** { os << *data; } # { os << *data; }
 
 beg_test 1
     input
         aaaa
     output
-        aa status=OK
+        a status=OK
+end_test
+
+beg_test 1
+    input
+        aab
+    output
+        a status=OK
 end_test

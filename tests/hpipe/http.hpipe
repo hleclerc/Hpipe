@@ -8,7 +8,7 @@ get =
     'GET ' read[ 'url', ' ' ] get_line**
     { os << url << " s:" << s; }
 
-main = get
+main = 'GET ' read[ "pouet" ] { os << pouet; } # get
     # beg_str_next[ 'url' ] any* end_str_next[ 'url' ] eol
     # beg_str_next[ 'url' ] any* end_str_next[ 'url' ] eol
 

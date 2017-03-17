@@ -28,6 +28,10 @@ void InstructionEndStr::update_running_strings( std::set<std::string> &strs ) co
     strs.erase( var );
 }
 
+bool InstructionEndStr::works_on_next() const {
+    return want_next_char;
+}
+
 void InstructionEndStr::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
     write_cpp_code_seq( ss, es, cpp_emitter );
     write_trans( ss, cpp_emitter );
@@ -55,5 +59,10 @@ void InstructionEndStr::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &
 bool InstructionEndStr::data_code() const {
     return true;
 }
+
+InstructionWithCode *InstructionEndStr::no_works_on_next_clone( PtrPool<Instruction> &inst_pool ) const {
+    return inst_pool << new InstructionEndStr( cx, var, num_active_item, false );
+}
+
 
 } // namespace Hpipe

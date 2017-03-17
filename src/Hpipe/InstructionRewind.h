@@ -15,11 +15,7 @@ public:
         int                  offset; ///< -1 means that code does not need data
         InstructionWithCode *code;
     };
-    enum {
-        USE_NCX_NONE,
-        USE_NCX_BEG,
-        USE_NCX_END,
-    };
+
     InstructionRewind( const Context &cx );
 
     virtual void         write_dot           ( std::ostream &os, std::vector<std::string> *edge_labels = 0 ) const;
@@ -34,7 +30,7 @@ public:
     virtual void         reg_var             ( std::function<void (std::string, std::string)> f, CppEmitter *cpp_emitter );
     virtual void         get_code_repr       ( std::ostream &os ) override;
 
-    bool                 use_data_in_code_seq() const;
+    bool                 need_mark           () const;
     bool                 no_code_at_all      () const;
 
     Instruction         *exec;                     ///< intermediate representation. Used to update the following attibutes
@@ -42,11 +38,10 @@ public:
     Vec<CodeSeqItem>     code_seq_end;             ///< code from rewind
     Vec<std::string>     strs_to_cancel;           ///< strings to cancel before the mark
 
-    unsigned             offset_for_ncx = 0;
-    int                  use_of_ncx = USE_NCX_BEG; ///< USE_NCX_BEG, ...
+    unsigned             offset_ncx;
     Context::PC          ncx;                      ///< new context
 
-    bool                 need_rw        = false;   ///< true if needed to rewind at mark (+ offset_for_ncx)
+    bool                 need_rw;                  ///< true if needed to rewind at mark (+ offset_for_ncx)
 };
 
 } // namespace Hpipe

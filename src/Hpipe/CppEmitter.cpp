@@ -158,7 +158,13 @@ void CppEmitter::write_parse_def( StreamSepMaker &ss, const std::string &hpipe_d
 
     nb_cont_label = 0;
     nb_id_gen     = 0;
-    write_parse_body( nss, root );
+
+    std::ostringstream tos;
+    StreamSepMaker tss( tos, nss.beg );
+    write_parse_body( tss, root );
+    for( const std::string &lv : loc_vars )
+        nss << lv;
+    *ss.stream << tos.str();
 
     ss << "}";
 }
@@ -443,6 +449,10 @@ std::string CppEmitter::repl_data( std::string code, const std::string &repl ) {
     }
 
     return code;
+}
+
+void CppEmitter::need_loc_var( const std::string &str ) {
+    loc_vars.insert( str );
 }
 
 } // namespace Hpipe

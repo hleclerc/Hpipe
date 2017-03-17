@@ -18,5 +18,13 @@ bool InstructionWithCode::can_be_deleted() const {
 void InstructionWithCode::update_running_strings( std::set<std::string> &strs ) const {
 }
 
+bool InstructionWithCode::works_on_next() const {
+    return false;
+}
+
+InstructionWithCode *InstructionWithCode::no_works_on_next_clone( PtrPool<Instruction> &inst_pool ) const {
+    return 0;
+}
+
 
 } // namespace Hpipe

@@ -42,6 +42,11 @@ InstructionGraph::InstructionGraph( CharGraph *cg, const std::vector<std::string
     simplify_marks();
     disp_if( disp, disp_inst_pred, disp_trans_freq, "mark" );
 
+    // +1( MC, KO ) => +1[ no test ]( MC( 0 => KO, ... ) )
+    if ( stop_char >= 0 )
+        opt_stop_char( stop_char );
+    disp_if( disp, disp_inst_pred, disp_trans_freq, "stop_char", false );
+
     // clean up
     remove_unused( init );
     disp_if( disp, disp_inst_pred, disp_trans_freq, "unused", false );
@@ -54,11 +59,6 @@ InstructionGraph::InstructionGraph( CharGraph *cg, const std::vector<std::string
     if ( want_boyer_moore )
         boyer_moore();
     disp_if( disp, disp_inst_pred, disp_trans_freq, "boyer", false );
-
-    // +1( MC, KO ) => +1[ no test ]( MC( 0 => KO, ... ) )
-    if ( stop_char >= 0 )
-        opt_stop_char( stop_char );
-    disp_if( disp, disp_inst_pred, disp_trans_freq, "stop_char", false );
 
     // cond opt
     optimize_conditions();
@@ -385,7 +385,7 @@ void InstructionGraph::simplify_marks() {
     for( InstructionMark *mark : marks ) {
         bool need_mark = false;
         for( InstructionRewind *rw : mark->rewinds ) {
-            if ( rw->need_rw || rw->use_data_in_code_seq() ) {
+            if ( rw->need_mark() ) {
                 need_mark = true;
                 break;
             }
@@ -468,6 +468,32 @@ void InstructionGraph::opt_stop_char( int stop_char ) {
         }
         if ( ! same_ko )
             continue;
+
+        // check that ko does not contain positionnal code or if its possible to offset the positionnal code
+        if ( ko ) {
+            bool ok_ko = true, has_choice = false;
+            Vec<InstructionRewind *> rewinds;
+            ko->apply( [&]( Instruction *inst ) {
+                // we want rewinds to be updated only once
+                if ( inst->prev.size() > 1 )
+                    has_choice = true;
+                if ( InstructionRewind *rw = dynamic_cast<InstructionRewind *>( inst ) ) {
+                    if ( rw->need_rw || has_choice )
+                        ok_ko = false;
+                    else
+                        rewinds << rw;
+                } else if ( inst->data_code() || dynamic_cast<InstructionMark *>( inst ) )
+                    ok_ko = false;
+            } );
+            if ( ! ok_ko )
+                continue;
+            // update offset in rewinds
+            if ( ! fc->beg )
+                for( InstructionRewind *rw : rewinds )
+                    for( InstructionRewind::CodeSeqItem &item : rw->code_seq_end )
+                        if ( item.offset >= 0 )
+                            ++item.offset;
+        }
 
         // remove nc->ko
         for( int i = 0; i < mc->prev.size(); ++i ) {
@@ -805,11 +831,71 @@ void InstructionGraph::make_rewind_data( InstructionRewind *rewind ) {
         return;
     }
 
+    // read instructions from the end (from OK instruction) until undecidabitity
+    InstructionOK *ok = 0;
+    unsigned offset_end = 0;
+    rewind->exec->apply_rw( [&]( Instruction *inst ) {
+        if ( InstructionOK *tr = dynamic_cast<InstructionOK *>( inst ) )
+            ok = tr;
+    } );
+    if ( ok ) {
+        for( Instruction *inst = ok, *next = nullptr; ; ) {
+            // if in a loop, stop here
+            if ( inst->nb_next_rw() >= 1 + bool( inst != ok ) )
+                break;
+
+            // some code to register ?
+            if ( InstructionWithCode *wc = dynamic_cast<InstructionWithCode *>( inst ) ) {
+                // if ambiguity, on a code, we stop here, to let the beg seq take care of it (with a rewind)
+                if ( wc->cx.pos.size() >= 2 )
+                    break;
+                rewind->code_seq_end.emplace_back( wc->data_code() ? offset_end : -1, wc );
+                wc->in_code_seq = true;
+            }
+
+            // several choices or end ?
+            if ( inst->prev.size() != 1 )
+                break;
+
+            // advance
+            if ( InstructionNextChar *nc = dynamic_cast<InstructionNextChar *>( inst ) ) {
+                if ( nc->beg == false ) {
+                    bool in[ 2 ] = { false, false }; // in ok, in ko
+                    for( unsigned nt = 0; nt < 2; ++nt ) {
+                        if ( nt < nc->next_rw.size() ) {
+                            for( const Transition &t : nc->next_rw[ nt ] )
+                                if ( next && t.inst == next )
+                                    in[ nt ] = true;
+                        }
+                    }
+                    // if OK and KO are possible, we don't know if we have to advance or not
+                    if ( in[ 0 ] && in[ 1 ] )
+                        break;
+                    if ( in[ 0 ] )
+                        ++offset_end;
+                }
+            }
+
+            // loop
+            next = inst;
+            inst = inst->prev[ 0 ].inst;
+        }
+    }
+
+    // replace _next instruction to non next versions if possible
+    for( unsigned num_item = 0; num_item < rewind->code_seq_end.size(); ++num_item ) {
+        InstructionRewind::CodeSeqItem &item = rewind->code_seq_end[ num_item ];
+        if ( item.offset && item.code->works_on_next() && ( num_item == 0 || rewind->code_seq_end[ num_item - 1 ].offset < item.offset ) ) {
+            item.code = item.code->no_works_on_next_clone( inst_pool );
+            --item.offset;
+        }
+    }
+
     // read instructions from the beginning, until undecibility
     unsigned offset_beg = 0;
-    const Context *restart_cx = 0;
+    const Context *ncx_beg = 0;
     for( Instruction *inst = rewind->exec; ; ) {
-        restart_cx = &inst->cx;
+        ncx_beg = &inst->cx;
 
         // if in a loop, stop here
         if ( inst->prev.size() >= 2 )
@@ -831,8 +917,12 @@ void InstructionGraph::make_rewind_data( InstructionRewind *rewind ) {
 
         // some code to register ?
         if ( InstructionWithCode *wc = dynamic_cast<InstructionWithCode *>( inst ) ) {
+            // already handled by code_seq_end
+            if ( wc->in_code_seq )
+                break;
             // if ambiguity, we make a rewind on wc
             if ( wc->cx.pos.size() >= 1 + bool( inst != rewind->exec ) ) {
+                rewind->offset_ncx = offset_beg;
                 rewind->need_rw = true;
                 break;
             }
@@ -851,72 +941,21 @@ void InstructionGraph::make_rewind_data( InstructionRewind *rewind ) {
         inst = next_rw;
     }
 
-    // instruction from the end (from OK instruction)
-    if ( ! rewind->need_rw ) {
-        InstructionOK *ok = 0;
-        unsigned offset_end = 0;
-        rewind->exec->apply_rw( [&]( Instruction *inst ) {
-            if ( InstructionOK *tr = dynamic_cast<InstructionOK *>( inst ) )
-                ok = tr;
-        } );
-        if ( ok ) {
-            for( Instruction *inst = ok, *next = nullptr; ; ) {
-                // if in a loop, stop here
-                if ( inst->nb_next_rw() >= 1 + bool( inst != ok ) )
-                    break;
-
-                // some code to register ?
-                if ( InstructionWithCode *wc = dynamic_cast<InstructionWithCode *>( inst ) ) {
-                    if ( wc->in_code_seq || wc->cx.pos.size() >= 2 )
-                        break;
-                    rewind->code_seq_end.emplace_back( wc->data_code() ? offset_end : -1, wc );
-                    wc->in_code_seq = true;
-                }
-
-                // several choices or end ?
-                if ( inst->prev.size() != 1 )
-                    break;
-
-                // advance
-                if ( InstructionNextChar *nc = dynamic_cast<InstructionNextChar *>( inst ) ) {
-                    if ( nc->beg == false ) {
-                        bool in[ 2 ] = { false, false }; // in ok, in ko
-                        for( unsigned nt = 0; nt < 2; ++nt ) {
-                            if ( nt < nc->next_rw.size() ) {
-                                for( const Transition &t : nc->next_rw[ nt ] )
-                                    if ( next && t.inst == next )
-                                        in[ nt ] = true;
-                            }
-                        }
-                        // if OK and KO are possible, we don't know if we have to advance or not
-                        if ( in[ 0 ] && in[ 1 ] )
-                            break;
-                        if ( in[ 0 ] )
-                            ++offset_end;
-                    }
-                }
-
-                // loop
-                next = inst;
-                inst = inst->prev[ 0 ].inst;
-            }
-        }
-    }
-
     // test if there are some instructions between code_seq_beg and code_seq_end
     rewind->exec->apply_rw( [&]( Instruction *inst ) {
-        if ( InstructionWithCode *code = dynamic_cast<InstructionWithCode *>( inst ) )
-            if ( ! code->in_code_seq )
+        if ( InstructionWithCode *code = dynamic_cast<InstructionWithCode *>( inst ) ) {
+            if ( ! code->in_code_seq ) {
+                rewind->offset_ncx = offset_beg;
                 rewind->need_rw = true;
+            }
+        }
     } );
 
     // restart context
-    if ( rewind->need_rw ) {
-        rewind->ncx = restart_cx->without_mark();
-        rewind->offset_for_ncx = offset_beg;
-    } else {
+    if ( rewind->need_rw )
+        rewind->ncx = ncx_beg->without_mark();
+    else
         rewind->ncx = rewind->cx.without_mark();
-    }
 
     // stuff that may change the restart context
     for( const InstructionRewind::CodeSeqItem &csi : rewind->code_seq_beg ) {
