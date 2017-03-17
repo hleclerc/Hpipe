@@ -223,7 +223,7 @@ Context Context::without_string( const std::string &str ) const {
 Context Context::with_string( const std::string &str ) const {
     Context res( *this );
     if ( res.paths_to_strings.count( str ) )
-        std::cerr << "Error: " << str << " is already in the context";
+        std::cerr << "Error: " << str << " is already in the context" << std::endl;
     res.paths_to_strings[ str ] = range_vec( unsigned( pos.size() ) );
     return res;
 }

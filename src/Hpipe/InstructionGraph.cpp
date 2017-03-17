@@ -182,6 +182,16 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
             return tra( new InstructionFreeStr( cx, strs ), 0, { cx, range_vec( unsigned( cx.pos.size() ) ) } );
     }
 
+    // we can cancel a mark ?
+    if ( cx.mark && ( CharGraph::leads_to_ok( cx.pos ) || cx.pos.empty() ) ) {
+        if ( cx.paths_to_mark.contains( cx.mark->num_active_item ) == false ||
+             cx.paths_to_mark.only_has( cx.mark->num_active_item ) ) {
+            InstructionRewind *res = inst_pool << new InstructionRewind( cx );
+            // res->running_strs = pt.inst->running_strs;
+            return res;
+        }
+    }
+
     // we already have way(s) to go to cx ?
     Tcache::iterator iter = cache.find( cx );
     if ( iter != cache.end() )
@@ -192,16 +202,6 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
         cache.insert( iter, std::make_pair( cx, inst_pool << inst ) );
         return inst;
     };
-
-    // we can cancel a mark ?
-    if ( cx.mark && ( CharGraph::leads_to_ok( cx.pos ) || cx.pos.empty() ) ) {
-        if ( cx.paths_to_mark.contains( cx.mark->num_active_item ) == false ||
-             cx.paths_to_mark.only_has( cx.mark->num_active_item ) ) {
-            InstructionRewind *res = inst_pool << new InstructionRewind( cx );
-            // res->running_strs = pt.inst->running_strs;
-            return res;
-        }
-    }
 
     // dead end ?
     if ( cx.pos.empty() )
@@ -230,7 +230,7 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
     if ( ! cx.mark ) {
         for( unsigned ind = 0; ind < cx.pos.size(); ++ind ) {
             const CharItem *item = cx.pos[ ind ];
-            if ( item->type == CharItem::BEG_STR || item->type == CharItem::BEG_STR_NEXT )
+            if ( ( item->type == CharItem::BEG_STR || item->type == CharItem::BEG_STR_NEXT ) && cx.paths_to_strings.count( item->str ) == 0 )
                 return tra( new InstructionBegStr( cx, item->str, ind, item->type == CharItem::BEG_STR_NEXT ), 0, cx.with_string( item->str ).forward( item ) );
         }
     }

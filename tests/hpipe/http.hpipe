@@ -1,14 +1,16 @@
-read[ name, end ] = any beg_str[ name ] any* end end_str[ name ]
+read[ name, end = 10 ] = beg_str_next[ name ] ( any - end )** end_str_next[ name ]
 
 get_line = 
-    # ( 's: ' read[ 's', eol ] ) |
-    ( any* 'P' { os << "1"; } )
+    ( 10 's: ' read[ 's' ] ) |
+    any
 
 get =
-    'GET ' read[ 'url', ' ' ] get_line
-    { os << url << " "; }
+    'GET ' read[ 'url', ' ' ] get_line**
+    { os << url << " s:" << s; }
 
 main = get
+    # beg_str_next[ 'url' ] any* end_str_next[ 'url' ] eol
+    # beg_str_next[ 'url' ] any* end_str_next[ 'url' ] eol
 
 beg_training
     input
@@ -22,6 +24,8 @@ end_training
 beg_test GET /smurf HTTP/1.1
     input
         GET /smurf HTTP/1.1
+        s: 17
+
     output
         /smurf  status=OK
 end_test
