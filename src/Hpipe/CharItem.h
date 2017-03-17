@@ -25,6 +25,7 @@ public:
         BEGIN,
         PIVOT,
         LABEL,
+        SKIP,
         COND,
         CODE,
         _EOF,

@@ -186,6 +186,7 @@ where the end machine is written twice (please note that there is no escaping in
 * `beg_str_next[ "A" ]`: same thing than `beg_str[ "A" ]` but the actual first char will be after the current one.
 * `end_str[ "A" ]`: end of a string named `A`. To be used in conjunction with beg_str.
 * `end_str_next[ "A" ]`: end of a string named `A`, current char being be included in `A`.
+* `skip[ "variable or value" ]`: skip some bytes (defined by an integer). At a given point, if the only active machine are skips, bytes are directly skipped.
 <!--* `add_str[ "A" ]`: shortcut to write a code that will append the current char value to a string named A (that will be automatically declared in the generated `HpipeData` structure). `add_str` enables specific optimizations. For instance contiguous `add_str` may be transformed to an "add mark" and a "use mark" instructions, enabling effective zero copy.
 * `clr_str[ "A" ]`: shortcut to write a code that will clear the string named A.-->
 

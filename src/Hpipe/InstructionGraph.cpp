@@ -1,4 +1,5 @@
 #include "InstructionTestContiguous.h"
+#include "InstructionSkipBytes.h"
 #include "InstructionMultiCond.h"
 #include "InstructionNextChar.h"
 #include "InstructionFreeStr.h"
@@ -215,6 +216,20 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
     // everything is OK ?
     if ( cx.only_has( CharItem::OK ) )
         return ok;
+
+    // lonely skip bytes
+    if ( cx.pos[ 0 ]->type == CharItem::SKIP && ( cx.pos.size() == 1 || cx.pos[ 2 ]->type == CharItem::OK ) ) {
+        InstructionSkipBytes *res = reg( new InstructionSkipBytes( cx, cx.pos[ 0 ]->str, cx.beg() ) );
+        tra( res, 0, cx.forward( cx.pos[ 0 ] ) );
+        tra( res, 1, cx.without( cx.pos[ 0 ] ) );
+        return res;
+    }
+
+    // several skips
+    if ( cx.has( CharItem::SKIP ) ) {
+        cg->err( "TODO: skip instructions with parallel paths" );
+        HPIPE_TODO;
+    }
 
     // EOF test ?
     for( const CharItem *item : cx.pos ) {

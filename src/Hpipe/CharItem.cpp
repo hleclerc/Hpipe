@@ -74,6 +74,7 @@ void CharItem::write_to_stream( std::ostream &os ) const {
     case CharItem::BEGIN:        os << "B"; break;
     case CharItem::PIVOT:        os << "P"; break;
     case CharItem::LABEL:        os << "LABEL"; break;
+    case CharItem::SKIP:         os << "SKIP(" << str << ")"; break;
     case CharItem::COND:         os << cond; break;
     case CharItem::CODE:         os << ( str.size() > 9 ? str.substr( 0, 6 ) + "..." : str ); break;
     case CharItem::_EOF:         os << "EOF"; break;
@@ -126,7 +127,7 @@ void CharItem::write_dot_rec( std::ostream &os ) const {
 }
 
 bool CharItem::code_like() const {
-    return type == CODE or type == ADD_STR or type == CLR_STR or type == BEG_STR or type == BEG_STR_NEXT or type == END_STR or type == END_STR_NEXT;
+    return type == CODE or type == SKIP or type == ADD_STR or type == CLR_STR or type == BEG_STR or type == BEG_STR_NEXT or type == END_STR or type == END_STR_NEXT;
 }
 
 bool CharItem::advancer() const {

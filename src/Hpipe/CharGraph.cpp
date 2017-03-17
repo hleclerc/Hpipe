@@ -342,6 +342,7 @@ void CharGraph::read( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> i
 
         if ( l->eq( "[" ) ) {
             static std::pair<const char *,std::function<CharItem *(const std::string &)>> fs[] = {
+                { "skip"        , [&]( const std::string &l ) { return ci_pool.New( CharItem::SKIP        , l ); } },
                 { "add_str"     , [&]( const std::string &l ) { return ci_pool.New( CharItem::ADD_STR     , l ); } },
                 { "clr_str"     , [&]( const std::string &l ) { return ci_pool.New( CharItem::CLR_STR     , l ); } },
                 { "beg_str"     , [&]( const std::string &l ) { return ci_pool.New( CharItem::BEG_STR     , l ); } },
@@ -657,7 +658,7 @@ void CharGraph::clone( Lexem *&beg, Lexem *&end, const Lexem *&l, const Vec<Arg>
 
         // function call ( func[ args ] )
         auto is_inline = []( const Lexem *l ) {
-            return l->eq( "add_str" ) or l->eq( "clr_str" ) or l->eq( "beg_str" )  or l->eq( "beg_str_next" ) or l->eq( "end_str" )  or l->eq( "end_str_next" ) or
+            return l->eq( "skip" ) or l->eq( "add_str" ) or l->eq( "clr_str" ) or l->eq( "beg_str" )  or l->eq( "beg_str_next" ) or l->eq( "end_str" )  or l->eq( "end_str_next" ) or
                    l->eq( "add_include" ) or l->eq( "add_prel" ) or l->eq( "add_preliminary" ) or l->eq( "add_attr" );
         };
 

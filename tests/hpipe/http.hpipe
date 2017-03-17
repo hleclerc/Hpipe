@@ -2,12 +2,11 @@
 read[ name, end = 10 | 13 ] = beg_str_next[ name ] ( any - end )** end_str_next[ name ]
 
 get =
-    'GET ' read[ 'url', ' ' ] 
-    # (
-    #     ( 10 's: ' read[ 's' ] ) |
-    #     ( 10 'tu: ' read[ 's' ] ) |
-    #     any
-    # )**
+    'GET ' read[ 'url', ' ' ] (
+        ( 10 's: ' read[ 's' ] ) |
+        ( 10 'tu: ' read[ 'tu' ] ) |
+        any
+    )**
     { os << url << " s:" << s; }
 
 main = get

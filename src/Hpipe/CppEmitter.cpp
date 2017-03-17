@@ -86,6 +86,7 @@ void CppEmitter::write_hpipe_data( StreamSepMaker &ss, const std::string &name )
             ss << "    unsigned char __save[ " << size_save_glo << " ];";
         for( const std::string &attr : sg->cg->attributes )
             ss << "    " << attr;
+        ss << "    size_t __bytes_to_skip; // TODO: check if necessary";
         ss << "    void *inp_cont;";
     }
     for( auto &p : variables )
