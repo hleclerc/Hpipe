@@ -66,6 +66,8 @@ struct Vec : std::vector<T> {
     bool     contains             ( const T &val ) const { for( unsigned i = 0; i < this->size(); ++i ) if ( this->operator[]( i ) == val ) return true; return false; }
     bool     only_has             ( const T &val ) const { for( unsigned i = 0; i < this->size(); ++i ) if ( this->operator[]( i ) != val ) return false; return true; }
 
+    Vec      uniqued              () const { Vec res; for( const T &val : *this ) res.push_back_unique( val ); return res; }
+
     Vec      concat               ( const Vec &v ) const { Vec res = *this; return res.append( v ); }
 };
 

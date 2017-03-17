@@ -219,8 +219,8 @@ void InstructionNextChar::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, Cpp
         }
     } else if ( cpp_emitter->buffer_type == CppEmitter::C_STR ) {
         if ( next.size() >= 2 )
-            ss << "if ( *" << ( beg ? "data" : "( ++data )" ) << " == " << cpp_emitter->end_char << " ) goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << ";";
-        else if ( ! beg )
+            ss << "if ( *" << ( beg ? "data" : "( data + 1 )" ) << " == " << cpp_emitter->end_char << " ) goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << ";";
+        if ( ! beg )
             ss << "++data;";
     } else { // not interruptible
         if ( next.size() >= 2 )

@@ -352,7 +352,7 @@ void Instruction::insert_before_this( Instruction *inst, Instruction *&init ) {
     for( Transition &p : prev ) {
         inst->prev << p;
         for( Transition &t : p.inst->next ) {
-            if ( t.inst == this and p.rcitem == t.rcitem ) {
+            if ( t.inst == this and t.rcitem == p.rcitem ) {
                 t.inst = inst;
                 break;
             }
@@ -361,6 +361,22 @@ void Instruction::insert_before_this( Instruction *inst, Instruction *&init ) {
     prev.clear();
     prev << Transition( inst, range_vec( unsigned( cx.pos.size() ) ) );
     inst->next << Transition( this, range_vec( unsigned( cx.pos.size() ) ) );
+}
+
+void Instruction::insert_after_this( Instruction *inst ) {
+    //
+    for( Transition &p : next ) {
+        inst->next << p;
+        for( Transition &t : p.inst->prev ) {
+            if ( t.inst == this and t.rcitem == p.rcitem ) {
+                t.inst = inst;
+                break;
+            }
+        }
+    }
+    next.clear();
+    next << Transition( inst, range_vec( unsigned( cx.pos.size() ) ) );
+    inst->prev << Transition( this, range_vec( unsigned( cx.pos.size() ) ) );
 }
 
 void Instruction::repl_in_preds( Instruction *inst ) {

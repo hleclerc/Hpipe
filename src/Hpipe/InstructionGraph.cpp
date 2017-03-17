@@ -383,6 +383,21 @@ void InstructionGraph::simplify_marks() {
 
     // find marks that can be removed
     for( InstructionMark *mark : marks ) {
+        // move E0 and E-1 instructions after the rewinds
+        for( InstructionRewind *rw : mark->rewinds ) {
+            if ( rw->need_rw )
+                continue;
+            for( unsigned i = 0; i < rw->code_seq_end.size(); ++i ) {
+                InstructionRewind::CodeSeqItem &item = rw->code_seq_end[ i ];
+                if ( item.offset > 0 )
+                    break;
+                Instruction *ninst = item.code->clone( inst_pool, item.code->cx, range_vec( unsigned( item.code->cx.pos.size() ) ) );
+                rw->code_seq_end.erase( rw->code_seq_end.begin() + i-- );
+                rw->insert_after_this( ninst );
+            }
+        }
+
+        // need_mark
         bool need_mark = false;
         for( InstructionRewind *rw : mark->rewinds ) {
             if ( rw->need_mark() ) {
@@ -1057,7 +1072,7 @@ void InstructionGraph::make_rewind_exec( InstructionMark *mark, InstructionRewin
         pt.new_inst->prev << new_inst;
 
         //
-        if ( t.inst == mark )
+        if ( t.inst == mark && keep_ind == rewind->cx.paths_to_mark.uniqued() )
             rewind->exec = new_inst;
     }
 
