@@ -46,11 +46,11 @@ void InstructionBegStr::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
 
 void InstructionBegStr::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter, std::string repl_data, std::string repl_buf ) {
     if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER ) {
-        ss << "sipe_data->__beg_" << var << "_off = " << want_next_char - bool( cx.flags & cx.FL_BEG ) << ";";
+        ss << "sipe_data->__beg_" << var << "_off = " << ( cx.beg() ? 0 : want_next_char ) << ";";
         ss << "sipe_data->__beg_" << var << "_buf = " << repl_buf << ";";
         ss << "sipe_data->__beg_" << var << "_data = " << repl_data << ";";
     } else {
-        ss << "sipe_data->__beg_" << var << "_data = " << repl_data << " + " << want_next_char - bool( cx.flags & cx.FL_BEG ) << ";";
+        ss << "sipe_data->__beg_" << var << "_data = " << repl_data << " + " << bool( cx.beg() ? 0 : want_next_char ) << ";";
     }
 }
 

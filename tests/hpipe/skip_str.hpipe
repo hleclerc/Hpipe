@@ -1,0 +1,22 @@
+main = beg_str["smurf"] skip[ "5" ] end_str_next["smurf"] { os << *data << " " << smurf; }
+
+beg_test basic
+    input
+        1234567
+    output
+        5 12345 status=OK
+end_test
+
+beg_test OK
+    input
+        12345
+    output
+        5 12345 status=OK
+end_test
+
+beg_test KO
+    input
+        1234
+    output
+        status=KO
+end_test
