@@ -4,7 +4,7 @@ Hpipe is the acronym of "High Performance Incremental Parser Engine".
 
 It generates optimized code to evaluate regular expressions with embedded actions (arbitrary code, that can be defined by the user).
 
-*Incremental* means that it works with streams: the crunching of the incoming data can be stopped/restarted at any point, with proper and automated handling of buffers. It is a prerequisite for different types of data coming from the network or for instance from huge files that do not fit into memory. It is the first difference compared to tools like for instance re2c which assumes that data come once, in a contiguous buffer.
+*Incremental* means that it works with streams: the crunching of the incoming data can be stopped/restarted at any point, with proper and automated handling of buffers (with reference counter or other techniques). It is a prerequisite for different types of data coming from the network or for instance from huge files that do not fit into memory. It is the first difference compared to tools like for instance re2c which assumes that data come once, in a contiguous buffer.
 
 All other things being equal,
 * Hpipe is designed for performance. Hpipe supports zero copy for most of the buffer styles, support training, anticipation, and tries to read the data only once, etc...

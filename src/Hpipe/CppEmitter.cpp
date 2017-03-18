@@ -96,6 +96,10 @@ void CppEmitter::write_preliminaries( StreamSepMaker &ss ) {
         ss << "#ifndef HPIPE_BUFF_T__INC_REF_N";
         ss << "#define HPIPE_BUFF_T__INC_REF_N( buf, N ) HPIPE_BUFF_T::inc_ref( buf, N )";
         ss << "#endif";
+        ss << "";
+        ss << "#ifndef HPIPE_BUFF_T__SKIP";
+        ss << "#define HPIPE_BUFF_T__SKIP( buf, ptr, N ) HPIPE_BUFF_T::skip( buf, ptr, N )";
+        ss << "#endif";
     }
 
     ss << "";
