@@ -147,10 +147,10 @@ void CppEmitter::write_declarations( StreamSepMaker &ss ) {
     std::ostringstream cs;
     StreamSepMaker cm( cs, "    " );
     if ( interruptible() )
-        cm << " hpipe_data->inp_cont = 0;";
+        cm << "hpipe_data->inp_cont = 0;";
     for( auto &p : variables )
         if ( p.second.default_value.size() )
-            cm << " hpipe_data->" << p.first << " = " << p.second.default_value << ";";
+            cm << "hpipe_data->" << p.first << " = " << p.second.default_value << ";";
     ctor = cs.str();
 
     // struct HpipeData
@@ -346,18 +346,21 @@ bool CppEmitter::bench(const std::vector<Lexer::TrainingData> &tds) {
     ss << "#include <Hpipe/Print.h>";
     ss << "#include <iostream>";
     ss << "#include <sstream>";
-    ss << "#include <ctime>";
+    ss << "#include <ctime>";    
+    ss << "";
+    ss << "#define HPIPE_DEFINITION_PREFIX Bench::";
     ss << "";
     write_preliminaries( ss );
     ss << "";
     ss << "struct Bench {";
-    ss << "    void exec( const unsigned char *name, const unsigned char *data, unsigned size, const char *display ) {";
-    write_definitions( ns );
+    ss << "    void exec( const unsigned char *name, const unsigned char *data, unsigned size, const char *display );";
+    write_declarations( ns );
     ss << "    std::ostringstream os;";
+    ss << "    HpipeData hpipe_data;";
     ss << "    unsigned cpt = 0;";
     ss << "};";
 
-    ss << "void exec( const unsigned char *name, const unsigned char *data, unsigned size, const char *display ) {";
+    ss << "void Bench::exec( const unsigned char *name, const unsigned char *data, unsigned size, const char *display ) {";
     switch ( buffer_type ) {
     case BT_HPIPE_BUFFER:
         ns << "Hpipe::Buffer *buf = Hpipe::Buffer::New( size );";
@@ -365,8 +368,8 @@ bool CppEmitter::bench(const std::vector<Lexer::TrainingData> &tds) {
         ns << "buf->used = size;";
         ns << "auto t0 = std::clock();";
         ns << "for( unsigned var = 0; var < 1000000; ++var ) {";
-        ns << "    HpipeData hd;";
-        ns << "    parse( &hd, buf, true );";
+        ns << "    Bench::HPIPE_DATA_CTOR_NAME( &hpipe_data );";
+        ns << "    parse( buf, true );";
         ns << "}";
         ns << "auto t1 = std::clock();";
         ns << "HPIPE_BUFF_T::dec_ref( buf );";
@@ -374,16 +377,16 @@ bool CppEmitter::bench(const std::vector<Lexer::TrainingData> &tds) {
     case BT_BEG_END:
         ns << "auto t0 = std::clock();";
         ns << "for( unsigned var = 0; var < 1000000; ++var ) {";
-        ns << "    HpipeData hd;";
-        ns << "    parse( &hd, data, data - 1 + size );";
+        ns << "    Bench::HPIPE_DATA_CTOR_NAME( &hpipe_data );";
+        ns << "    parse( data, data - 1 + size );";
         ns << "}";
         ns << "auto t1 = std::clock();";
         break;
     case BT_C_STR:
         ns << "auto t0 = std::clock();";
         ns << "for( unsigned var = 0; var < 1000000; ++var ) {";
-        ns << "    HpipeData hd;";
-        ns << "    parse( &hd, data );";
+        ns << "    Bench::HPIPE_DATA_CTOR_NAME( &hpipe_data );";
+        ns << "    parse( data );";
         ns << "}";
         ns << "auto t1 = std::clock();";
         break;
