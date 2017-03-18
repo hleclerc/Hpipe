@@ -7,6 +7,7 @@ cmake_install.cmake
 install_manifest.txt
 *.kdev4
 *.dot
+tests/re2c/js.c
 *.pdf
 *.user
 build/
