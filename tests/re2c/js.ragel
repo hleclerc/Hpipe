@@ -124,7 +124,7 @@ static int cs;
 	# Comments and whitespace.
 	'/*' { fgoto c_comment; };
 	'//' [^\n]* '\n';
-	( any - 33..126 )+;
+	any;
 
 	*|;
 }%%
