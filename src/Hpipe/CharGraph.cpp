@@ -45,7 +45,10 @@ std::string left_shifted( const std::string &str ) {
 
 }
 
-CharGraph::CharGraph( Lexer &lexer, const Lexem *lexem ) : ok( true ), lexer( lexer ), base( CharItem::BEGIN ) {
+CharGraph::CharGraph( Lexer &lexer ) : ok( true ), lexer( lexer ), base( CharItem::BEGIN ) {
+}
+
+void CharGraph::read( const Lexem *lexem ) {
     // make a clone of the lexems, with subsituted variables
     Lexem *lexem_cl = clone( lexem, {} );
     // lexem_cl->display_dot();

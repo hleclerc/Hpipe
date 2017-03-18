@@ -15,7 +15,7 @@ Instruction *InstructionSkipBytes::clone( PtrPool<Instruction> &inst_pool, const
 }
 
 void InstructionSkipBytes::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
-    if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER ) {
+    if ( cpp_emitter->buffer_type == CppEmitter::BT_HPIPE_BUFFER ) {
         unsigned cont_label = ++cpp_emitter->nb_cont_label;
 
         // cpp_emitter->need_loc_var(  );
@@ -67,15 +67,15 @@ void InstructionSkipBytes::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, Cp
             ss.beg.resize( ss.beg.size() - 4 );
             ss << "}";
         }
-    } else if ( cpp_emitter->buffer_type == CppEmitter::C_STR ) {
+    } else if ( cpp_emitter->buffer_type == CppEmitter::BT_C_STR ) {
         if ( beg ) {
             ss << "if ( " << var << " ) {";
             ss.beg += "    ";
         }
         ss << "for( size_t n = ( " << var << ( beg ? " ) - 1" : " )" ) << "; n--; ++data )";
-        ss << "    if ( *data == " << cpp_emitter->end_char << " )";
+        ss << "    if ( *data == " << cpp_emitter->stop_char << " )";
         ss << "        goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << ";";
-        ss << "if ( *data == " << cpp_emitter->end_char << " )";
+        ss << "if ( *data == " << cpp_emitter->stop_char << " )";
         ss << "    goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << ";";
         if ( beg ) {
             ss.beg.resize( ss.beg.size() - 4 );

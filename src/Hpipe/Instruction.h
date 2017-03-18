@@ -33,7 +33,6 @@ public:
     virtual Transition   *train                 ( std::string::size_type &s, std::string::size_type &m, const std::string &inp, double freq, bool use_contiguous );
     void                  train_rec             ( std::string::size_type &s, std::string::size_type &m, const std::string &inp, double freq, bool use_contiguous );
     virtual bool          can_be_deleted        () const;
-    virtual bool          is_a_mark             () const;
     virtual int           save_in_loc_reg       () const;
     void                  remove                ( bool update_rcitem = true ); ///< remove from graph
     void                  insert_before_this    ( Instruction *inst, Instruction *&init ); ///< inst -> this

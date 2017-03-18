@@ -18,8 +18,9 @@ class CharGraph {
 public:
     struct ItemNum { CharItem *item; unsigned num; };
 
-    CharGraph( Lexer &lexer, const Lexem *lexem );
+    CharGraph( Lexer &lexer );
 
+    void                     read          ( const Lexem *lexem );
     int                      display_dot   ( const char *f = ".char.dot", const char *prg = 0 ) const;
     void                     get_cycles    ( std::function<void(Vec<ItemNum>)> f );
     void                     apply         ( std::function<void(CharItem *)> f );
@@ -35,8 +36,8 @@ public:
 
     CharItem                *char_item_ok;
     std::set<std::string>    includes;
-    Vec<std::string>         attributes;
-    Vec<std::string>         preliminaries;
+    std::set<std::string>    attributes;
+    std::set<std::string>    preliminaries;
     bool                     ok;
 
 protected:

@@ -29,6 +29,7 @@ public:
 
     Lexem                *read           ( Source *source ); ///< append the data from source
 
+    const Lexem          *find_machine   ( const std::string &name ) const; ///< find the last machine named $name
     const Lexem          *find_machine   ( const Lexem *&args, const std::string &name ) const; ///< find the last machine named $name
     const Lexem          *root           () const; ///< first lexem in the graph (may be null)
 

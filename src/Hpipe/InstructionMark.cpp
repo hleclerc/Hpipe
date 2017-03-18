@@ -12,10 +12,6 @@ void InstructionMark::write_dot( std::ostream &os, std::vector<std::string> *edg
     os << "MARK"; // << num_active_item;
 }
 
-bool InstructionMark::is_a_mark() const {
-    return true;
-}
-
 void InstructionMark::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
     //    ss << "// mark";
     //    ss << "PRINT( *data, Hpipe::Buffer::nb_alive_bufs );";
@@ -23,14 +19,14 @@ void InstructionMark::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmit
     //    ss << "  PRINT( *b->data, b->cpt_use + 1 );";
 
     if ( cpp_emitter->interruptible() ) {
-        if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER ) {
+        if ( cpp_emitter->buffer_type == CppEmitter::BT_HPIPE_BUFFER ) {
             ss << "sipe_data->pending_buf = buf;";
             ss << "sipe_data->rw_buf = buf;";
         }
         ss << "sipe_data->rw_ptr = data;";
     } else {
         ss << "rw_ptr = data;";
-        if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER )
+        if ( cpp_emitter->buffer_type == CppEmitter::BT_HPIPE_BUFFER )
             ss << "rw_buf = buf;";
     }
 }

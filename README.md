@@ -1,16 +1,36 @@
-What is Hpipe ?
-==============
+# What is Hpipe ?
 
 Hpipe is the acronym of "High Performance Incremental Parser Engine".
 
-It generates optimized code to evaluate regular expressions with embedded actions (code executed in succeeding paths, with handling of priority).
+It generates optimized code to evaluate regular expressions with embedded actions (arbitrary code, that can be defined by the user).
 
-*Incremental* means that the crunching of the incoming data can be stopped/restarted at any point, with proper and automated handling of buffers. It is a prerequisite for different types of data coming from the network or for instance from huge files that do not fit into memory. It is the first difference compared to tools like re2c.
+*Incremental* means that it works with streams: the crunching of the incoming data can be stopped/restarted at any point, with proper and automated handling of buffers. It is a prerequisite for different types of data coming from the network or for instance from huge files that do not fit into memory. It is the first difference compared to tools like for instance re2c which assumes that data come once, in a contiguous buffer.
 
-All other things being equal, Hpipe is designed for performance. Hpipe support zero copy and tries to read the data only once. Besides, training data and multi-character representations allow to obtain significant speedup over what we can find with usual solutions.
+All other things being equal,
+* Hpipe is designed for performance. Hpipe supports zero copy for most of the buffer styles, support training, anticipation, and tries to read the data only once, etc...
+* Hpipe's syntax focuses on clarity and security (over compactness). For instance, user codes are executed only if the paths succeed, escape sequences are avoided when possible, etc...
 
-Show me an example
-==================
+<!-- TOC -->
+
+- [What is Hpipe ?](#what-is-hpipe-)
+- [Show me an example](#show-me-an-example)
+- [Installation](#installation)
+- [A word on performance](#a-word-on-performance)
+    - [Training](#training)
+    - [Anticipation](#anticipation)
+- [Syntax](#syntax)
+    - [Operators](#operators)
+    - [How to call and define machines ?](#how-to-call-and-define-machines-)
+    - [Predefined machines](#predefined-machines)
+    - [Aditional sections](#aditional-sections)
+    - [Operator precedence](#operator-precedence)
+- [Output file](#output-file)
+    - [Sections](#sections)
+    - [Buffer styles](#buffer-styles)
+
+<!-- /TOC -->
+
+# Show me an example
 
 The following code is an example of a "machine" that sums the last digit of each 'bar[0-9]', and that counts the number of 'foo' and 'bar' not followed by a digit (which can be EOF or the beginning of something else...).
 
@@ -81,8 +101,7 @@ number_flt =
     { os << nfl << " "; }
 ```
 
-Installation
-============
+# Installation
 
 ```bash
 git clone https://github.com/hleclerc/Hpipe.git && cd Hpipe && mkdir build && cd build
@@ -90,13 +109,11 @@ cmake -DCMAKE_BUILD_TYPE=release .. && make -j8
 sudo make install
 ```
 
-A word on performance
-=====================
+# A word on performance
 
 Hpipe is made from the ground for performance. Here are some illustrations for some specific optimizations:
 
-Training
---------
+## Training
 
 Training data can be used by hpipe to transform the instruction graph before code generation. In particular, it enables to automatically decompose the tests, to minimize the average number of tests and branch mispredictions.
 
@@ -139,8 +156,7 @@ Here is a comparison of the performance of a _basic_ js scanner, written with [r
 
 re2c is not meant to work on interrupted streams, but the base techniques are roughly the same, hence the relevance of the test.
 
-Boyer-Moore like optimizations
-------------------------------
+## Anticipation
 
 Like in the Boyer-Moore algorithm it may be beneficial to test several chars ahead, in particular if the test leads most of the time to paths where it is of no use to test the chars before.
 
@@ -159,11 +175,9 @@ we obtain (on a very long random data set) the following result (using `--boyer-
 |------------------|:----------------:|:--------------:|:------:|
 | execution time   |   0.937635s      |    0.126285s   | 7.42x  |
 
-Syntax
-======
+# Syntax
 
-Operators
----------
+## Operators
 
 * `"foo"` or `'foo'`: look for the text "foo" in the incoming data. "f" must be the first character of the incoming data (looking for a substring can be expressed as `any* "foo"`).
 * `104` (unsigned char value): look for a byte with specified (unsigned) numeric value. For encoding where characters can use more than one byte (UTFx...), concatenation can be used.
@@ -199,12 +213,11 @@ where the end machine is written twice (please note that there is no escaping in
 * `clr_str[ "A" ]`: shortcut to write a code that will clear the string named A.-->
 
 There are some internal predefined machine to help generate code (mostly for test purpose):
-* `add_include[ 'my_include.h' ]` will add `#include <my_include.h>` (only once) in the preliminary of the generated code
+* `add_include[ 'my_include.h' ]` will add `#include <my_include.h>` (only once) in the preliminary of the generated code. `<>` and `""` can be specified explicitely (as in `add_include[ '"my_include.h"' ]`)
 * `add_prel[ 'some_code' ]` or `add_preliminary[ 'some_code' ]` will add `some_code` (only once) in the preliminary of the generated code
 * `add_attr[ 'some_code' ]` will add `some_code` (only once) in the attributes of the generated class.
 
-How to call and define machines ?
----------------------------------
+## How to call and define machines ?
 
 ```python
 # Arguments values are machines. It may have default values.
@@ -222,8 +235,11 @@ main =
     other
 ```
 
-Aditional sections
-------------------
+## Predefined machines
+
+They are defined in [src/Hpipe/Predef.sipe](https://github.com/hleclerc/Hpipe/blob/master/src/Hpipe/predef.hpipe).
+
+## Aditional sections
 
 It is possible to define test(s) inside machine definition, using:
 
@@ -263,8 +279,26 @@ end_methods
 
 will add some code inside the _declaration_ section (which may be in a class or not, depending on how the generated code is used).
 
-Buffer style
-============
+## Operator precedence
+
+| group            |          operators         |
+|------------------|:--------------------------:|
+| 0                |    `[`                     |
+| 1                |   `->` `<-`                |
+| 2                |   `..`                     |
+| 3                | `-`                        |
+| 4                | `**` `++` `??` `*` `+` `?` |
+| 5                |    `|`                     |
+| 6                |    `,`                     |
+| 7                |      `=`                   |
+
+# Output file
+
+## Sections
+
+Hpipe generates only one output file, with sections that can 
+
+## Buffer styles
 
 By default (but there are other choices), hpipe generate a `parse` function with a signature like:
 
@@ -296,8 +330,9 @@ void input_data_event() {
 ```
 
 Of course, using this kind of buffer is not the taste of everyone. One can use the option `-s` or `--style` to choose the buffer style:
-- `-s BEG_END` will generate code for a unique (non interruptible) buffer defined using a `const unsigned char *` for the beginning and also for the end
-- `-s C_STR` will generate code for a unique (non interruptible) buffer defined using a `const unsigned char *` for the beginning, and ended by a zero.
+- `-s HPIPE_BUFFER` generates code as shown above.
+- `-s BEG_END` will generate code for a unique (non interruptible) buffer defined using a `const unsigned char *` for the beginning and also for the end.
+- `-s C_STR` will generate code for a unique (non interruptible) buffer defined using a `const unsigned char *` for the beginning, and ended by the value after the `--stop-char` cmd arg (0 by default).
 
 For instance, `-s BEG_END` will generate a function with a signature like:
 
@@ -305,22 +340,3 @@ For instance, `-s BEG_END` will generate a function with a signature like:
 unsigned parse( HpipeData* hpipe_data, const unsigned char* data, const unsigned char* end_m1 ); // `end_m1` must point to the last char (e.g. for data.size == 0, end_m1 must be equal to data - 1).
 ```
 
-Predefined machines
-===================
-
-They are defined in [src/Hpipe/Predef.sipe](https://github.com/hleclerc/Hpipe/blob/master/src/Hpipe/predef.hpipe).
-
-
-Operator precedence
-===================
-
-| group            |          operators         |
-|------------------|:--------------------------:|
-| 0                |    `[`                     |
-| 1                |   `->` `<-`                |
-| 2                |   `..`                     |
-| 3                | `-`                        |
-| 4                | `**` `++` `??` `*` `+` `?` |
-| 5                |    `|`                     |
-| 6                |    `,`                     |
-| 7                |      `=`                   |

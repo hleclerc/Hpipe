@@ -18,14 +18,17 @@ class InstructionMark;
 */
 class InstructionGraph {
 public:
-    InstructionGraph( CharGraph *cg, const std::vector<std::string> &disp = {}, int stop_char = -1, bool disp_inst_pred = false, bool disp_trans_freq = false, bool want_boyer_moore = false, bool no_training = false );
+    InstructionGraph();
 
+    void                            read                ( CharGraph *cg, const std::vector<std::string> &disp = {}, bool disp_inst_pred = false, bool disp_trans_freq = false );
     void                            apply               ( std::function<void(Instruction *)> f, bool subgraphs = false );
     int                             display_dot         ( CharGraph *cg = 0, bool disp_inst_pred = false, bool disp_trans_freq = false, bool disp_rc_item = false, const char *f = ".inst.dot", const char *prg = 0 ) const;
     std::string                     methods             () const { return cg->methods(); }
     Instruction                    *root                ();
 
-    CharGraph                      *cg;
+    int                             stop_char;
+    bool                            no_training;
+    bool                            boyer_moore;
 protected:
     struct PendingTrans {
         PendingTrans( Instruction *inst, unsigned num_edge, const Context &cx, const Vec<unsigned> &rcitem = {} ) : inst( inst ), num_edge( num_edge ), cx( cx ), rcitem( rcitem ) {}
@@ -71,6 +74,7 @@ protected:
     Instruction                    *make_boyer_moore_rec ( const Vec<std::pair<Vec<Cond>, Instruction *> > &front, InstructionNextChar *next_char, int orig_front_size );
     bool                            no_code_ambiguity    ( InstructionMark *mark, Instruction *inst, const Vec<unsigned> &rcitem );
 
+    CharGraph                      *cg;
     Instruction                    *ok;
     Instruction                    *ko;
     Instruction                    *init;

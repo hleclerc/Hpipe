@@ -38,7 +38,7 @@ void InstructionEndStr::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
 }
 
 void InstructionEndStr::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter, std::string repl_data, std::string repl_buf ) {
-    if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER ) {
+    if ( cpp_emitter->buffer_type == CppEmitter::BT_HPIPE_BUFFER ) {
         if ( want_next_char ) {
             ss << "HPIPE_BUFFER::inc_ref( " << repl_buf << " );";
             ss << "HPIPE_BUFFER::skip( sipe_data->__beg_" << var << "_buf, sipe_data->__beg_" << var << "_data, sipe_data->__beg_" << var << "_off );";

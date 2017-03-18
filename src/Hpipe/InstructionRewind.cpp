@@ -89,7 +89,7 @@ void InstructionRewind::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
 
     // need_rw mode => change buf and data (else, only change sipe_data->rw_buf and sipe_data->rw_ptr)
     if ( need_rw ) {
-        if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER ) {
+        if ( cpp_emitter->buffer_type == CppEmitter::BT_HPIPE_BUFFER ) {
             ss << "data   = sipe_data->rw_ptr;";
             ss << "buf    = sipe_data->rw_buf;";
             ss << "end_m1 = buf->data + buf->used - 1;";
@@ -101,7 +101,7 @@ void InstructionRewind::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
         for( const CodeSeqItem &item : code_seq_beg ) {
             // need to skip some bytes ?
             if ( item.offset >= 0 && item.offset != old_offset ) {
-                if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER )
+                if ( cpp_emitter->buffer_type == CppEmitter::BT_HPIPE_BUFFER )
                     ss << "if ( HPIPE_BUFFER::skip( buf, data, " << item.offset - old_offset << ", " << running_strs.size() << " ) ) end_m1 = buf->data + buf->used - 1;";
                 else
                     ss << "data += " << item.offset - old_offset << ";";
@@ -113,7 +113,7 @@ void InstructionRewind::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
 
         // need to skip some bytes ?
         if ( offset_ncx != old_offset ) {
-            if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER )
+            if ( cpp_emitter->buffer_type == CppEmitter::BT_HPIPE_BUFFER )
                 ss << "if ( HPIPE_BUFFER::skip( buf, data, " << offset_ncx - old_offset << ", " << running_strs.size() << " ) ) end_m1 = buf->data + buf->used - 1;";
             else
                 ss << "data += " << offset_ncx - old_offset << ";";
@@ -124,7 +124,7 @@ void InstructionRewind::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
         for( const CodeSeqItem &item : code_seq_beg ) {
             // need to skip some bytes ?
             if ( item.offset >= 0 && item.offset != old_offset ) {
-                if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER )
+                if ( cpp_emitter->buffer_type == CppEmitter::BT_HPIPE_BUFFER )
                     ss << "HPIPE_BUFFER::skip( sipe_data->rw_buf, sipe_data->rw_ptr, " << item.offset - old_offset << ", " << running_strs.size() << " );";
                 else
                     ss << "rw_ptr += " << item.offset - old_offset << ";";
@@ -132,7 +132,7 @@ void InstructionRewind::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
             }
 
             // do the code
-            if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER )
+            if ( cpp_emitter->buffer_type == CppEmitter::BT_HPIPE_BUFFER )
                 item.code->write_cpp_code_seq( ss, es, cpp_emitter, "sipe_data->rw_ptr", "sipe_data->rw_buf" );
             else
                 item.code->write_cpp_code_seq( ss, es, cpp_emitter, "rw_ptr", "rw_buf" );
@@ -154,7 +154,7 @@ void InstructionRewind::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
                 }
             } else {
                 // else, jump to position for the first code to be executed
-                if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER ) {
+                if ( cpp_emitter->buffer_type == CppEmitter::BT_HPIPE_BUFFER ) {
                     if ( mark )
                         ss << "HPIPE_BUFFER::skip( sipe_data->rw_buf, sipe_data->rw_ptr, HPIPE_BUFFER::size_between( sipe_data->rw_buf, sipe_data->rw_ptr, buf, data ) - " << off << ", " << running_strs.size() << " );";
                     else {
@@ -172,7 +172,7 @@ void InstructionRewind::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
 
                     // need to skip some bytes ?
                     if ( item.offset >= 0 && item.offset != off ) {
-                        if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER ) {
+                        if ( cpp_emitter->buffer_type == CppEmitter::BT_HPIPE_BUFFER ) {
                             if ( mark )
                                 ss << "HPIPE_BUFFER::skip( sipe_data->rw_buf, sipe_data->rw_ptr, " << off - item.offset << ", " << running_strs.size() << " );";
                             else
@@ -183,7 +183,7 @@ void InstructionRewind::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
                     }
 
                     // do the code
-                    if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER ) {
+                    if ( cpp_emitter->buffer_type == CppEmitter::BT_HPIPE_BUFFER ) {
                         if ( mark )
                             item.code->write_cpp_code_seq( ss, es, cpp_emitter, "sipe_data->rw_ptr", "sipe_data->rw_buf" );
                         else
@@ -195,7 +195,7 @@ void InstructionRewind::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
             }
         }
 
-        if ( mark && cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER )
+        if ( mark && cpp_emitter->buffer_type == CppEmitter::BT_HPIPE_BUFFER )
             ss << "sipe_data->rw_buf->dec_ref_upto( buf, " << running_strs.size() << " );";
     }
 

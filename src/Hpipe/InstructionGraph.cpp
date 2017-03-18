@@ -28,7 +28,16 @@
 
 namespace Hpipe {
 
-InstructionGraph::InstructionGraph( CharGraph *cg, const std::vector<std::string> &disp, int stop_char, bool disp_inst_pred, bool disp_trans_freq, bool want_boyer_moore, bool no_training ) : cg( cg ), init( 0 ), cx_ok( cg->char_item_ok ), no_training( no_training ) {
+InstructionGraph::InstructionGraph() {
+    stop_char        = -1;
+    no_training      = false;
+    boyer_moore = false;
+}
+
+void InstructionGraph::read( CharGraph *cg, const std::vector<std::string> &disp, bool disp_inst_pred, bool disp_trans_freq ) {
+    this->cg = cg;
+    cx_ok = Context{ cg->char_item_ok };
+
     // predefined instructions
     ok = inst_pool << new InstructionOK( cx_ok );
     ko = inst_pool << new InstructionKO( cx_ko );
@@ -57,7 +66,7 @@ InstructionGraph::InstructionGraph( CharGraph *cg, const std::vector<std::string
     disp_if( disp, disp_inst_pred, disp_trans_freq, "merge", false );
 
     // boyer-moore like optimizations
-    if ( want_boyer_moore )
+    if ( boyer_moore )
         boyer_moore();
     disp_if( disp, disp_inst_pred, disp_trans_freq, "boyer", false );
 
@@ -546,11 +555,10 @@ void InstructionGraph::optimize_conditions() {
     if ( ! no_training )
         train();
     
-    unsigned nb_conds = 0;
-    root()->apply( [&]( Instruction *inst ) {
-        nb_conds += dynamic_cast<InstructionMultiCond *>( inst ) != 0;
-    } );
-    std::cerr << "Nb conds to optimize: " << nb_conds << std::endl;
+    // unsigned nb_conds = 0;
+    // root()->apply( [&]( Instruction *inst ) {
+    //     nb_conds += dynamic_cast<InstructionMultiCond *>( inst ) != 0;
+    // } );
 
     ++Instruction::cur_op_id;
     init->optimize_conditions( inst_pool );

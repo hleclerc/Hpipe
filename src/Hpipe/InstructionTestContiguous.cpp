@@ -33,7 +33,7 @@ void InstructionTestContiguous::write_cpp( StreamSepMaker &ss, StreamSepMaker &e
         return write_trans( ss, cpp_emitter );
     }
     
-    if ( cpp_emitter->buffer_type == CppEmitter::C_STR ) {
+    if ( cpp_emitter->buffer_type == CppEmitter::BT_C_STR ) {
         if ( next[ 1 ].inst->num_ordering != num_ordering + 1 )
             ss << "goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << ";";
     } else {

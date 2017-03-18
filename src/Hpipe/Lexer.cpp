@@ -94,6 +94,11 @@ Lexem *Lexer::read( Source *source ) {
     return res->next;
 }
 
+const Lexem *Lexer::find_machine( const std::string &name) const {
+    const Lexem *margs;
+    return find_machine( margs, name );
+}
+
 const Lexem *Lexer::base() const {
     return &first_item;
 }

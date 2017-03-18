@@ -32,34 +32,40 @@ int main( int argc, char **argv ) {
         }
 
         // char and transitions
-        const Lexem *margs;
-        CharGraph cg( lexer, lexer.find_machine( margs, "main" ) );
-
+        CharGraph cg( lexer );
+        cg.read( lexer.find_machine( "main" ) );
         if ( disp_char_graph )
             cg.display_dot();
-
         if ( ! cg.ok )
             return 1;
 
-        // instruction (language independant)
+        // instruction graph
+        InstructionGraph ig;
+        ig.stop_char   = strcmp( style, "C_STR" ) == 0 ? stop_char : -1;
+        ig.boyer_moore = boyer_moore;
+        ig.no_training = no_training;
+
         std::istringstream iss( disp_inst_graph );
-        int stop_char = strcmp( style, "C_STR" ) == 0 ? 0 : -1;
-        InstructionGraph sg( &cg, { std::istream_iterator<std::string>{ iss }, std::istream_iterator<std::string>{} }, stop_char, disp_inst_pred, disp_trans_freq, boyer_moore, no_training );
+        std::vector<std::string> disp( std::istream_iterator<std::string>{ iss }, std::istream_iterator<std::string>{} );
+        ig.read( &cg, disp, disp_inst_pred, disp_trans_freq );
 
-        // output
-        CppEmitter cp( &sg );
-        cp.trace_labels = trace_labels;
+        // emitter
+        CppEmitter ce;
+        ce.trace_labels = trace_labels;
 
-        if      ( strcmp( style, "BUFFER"  ) == 0 ) { cp.buffer_type = CppEmitter::HPIPE_BUFFER; }
-        else if ( strcmp( style, "BEG_END" ) == 0 ) { cp.buffer_type = CppEmitter::BEGEND; }
-        else if ( strcmp( style, "C_STR"   ) == 0 ) { cp.buffer_type = CppEmitter::C_STR; }
-        else { std::cerr << "Unknown parse style ( " << style << " ). Possible values are BUFFER, BEG_END or C_STR" << std::endl; return 1; }
+        if      ( strcmp( style, "HPIPE_BUFFER"  ) == 0 ) { ce.buffer_type = CppEmitter::BT_HPIPE_BUFFER; }
+        else if ( strcmp( style, "BEG_END"       ) == 0 ) { ce.buffer_type = CppEmitter::BT_BEG_END     ; }
+        else if ( strcmp( style, "C_STR"         ) == 0 ) { ce.buffer_type = CppEmitter::BT_C_STR       ; }
+        else { std::cerr << "Unknown parse style ( " << style << " ). Possible values are HPIPE_BUFFER, BEG_END or C_STR" << std::endl; return 1; }
 
+        ce.read( &ig );
+
+        // output/test
         if ( benchmark )
-            cp.bench( lexer.training_data(), CppEmitter::BEGEND );
+            ce.bench( lexer.training_data() );
 
         if ( test )
-            return cp.test( lexer.test_data() );
+            return ce.test( lexer.test_data() );
 
         if ( benchmark )
             return 0;
@@ -72,22 +78,20 @@ int main( int argc, char **argv ) {
         }
 
         ss << "#ifdef HPIPE_PRELIMINARIES";
-        cp.write_preliminaries( ss );
+        ce.write_preliminaries( ss );
         ss << "#endif // HPIPE_PRELIMINARIES";
         ss << "";
 
         ss << "#ifdef HPIPE_DECLARATIONS";
-        cp.write_constants ( ss );
-        cp.write_hpipe_data( ss, "HpipeData" );
-        cp.write_parse_decl( ss, "HpipeData", "parse", args );
+        ce.write_declarations( ss );
         ss << "#endif // HPIPE_DECLARATIONS";
         ss << "";
 
         ss << "#ifdef HPIPE_DEFINITIONS";
-        cp.write_parse_def ( ss, "HpipeData", "parse", args );
+        ce.write_definitions( ss );
         ss << "#endif // HPIPE_DEFINITIONS";
-        return 0;
 
+        return 0;
     } catch ( const char *msg ) {
         std::cerr << msg << std::endl;
         return 1;

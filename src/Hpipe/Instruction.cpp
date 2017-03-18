@@ -295,10 +295,6 @@ bool Instruction::can_be_deleted() const {
     return false;
 }
 
-bool Instruction::is_a_mark() const {
-    return false;
-}
-
 int Instruction::save_in_loc_reg() const {
     return -1;
 }

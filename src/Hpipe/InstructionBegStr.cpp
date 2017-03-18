@@ -28,7 +28,7 @@ void InstructionBegStr::update_running_strings( std::set<std::string> &strs ) co
 }
 
 void InstructionBegStr::reg_var( std::function<void (std::string, std::string)> f, CppEmitter *cpp_emitter ) {
-    if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER ) {
+    if ( cpp_emitter->buffer_type == CppEmitter::BT_HPIPE_BUFFER ) {
         f( "const unsigned char *",  "__beg_" + var + "_data" );
         f( "unsigned"             ,  "__beg_" + var + "_off"  );
         f( "HPIPE_BUFFER *"       ,  "__beg_" + var + "_buf"  );
@@ -45,7 +45,7 @@ void InstructionBegStr::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
 }
 
 void InstructionBegStr::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter, std::string repl_data, std::string repl_buf ) {
-    if ( cpp_emitter->buffer_type == CppEmitter::HPIPE_BUFFER ) {
+    if ( cpp_emitter->buffer_type == CppEmitter::BT_HPIPE_BUFFER ) {
         ss << "sipe_data->__beg_" << var << "_off = " << ( cx.beg() ? 0 : want_next_char ) << ";";
         ss << "sipe_data->__beg_" << var << "_buf = " << repl_buf << ";";
         ss << "sipe_data->__beg_" << var << "_data = " << repl_data << ";";
