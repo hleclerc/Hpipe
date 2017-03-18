@@ -46,9 +46,13 @@ std::string left_shifted( const std::string &str ) {
 }
 
 CharGraph::CharGraph( Lexer &lexer ) : ok( true ), lexer( lexer ), base( CharItem::BEGIN ) {
+    std::string method = lexer.methods();
+    if ( ! method.empty() )
+        methods.push_back_unique( method );
 }
 
 void CharGraph::read( const Lexem *lexem ) {
+
     // make a clone of the lexems, with subsituted variables
     Lexem *lexem_cl = clone( lexem, {} );
     // lexem_cl->display_dot();
@@ -371,10 +375,9 @@ void CharGraph::read( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> i
             }
 
             static std::pair<const char *,std::function<void(const std::string &)>> fv[] = {
-                { "add_include"    , [&]( const std::string &l ) { includes.insert( l );                                } },
+                { "add_include"    , [&]( const std::string &l ) { includes     .push_back_unique( l );                 } },
                 { "add_preliminary", [&]( const std::string &l ) { preliminaries.push_back_unique( left_shifted( l ) ); } },
                 { "add_prel"       , [&]( const std::string &l ) { preliminaries.push_back_unique( left_shifted( l ) ); } },
-                { "add_attr"       , [&]( const std::string &l ) { attributes   .push_back_unique( l );                 } },
             };
 
             for( const auto &p : fv ) {
@@ -815,10 +818,10 @@ void CharGraph::clone( Lexem *&beg, Lexem *&end, const std::string &name, const 
     }
 
     // predefined machine
-    if ( name == "add_prel" || name == "add_attr" ) {
+    if ( name == "add_prel" ) { //  || name == "add_attr"
         if ( cargs.size() != 1 ) lexer.err( l, "function expects exactly 1 argument" );
         else if ( name == "add_prel" ) preliminaries.push_back_unique( left_shifted( cargs[ 0 ].val->str ) );
-        else if ( name == "add_attr" ) attributes   .push_back_unique( cargs[ 0 ].val->str );
+        // else if ( name == "add_attr" ) attributes   .push_back_unique( cargs[ 0 ].val->str );
         return calls.pop_back();
     }
 

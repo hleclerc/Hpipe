@@ -23,12 +23,17 @@ public:
     void                            read                ( CharGraph *cg, const std::vector<std::string> &disp = {}, bool disp_inst_pred = false, bool disp_trans_freq = false );
     void                            apply               ( std::function<void(Instruction *)> f, bool subgraphs = false );
     int                             display_dot         ( CharGraph *cg = 0, bool disp_inst_pred = false, bool disp_trans_freq = false, bool disp_rc_item = false, const char *f = ".inst.dot", const char *prg = 0 ) const;
-    std::string                     methods             () const { return cg->methods(); }
     Instruction                    *root                ();
 
     int                             stop_char;
     bool                            no_training;
     bool                            boyer_moore;
+
+    Vec<std::string>                methods;
+    Vec<std::string>                includes;
+    Vec<std::string>                loc_vars;
+    Vec<std::string>                preliminaries;
+
 protected:
     struct PendingTrans {
         PendingTrans( Instruction *inst, unsigned num_edge, const Context &cx, const Vec<unsigned> &rcitem = {} ) : inst( inst ), num_edge( num_edge ), cx( cx ), rcitem( rcitem ) {}
@@ -69,7 +74,7 @@ protected:
     void                            get_possible_inst_rec( std::set<std::pair<Instruction *,unsigned>> &possible_instructions, Instruction *inst, unsigned pos, const Instruction *mark );
     void                            disp_if              ( const std::vector<std::string> &disp, bool disp_inst_pred, bool disp_trans_freq, const std::string &name, bool disp_rcitem = true );
     void                            merge_eq_pred        ( Instruction *&root );
-    void                            boyer_moore          ();
+    void                            make_boyer_moore     ();
     unsigned                        nb_multi_conds       ();
     Instruction                    *make_boyer_moore_rec ( const Vec<std::pair<Vec<Cond>, Instruction *> > &front, InstructionNextChar *next_char, int orig_front_size );
     bool                            no_code_ambiguity    ( InstructionMark *mark, Instruction *inst, const Vec<unsigned> &rcitem );
@@ -82,7 +87,6 @@ protected:
     Context                         cx_ko;
     Tcache                          cache;
     PtrPool<Instruction>            inst_pool;
-    bool                            no_training;
 };
 
 } // namespace Hpipe

@@ -27,18 +27,6 @@ void InstructionBegStr::update_running_strings( std::set<std::string> &strs ) co
     strs.insert( var );
 }
 
-void InstructionBegStr::reg_var( std::function<void (std::string, std::string)> f, CppEmitter *cpp_emitter ) {
-    if ( cpp_emitter->buffer_type == CppEmitter::BT_HPIPE_BUFFER ) {
-        f( "const unsigned char *",  "__beg_" + var + "_data" );
-        f( "unsigned"             ,  "__beg_" + var + "_off"  );
-        f( "HPIPE_BUFFER *"       ,  "__beg_" + var + "_buf"  );
-        f( "Hpipe::CbString"      ,  var                      );
-    } else {
-        f( "const unsigned char *",  "__beg_" + var + "_data" );
-        f( "Hpipe::CmString"      ,  var                      );
-    }
-}
-
 void InstructionBegStr::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
     write_cpp_code_seq( ss, es, cpp_emitter );
     write_trans( ss, cpp_emitter );
@@ -46,11 +34,24 @@ void InstructionBegStr::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
 
 void InstructionBegStr::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter, std::string repl_data, std::string repl_buf ) {
     if ( cpp_emitter->buffer_type == CppEmitter::BT_HPIPE_BUFFER ) {
-        ss << "sipe_data->__beg_" << var << "_off = " << ( cx.beg() ? 0 : want_next_char ) << ";";
-        ss << "sipe_data->__beg_" << var << "_buf = " << repl_buf << ";";
-        ss << "sipe_data->__beg_" << var << "_data = " << repl_data << ";";
+        cpp_emitter->preliminaries.push_back_unique( "#ifndef HPIPE_SIZE_T\n#define HPIPE_SIZE_T size_t\n#endif // HPIPE_SIZE_T\n" );
+        cpp_emitter->preliminaries.push_back_unique( "#ifndef HPIPE_CB_STRING_T\n#define HPIPE_CB_STRING_T Hpipe::CbString\n#endif // HPIPE_CB_STRING_T\n" );
+
+        cpp_emitter->add_variable( "__beg_" + var + "_off" , "HPIPE_SIZE_T"         );
+        cpp_emitter->add_variable( "__beg_" + var + "_buf" , "HPIPE_BUFF_T *"       );
+        cpp_emitter->add_variable( "__beg_" + var + "_data", "const HPIPE_CHAR_T *" );
+        cpp_emitter->add_variable( var, "HPIPE_CB_STRING_T" );
+
+        ss << "HPIPE_DATA.__beg_" << var << "_off = " << ( cx.beg() ? 0 : want_next_char ) << ";";
+        ss << "HPIPE_DATA.__beg_" << var << "_buf = " << repl_buf << ";";
+        ss << "HPIPE_DATA.__beg_" << var << "_data = " << repl_data << ";";
     } else {
-        ss << "sipe_data->__beg_" << var << "_data = " << repl_data << " + " << bool( cx.beg() ? 0 : want_next_char ) << ";";
+        cpp_emitter->preliminaries.push_back_unique( "#ifndef HPIPE_CM_STRING_T\n#define HPIPE_CM_STRING_T Hpipe::CmString\n#endif // HPIPE_CM_STRING_T\n" );
+
+        cpp_emitter->add_variable( "__beg_" + var + "_data", "const HPIPE_CHAR_T *" );
+        cpp_emitter->add_variable( var                     , "HPIPE_CM_STRING_T"    );
+
+        ss << "HPIPE_DATA.__beg_" << var << "_data = " << repl_data << " + " << bool( cx.beg() ? 0 : want_next_char ) << ";";
     }
 }
 

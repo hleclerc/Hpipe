@@ -38,7 +38,6 @@ public:
     void                  insert_before_this    ( Instruction *inst, Instruction *&init ); ///< inst -> this
     void                  insert_after_this     ( Instruction *inst ); ///< this -> inst -> next
     void                  repl_in_preds         ( Instruction *inst ); ///< replace in graph
-    virtual void          reg_var               ( std::function<void(std::string type,std::string name)> f, CppEmitter *cpp_emitter );
     virtual void          write_cpp             ( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter );
     int                   get_id_gen            ( CppEmitter *cpp_emitter );
     void                  write_trans           ( StreamSepMaker &ss, CppEmitter *cpp_emitter, unsigned num = 0 );

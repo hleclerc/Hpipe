@@ -94,9 +94,9 @@ install (
 include( CTest )
 
 macro( test_hpipe_file filename )
-  add_test( test_hpipe_file_${filename}_0 ${CMAKE_BINARY_DIR}/hpipe --style BUFFER  -t ${CMAKE_SOURCE_DIR}/${filename} )
-  add_test( test_hpipe_file_${filename}_1 ${CMAKE_BINARY_DIR}/hpipe --style BEG_END -t ${CMAKE_SOURCE_DIR}/${filename} )
-  add_test( test_hpipe_file_${filename}_2 ${CMAKE_BINARY_DIR}/hpipe --style C_STR   -t ${CMAKE_SOURCE_DIR}/${filename} )
+  add_test( test_hpipe_file_${filename}_0 ${CMAKE_BINARY_DIR}/hpipe --style HPIPE_BUFFER  -t ${CMAKE_SOURCE_DIR}/${filename} )
+  add_test( test_hpipe_file_${filename}_1 ${CMAKE_BINARY_DIR}/hpipe --style BEG_END       -t ${CMAKE_SOURCE_DIR}/${filename} )
+  add_test( test_hpipe_file_${filename}_2 ${CMAKE_BINARY_DIR}/hpipe --style C_STR         -t ${CMAKE_SOURCE_DIR}/${filename} )
   set_tests_properties( test_hpipe_file_${filename}_0 PROPERTIES FAIL_REGULAR_EXPRESSION "(BAD)" PASS_REGULAR_EXPRESSION "(OK)" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} )
   set_tests_properties( test_hpipe_file_${filename}_1 PROPERTIES FAIL_REGULAR_EXPRESSION "(BAD)" PASS_REGULAR_EXPRESSION "(OK)" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} )
   set_tests_properties( test_hpipe_file_${filename}_2 PROPERTIES FAIL_REGULAR_EXPRESSION "(BAD)" PASS_REGULAR_EXPRESSION "(OK)" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} )

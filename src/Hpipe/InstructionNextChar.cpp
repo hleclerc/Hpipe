@@ -187,29 +187,30 @@ void InstructionNextChar::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, Cpp
 
         // c_... (code when there is no data left in the buffer)
         es.rm_beg( 2 ) << "c_" << cont_label << ":" << ( cpp_emitter->trace_labels ? " std::cout << \"c_" + to_string( cont_label ) + " \" << __LINE__ << std::endl;" : "" );
-        // es << "while ( buf->next ) {" << ( need_buf_next() > 1 ? " HPIPE_BUFFER::inc_ref( buf, " + to_string( need_buf_next() - 1 ) + " );" : "" ) << " buf = buf->next; if ( buf->used ) { data = buf->data; end_m1 = buf->data + buf->used - 1; goto l_" << next[ 0 ].inst->get_id_gen( cpp_emitter ) << "; } }";
+        // es << "while ( buf->next ) {" << ( need_buf_next() > 1 ? " HPIPE_BUFF_T__INC_REF_N( buf, " + to_string( need_buf_next() - 1 ) + " );" : "" ) << " buf = buf->next; if ( buf->used ) { data = buf->data; end_m1 = buf->data + buf->used - 1; goto l_" << next[ 0 ].inst->get_id_gen( cpp_emitter ) << "; } }";
         if ( need_buf_next() )
-            es << "while ( buf->next ) { HPIPE_BUFFER::inc_ref( buf, " << need_buf_next() - 1 << " ); buf = buf->next; if ( buf->used ) { data = buf->data; end_m1 = buf->data + buf->used - 1; goto l_" << next[ 0 ].inst->get_id_gen( cpp_emitter ) << "; } }";
+            es << "while ( buf->next ) { HPIPE_BUFF_T__INC_REF_N( buf, " << need_buf_next() - 1 << " ); buf = buf->next; if ( buf->used ) { data = buf->data; end_m1 = buf->data + buf->used - 1; goto l_" << next[ 0 ].inst->get_id_gen( cpp_emitter ) << "; } }";
         else
-            es << "while ( buf->next ) { HPIPE_BUFFER *old = buf; buf = buf->next; HPIPE_BUFFER::dec_ref( old ); if ( buf->used ) { data = buf->data; end_m1 = buf->data + buf->used - 1; goto l_" << next[ 0 ].inst->get_id_gen( cpp_emitter ) << "; } }";
+            es << "while ( buf->next ) { HPIPE_BUFF_T *old = buf; buf = buf->next; HPIPE_BUFF_T__DEC_REF( old ); if ( buf->used ) { data = buf->data; end_m1 = buf->data + buf->used - 1; goto l_" << next[ 0 ].inst->get_id_gen( cpp_emitter ) << "; } }";
 
         if ( next.size() >= 2 )
             es << "if ( last_buf ) goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << ";";
 
         if ( need_buf_next() ) {
-            es << "sipe_data->pending_buf = buf;";
-            es << "sipe_data->inp_cont = &&e_" << cont_label << ";";
-            es << "HPIPE_BUFFER::inc_ref( buf, " << need_buf_next() << " );";
+            cpp_emitter->add_variable( "pending_buf", "HPIPE_BUFF_T *" );
+            es << "HPIPE_DATA.pending_buf = buf;";
+            es << "HPIPE_DATA.inp_cont = &&e_" << cont_label << ";";
+            es << "HPIPE_BUFF_T__INC_REF_N( buf, " << need_buf_next() << " );";
             es << "return RET_CONT;";
 
             // e_... (come back code)
             es.rm_beg( 2 ) << "e_" << cont_label << ":" << ( cpp_emitter->trace_labels ? " std::cout << \"e_" + to_string( cont_label ) + " \" << __LINE__ << std::endl;" : "" );
-            es << "sipe_data->pending_buf->next = buf;";
-            es << "sipe_data->pending_buf = buf;";
+            es << "HPIPE_DATA.pending_buf->next = buf;";
+            es << "HPIPE_DATA.pending_buf = buf;";
             es << "if ( data > end_m1 ) goto c_" << cont_label << ";";
             es << "goto l_" << next[ 0 ].inst->get_id_gen( cpp_emitter ) << ";";
         } else {
-            es << "sipe_data->inp_cont = &&e_" << cont_label << ";";
+            es << "HPIPE_DATA.inp_cont = &&e_" << cont_label << ";";
             es << "return RET_CONT;";
 
             // e_... (come back code)

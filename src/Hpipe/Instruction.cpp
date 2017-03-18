@@ -388,9 +388,6 @@ void Instruction::repl_in_preds( Instruction *inst ) {
     prev.clear();
 }
 
-void Instruction::reg_var( std::function<void(std::string,std::string)> f, Hpipe::CppEmitter *cpp_emitter ) {
-}
-
 void Instruction::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
     ss << "TODO; // " << *this;
     PRINTLE( "write_cpp", *this );

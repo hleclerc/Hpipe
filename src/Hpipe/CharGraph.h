@@ -30,15 +30,14 @@ public:
 
     Vec<Lexer::TrainingData> training_data () const { return lexer.training_data(); }
 
-    std::string              methods       () const { return lexer.methods(); }
-
     void                     err           ( const std::string &msg );
 
-    CharItem                *char_item_ok;
-    std::set<std::string>    includes;
-    std::set<std::string>    attributes;
-    std::set<std::string>    preliminaries;
     bool                     ok;
+    CharItem                *char_item_ok;
+
+    Vec<std::string>         methods;
+    Vec<std::string>         includes;
+    Vec<std::string>         preliminaries;
 
 protected:
     struct Variable {

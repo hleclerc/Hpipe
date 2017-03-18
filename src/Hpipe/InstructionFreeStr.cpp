@@ -28,7 +28,7 @@ void InstructionFreeStr::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppE
 void InstructionFreeStr::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter, std::string repl_data, std::string repl_buf ) {
     if ( cpp_emitter->buffer_type == CppEmitter::BT_HPIPE_BUFFER ) {
         for( const std::string &var : strs )
-            ss << "HPIPE_BUFFER::skip( sipe_data->__beg_" << var << "_buf, sipe_data->__beg_" << var << "_data, HPIPE_BUFFER::size_between( sipe_data->__beg_" << var << "_buf, sipe_data->__beg_" << var << "_data, " << repl_buf << ", " << repl_data << " ) );";
+            ss << "HPIPE_BUFF_T::skip( HPIPE_DATA.__beg_" << var << "_buf, HPIPE_DATA.__beg_" << var << "_data, HPIPE_BUFF_T::size_between( HPIPE_DATA.__beg_" << var << "_buf, HPIPE_DATA.__beg_" << var << "_data, " << repl_buf << ", " << repl_data << " ) );";
     }
 }
 

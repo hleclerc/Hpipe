@@ -39,9 +39,9 @@ void InstructionIf::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, 
     //        return;
     //    }
     //    if ( cpp_emitter->interruptible() )
-    //        ss << "sipe_data->" << var << " += sipe_data->__save[ " << save->num_save << " ];";
+    //        ss << "HPIPE_DATA." << var << " += HPIPE_DATA.__save[ " << save->num_save << " ];";
     //    else
-    //        ss << "sipe_data->" << var << " += save[ " << save->num_save << " ];";
+    //        ss << "HPIPE_DATA." << var << " += save[ " << save->num_save << " ];";
 }
 
 bool InstructionIf::data_code() const {

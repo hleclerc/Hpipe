@@ -40,19 +40,19 @@ void InstructionEndStr::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
 void InstructionEndStr::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter, std::string repl_data, std::string repl_buf ) {
     if ( cpp_emitter->buffer_type == CppEmitter::BT_HPIPE_BUFFER ) {
         if ( want_next_char ) {
-            ss << "HPIPE_BUFFER::inc_ref( " << repl_buf << " );";
-            ss << "HPIPE_BUFFER::skip( sipe_data->__beg_" << var << "_buf, sipe_data->__beg_" << var << "_data, sipe_data->__beg_" << var << "_off );";
-            ss << "sipe_data->" << var << " = Hpipe::CbString{ Hpipe::CbString::NoIncRef(), sipe_data->__beg_" << var << "_buf, sipe_data->__beg_" << var << "_data, " << repl_buf << ", " << repl_data << " + 1 };";
+            ss << "HPIPE_BUFF_T__INC_REF( " << repl_buf << " );";
+            ss << "HPIPE_BUFF_T::skip( HPIPE_DATA.__beg_" << var << "_buf, HPIPE_DATA.__beg_" << var << "_data, HPIPE_DATA.__beg_" << var << "_off );";
+            ss << "HPIPE_DATA." << var << " = Hpipe::CbString{ Hpipe::CbString::NoIncRef(), HPIPE_DATA.__beg_" << var << "_buf, HPIPE_DATA.__beg_" << var << "_data, " << repl_buf << ", " << repl_data << " + 1 };";
         } else {
-            ss << "if ( " << repl_data << " > " << repl_buf << "->data ) HPIPE_BUFFER::inc_ref( " << repl_buf << " );";
-            ss << "HPIPE_BUFFER::skip( sipe_data->__beg_" << var << "_buf, sipe_data->__beg_" << var << "_data, sipe_data->__beg_" << var << "_off );";
-            ss << "sipe_data->" << var << " = Hpipe::CbString{ Hpipe::CbString::NoIncRef(), sipe_data->__beg_" << var << "_buf, sipe_data->__beg_" << var << "_data, " << repl_buf << ", " << repl_data << " };";
+            ss << "if ( " << repl_data << " > " << repl_buf << "->data ) HPIPE_BUFF_T__INC_REF( " << repl_buf << " );";
+            ss << "HPIPE_BUFF_T::skip( HPIPE_DATA.__beg_" << var << "_buf, HPIPE_DATA.__beg_" << var << "_data, HPIPE_DATA.__beg_" << var << "_off );";
+            ss << "HPIPE_DATA." << var << " = Hpipe::CbString{ Hpipe::CbString::NoIncRef(), HPIPE_DATA.__beg_" << var << "_buf, HPIPE_DATA.__beg_" << var << "_data, " << repl_buf << ", " << repl_data << " };";
         }
     } else {
         if ( want_next_char ) {
-            ss << "sipe_data->" << var << " = Hpipe::CmString{ sipe_data->__beg_" << var << "_data, " << repl_data << " + 1 };";
+            ss << "HPIPE_DATA." << var << " = Hpipe::CmString{ HPIPE_DATA.__beg_" << var << "_data, " << repl_data << " + 1 };";
         } else {
-            ss << "sipe_data->" << var << " = Hpipe::CmString{ sipe_data->__beg_" << var << "_data, " << repl_data << " };";
+            ss << "HPIPE_DATA." << var << " = Hpipe::CmString{ HPIPE_DATA.__beg_" << var << "_data, " << repl_data << " };";
         }
     }
 }

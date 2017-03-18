@@ -31,36 +31,39 @@ void InstructionSkipBytes::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, Cp
         ss << "    data += " << v << ";";
         ss << "} else {";
         // skip data in current buf
-        ss << "    sipe_data->__bytes_to_skip = " << v << " - ( buf->data + buf->used - data );";
+        cpp_emitter->preliminaries.push_back_unique( "#ifndef HPIPE_SIZE_T\n#define HPIPE_SIZE_T size_t\n#endif // HPIPE_SIZE_T\n" );
+        cpp_emitter->add_variable( "__bytes_to_skip", "HPIPE_SIZE_T" );
+        ss << "    HPIPE_DATA.__bytes_to_skip = " << v << " - ( buf->data + buf->used - data );";
         ss << "  t_" << cont_label << ":";
         ss << "    if ( ! buf->next ) {";
         ss << "        if ( last_buf )";
         ss << "            goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << ";";
         if ( need_buf_next() ) {
-            ss << "        sipe_data->pending_buf = buf;";
-            ss << "        HPIPE_BUFFER::inc_ref( buf, " << need_buf_next() << " );";
-            ss << "        sipe_data->inp_cont = &&e_" << cont_label << ";";
+            cpp_emitter->add_variable( "pending_buf", "HPIPE_BUFF_T *" );
+            ss << "        HPIPE_DATA.pending_buf = buf;";
+            ss << "        HPIPE_BUFF_T__INC_REF_N( buf, " << need_buf_next() << " );";
+            ss << "        HPIPE_DATA.inp_cont = &&e_" << cont_label << ";";
         } else
-            ss << "        sipe_data->inp_cont = &&c_" << cont_label << ";";
+            ss << "        HPIPE_DATA.inp_cont = &&c_" << cont_label << ";";
         ss << "        return RET_CONT;";
         if ( need_buf_next() ) {
             // e_... (come back code)
             ss << "      e_" << cont_label << ":" << ( cpp_emitter->trace_labels ? " std::cout << \"e_" + to_string( cont_label ) + " \" << __LINE__ << std::endl;" : "" );
-            ss << "        sipe_data->pending_buf->next = buf;";
-            ss << "        sipe_data->pending_buf = buf;";
+            ss << "        HPIPE_DATA.pending_buf->next = buf;";
+            ss << "        HPIPE_DATA.pending_buf = buf;";
             ss << "        goto c_" << cont_label << ";";
         }
         ss << "    }";
         if ( need_buf_next() )
-            ss << "    HPIPE_BUFFER::inc_ref( buf, " << need_buf_next() - 1 << " ); buf = buf->next;";
+            ss << "    HPIPE_BUFF_T__INC_REF_N( buf, " << need_buf_next() - 1 << " ); buf = buf->next;";
         else
-            ss << "    HPIPE_BUFFER *old = buf; buf = buf->next; HPIPE_BUFFER::dec_ref( old );";
+            ss << "    HPIPE_BUFF_T *old = buf; buf = buf->next; HPIPE_BUFF_T__DEC_REF( old );";
         ss << "  c_" << cont_label << ":";
-        ss << "    if ( sipe_data->__bytes_to_skip >= buf->used ) {";
-        ss << "        sipe_data->__bytes_to_skip -= buf->used;";
+        ss << "    if ( HPIPE_DATA.__bytes_to_skip >= buf->used ) {";
+        ss << "        HPIPE_DATA.__bytes_to_skip -= buf->used;";
         ss << "        goto t_" << cont_label << ";";
         ss << "    }";
-        ss << "    data = buf->data + sipe_data->__bytes_to_skip;";
+        ss << "    data = buf->data + HPIPE_DATA.__bytes_to_skip;";
         ss << "    end_m1 = buf->data + buf->used - 1;";
         ss << "}";
         if ( beg ) {

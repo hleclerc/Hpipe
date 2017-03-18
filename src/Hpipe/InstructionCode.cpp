@@ -27,11 +27,13 @@ bool InstructionCode::has_ret_cont() const {
 void InstructionCode::write_code( StreamSepMaker &ss, CppEmitter *cpp_emitter, std::string str, const std::string &repl ) {
     // variables
     for( auto &p : cpp_emitter->variables ) {
+        PRINT( p.first );
+
         for( std::string::size_type pos = 0; ; ) {
             pos = find_var_in_code( str, p.first, pos );
             if ( pos == std::string::npos )
                 break;
-            str = str.replace( pos, 0, "sipe_data->" );
+            str = str.replace( pos, 0, "HPIPE_DATA." );
             pos += 11 + p.first.size();
         }
     }
@@ -43,7 +45,7 @@ void InstructionCode::write_code( StreamSepMaker &ss, CppEmitter *cpp_emitter, s
             break;
         // ++cpp_emitter->nb_cont_label;
         std::ostringstream val;
-        val << "sipe_data->inp_cont = &&c_" << cpp_emitter->nb_cont_label << "; return RET_STOP_CONT; c_" << ++cpp_emitter->nb_cont_label << ":;";
+        val << "HPIPE_DATA.inp_cont = &&c_" << cpp_emitter->nb_cont_label << "; return RET_STOP_CONT; c_" << ++cpp_emitter->nb_cont_label << ":;";
         str = str.replace( pos, 16, val.str() );
         pos += val.str().size();
     }
@@ -77,7 +79,7 @@ void InstructionCode::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmit
 
 void InstructionCode::write_cpp_code_seq(StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter, std::string repl_data, std::string repl_buf ) {
     if ( save )
-        repl_data = "( " + std::string( not cpp_emitter->interruptible() ? "" : "sipe_data->__" ) + "save + " + to_string( save->num_save ) + " )";
+        repl_data = "( " + std::string( not cpp_emitter->interruptible() ? "" : "HPIPE_DATA.__" ) + "save + " + to_string( save->num_save ) + " )";
 
     write_code( ss, cpp_emitter, code, repl_data );
 }

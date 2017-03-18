@@ -20,7 +20,7 @@ int InstructionSave::save_in_loc_reg() const {
 }
 
 void InstructionSave::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
-    ss << ( ! cpp_emitter->interruptible() ? "" : "sipe_data->__" ) << "save[ " << num_save << " ] = *data;";
+    ss << ( ! cpp_emitter->interruptible() ? "" : "HPIPE_DATA.__" ) << "save[ " << num_save << " ] = *data;";
     write_trans( ss, cpp_emitter );
 }
 

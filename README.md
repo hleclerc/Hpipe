@@ -215,7 +215,7 @@ where the end machine is written twice (please note that there is no escaping in
 There are some internal predefined machine to help generate code (mostly for test purpose):
 * `add_include[ 'my_include.h' ]` will add `#include <my_include.h>` (only once) in the preliminary of the generated code. `<>` and `""` can be specified explicitely (as in `add_include[ '"my_include.h"' ]`)
 * `add_prel[ 'some_code' ]` or `add_preliminary[ 'some_code' ]` will add `some_code` (only once) in the preliminary of the generated code
-* `add_attr[ 'some_code' ]` will add `some_code` (only once) in the attributes of the generated class.
+<!--* `add_attr[ 'some_code' ]` will add `some_code` (only once) in the attributes of the generated class.-->
 
 ## How to call and define machines ?
 

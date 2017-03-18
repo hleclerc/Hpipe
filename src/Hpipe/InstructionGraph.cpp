@@ -35,8 +35,11 @@ InstructionGraph::InstructionGraph() {
 }
 
 void InstructionGraph::read( CharGraph *cg, const std::vector<std::string> &disp, bool disp_inst_pred, bool disp_trans_freq ) {
-    this->cg = cg;
+    for( const std::string &str : cg->preliminaries ) preliminaries.push_back_unique( str );
+    for( const std::string &str : cg->includes      ) includes     .push_back_unique( str );
+    for( const std::string &str : cg->methods       ) methods      .push_back_unique( str );
     cx_ok = Context{ cg->char_item_ok };
+    this->cg = cg;
 
     // predefined instructions
     ok = inst_pool << new InstructionOK( cx_ok );
@@ -67,7 +70,7 @@ void InstructionGraph::read( CharGraph *cg, const std::vector<std::string> &disp
 
     // boyer-moore like optimizations
     if ( boyer_moore )
-        boyer_moore();
+        make_boyer_moore();
     disp_if( disp, disp_inst_pred, disp_trans_freq, "boyer", false );
 
     // cond opt
@@ -585,7 +588,7 @@ void InstructionGraph::merge_eq_pred( Instruction *&root ) {
     } );
 }
 
-void InstructionGraph::boyer_moore() {
+void InstructionGraph::make_boyer_moore() {
     // get NextChar items
     //++Instruction::cur_op_id;
     //init->boyer_moore_opt( inst_pool, &init );

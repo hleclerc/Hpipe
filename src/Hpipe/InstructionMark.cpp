@@ -13,21 +13,22 @@ void InstructionMark::write_dot( std::ostream &os, std::vector<std::string> *edg
 }
 
 void InstructionMark::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
-    //    ss << "// mark";
-    //    ss << "PRINT( *data, Hpipe::Buffer::nb_alive_bufs );";
-    //    ss << "for( Hpipe::Buffer *b = buf; b; b = b->next )";
-    //    ss << "  PRINT( *b->data, b->cpt_use + 1 );";
-
     if ( cpp_emitter->interruptible() ) {
         if ( cpp_emitter->buffer_type == CppEmitter::BT_HPIPE_BUFFER ) {
-            ss << "sipe_data->pending_buf = buf;";
-            ss << "sipe_data->rw_buf = buf;";
+            cpp_emitter->add_variable( "pending_buf", "HPIPE_BUFF_T *"  );
+            cpp_emitter->add_variable( "rw_buf", "HPIPE_BUFF_T *"  );
+            ss << "HPIPE_DATA.pending_buf = buf;";
+            ss << "HPIPE_DATA.rw_buf = buf;";
         }
-        ss << "sipe_data->rw_ptr = data;";
+        cpp_emitter->add_variable( "rw_ptr", "const HPIPE_CHAR_T *" );
+        ss << "HPIPE_DATA.rw_ptr = data;";
     } else {
+        cpp_emitter->loc_vars.push_back_unique( "const HPIPE_CHAR_T *rw_ptr;"  );
         ss << "rw_ptr = data;";
-        if ( cpp_emitter->buffer_type == CppEmitter::BT_HPIPE_BUFFER )
+        if ( cpp_emitter->buffer_type == CppEmitter::BT_HPIPE_BUFFER ) {
+            cpp_emitter->loc_vars.push_back_unique( "HPIPE_BUFF_T *rw_buf;"  );
             ss << "rw_buf = buf;";
+        }
     }
 }
 

@@ -23,26 +23,24 @@ void InstructionAddStr::get_code_repr( std::ostream &os ) {
     os << "ADD_STR " << var.size() << " " << var;
 }
 
-void InstructionAddStr::reg_var( std::function<void(std::string,std::string)> f, CppEmitter *cpp_emitter ) {
-    f( "std::string", var );
-}
-
 void InstructionAddStr::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
-    ss << "sipe_data->" << var << " += *data;";
+    ss << "HPIPE_DATA." << var << " += *data;";
     write_trans( ss, cpp_emitter );
 }
 
 void InstructionAddStr::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter, std::string repl_data, std::string repl_buf ) {
-    ss << "sipe_data->" << var << " += *" << repl_data << ";";
+    cpp_emitter->add_variable( var, "std::string" );
+
+    ss << "HPIPE_DATA." << var << " += *" << repl_data << ";";
 
     //    if ( not save ) {
     //        PRINTLE( "bing" );
     //        return;
     //    }
     //    if ( cpp_emitter->interruptible() )
-    //        ss << "sipe_data->" << var << " += sipe_data->__save[ " << save->num_save << " ];";
+    //        ss << "HPIPE_DATA." << var << " += HPIPE_DATA.__save[ " << save->num_save << " ];";
     //    else
-    //        ss << "sipe_data->" << var << " += save[ " << save->num_save << " ];";
+    //        ss << "HPIPE_DATA." << var << " += save[ " << save->num_save << " ];";
 }
 
 bool InstructionAddStr::data_code() const {

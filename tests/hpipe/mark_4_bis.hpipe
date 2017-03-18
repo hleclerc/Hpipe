@@ -1,5 +1,5 @@
 
-ifdef  = '#' ' '** ( any - ' ' add_str[ "res" ] )** { os << res; } clr_str[ "res" ]
+ifdef  = '#' ' '** ( any - ' ' add_str[ "res" ] )** { os << HPIPE_DATA.res; } clr_str[ "res" ]
 
 main = ( ifdef | any )**
 
