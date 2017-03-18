@@ -122,14 +122,19 @@ CbString::CbString( const std::string &bs ) {
 
 CbString::CbString( NoIncRef, Buffer *beg_buff, const Buffer::PI8 *beg_data, Buffer *end_buff, const Buffer::PI8 *end_data ) {
     beg = beg_buff;
-    off = beg_data - beg_buff->data;
-    if ( end_buff == beg_buff ) {
-        end = end_data - beg_buff->data;
+    if ( beg_buff ) {
+        off = beg_data - beg_buff->data;
+        if ( end_buff == beg_buff ) {
+            end = end_data - beg_buff->data;
+        } else {
+            end = 0;
+            for ( ; beg_buff != end_buff; beg_buff = beg_buff->next )
+                end += beg_buff->used;
+            end += end_data - end_buff->data;
+        }
     } else {
+        off = 0;
         end = 0;
-        for ( ; beg_buff != end_buff; beg_buff = beg_buff->next )
-            end += beg_buff->used;
-        end += end_data - end_buff->data;
     }
 }
 

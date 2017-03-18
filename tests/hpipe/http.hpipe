@@ -1,20 +1,26 @@
-# read until end 
-read[ name, end = 10 | 13 ] = beg_str_next[ name ] ( any - end )** end_str_next[ name ]
+# read until end
+read_string[ name, end = 10 | 13 ] = beg_str_next[ name ] ( any - end )** end_str_next[ name ]
+read_ssized[ name, size ] = beg_str_next[ name ] skip[ size ] end_str_next[ name ]
+read_number[ name ] = digit { name = *data - '0'; } ( digit { name = 10 * name + *data - '0'; } )**
 
-get =
-    'GET ' read[ 'url', ' ' ] (
-        ( 10 's: ' read[ 's' ] ) |
-        ( 10 'tu: ' read[ 'tu' ] ) |
-        any
-    )**
-    { os << url << " s:" << s; }
+get = 'GET ' read_string[ 'url', ' ' ] (
+    ( 10 eol read_ssized[ 'content', 'content_length' ] { os << "url:" << url << " cl:" << content_length << " content:" << content; } any** ) |
+    ( 10 'Content-Length: ' read_number[ 'content_length' ] ) |
+    # ( 10 'Content-Length: ' read_dec[ 'content_length' ] ) |
+    # ( 10 'tu: ' read_string[ 'tu' ] ) |
+    any
+)** 
 
 main = get
+
+beg_methods
+    size_t content_length = 0;
+end_methods
 
 beg_training
     input
         GET /smurf HTTP/1.1
-        s: 17
+        Content-Length: 17
 
     freq
         1
@@ -23,8 +29,9 @@ end_training
 beg_test GET /smurf HTTP/1.1
     input
         GET /smurf HTTP/1.1
-        s: 17
+        Content-Length: 3
 
+        12345
     output
-        /smurf s:17 status=OK
+        /smurf cl:17 content:123 status=OK
 end_test

@@ -18,6 +18,12 @@ out
 err
 ext/
 bench
+stop_char
+Hpipe.creator
+Hpipe.files
+Hpipe.config
+Hpipe.creator.user
+Hpipe.includes
 bench.cpp
 *.gcda
 tests/re2c/js

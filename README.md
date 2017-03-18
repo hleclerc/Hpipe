@@ -81,6 +81,14 @@ number_flt =
     { os << nfl << " "; }
 ```
 
+Installation
+============
+
+```bash
+git clone https://github.com/hleclerc/Hpipe.git && cd Hpipe && mkdir build && cd build
+cmake -DCMAKE_BUILD_TYPE=release .. && make -j8
+sudo make install
+```
 
 Performance
 ===========
@@ -195,8 +203,27 @@ There are some internal predefined machine to help generate code (mostly for tes
 * `add_prel[ 'some_code' ]` or `add_preliminary[ 'some_code' ]` will add `some_code` (only once) in the preliminary of the generated code
 * `add_attr[ 'some_code' ]` will add `some_code` (only once) in the attributes of the generated class.
 
-Helper sections
----------------
+How to call and define machines ?
+---------------------------------
+
+```python
+# Arguments values are machines. It may have default values.
+my_machine[ val, num = "123", end = digit 'e' | 'E' ] =
+    { res += num; } # substring with argument names are replaced by the values
+    val any* end # variable can be used as normal machines
+#
+other[ foo = eol ] = ...
+
+#
+main =
+    # arguments can be specified using their names
+    my_machine[ any, num = "5" ]
+    # if no argument of default values are available at every position, a machine can be called without []
+    other
+```
+
+Aditional sections
+------------------
 
 It is possible to define test(s) inside machine definition, using:
 
@@ -209,7 +236,7 @@ beg_test preproc
 end_test
 ```
 
-`input` and `output` are shifted to the left (space at the beginning of the line are here to separate sections)
+`input` and `output` are shifted to the left (space at the beginning of the line are here to separate sections). `hpipe --test foo.hpipe` allows to launch the tests in `foo.hpipe` (one can use the flag `style` to test with different kinds of buffers).
 
 Training data uses a similar syntax:
 
@@ -276,25 +303,6 @@ For instance, `-s BEG_END` will generate a function with a signature like:
 
 ```C++
 unsigned parse( HpipeData* hpipe_data, const unsigned char* data, const unsigned char* end_m1 ); // `end_m1` must point to the last char (e.g. for data.size == 0, end_m1 must be equal to data - 1).
-```
-
-How to call and define machines ?
-=================================
-
-```python
-# Arguments values are machines. It may have default values.
-my_machine[ val, num = "123", end = digit 'e' | 'E' ] =
-    { res += num; } # substring with argument names are replaced by the values
-    val any* end # variable can be used as normal machines
-#
-other[ foo = eol ] = ...
-
-#
-main =
-    # arguments can be specified using their names
-    my_machine[ any, num = "5" ]
-    # if no argument of default values are available at every position, a machine can be called without []
-    other
 ```
 
 Predefined machines
