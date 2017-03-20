@@ -429,6 +429,7 @@ void InstructionGraph::simplify_marks() {
         for( InstructionRewind *rw : mark->rewinds ) {
             if ( rw->need_mark() ) {
                 need_mark = true;
+                PRINT( *rw );
                 break;
             }
         }
@@ -932,14 +933,14 @@ void InstructionGraph::make_rewind_data( InstructionRewind *rewind ) {
         }
     }
 
-    // read instructions from the beginning, until undecibility
+    // read instructions from the beginning, until undecidability
     unsigned offset_beg = 0;
     const Context *ncx_beg = 0;
     for( Instruction *inst = rewind->exec; ; ) {
         ncx_beg = &inst->cx;
 
         // if in a loop, stop here
-        if ( inst->prev.size() >= 2 )
+        if ( inst->prev.size() >= 1 + bool( inst != rewind->exec ) )
             break;
 
         // several choices / undecidability or no next
@@ -962,7 +963,7 @@ void InstructionGraph::make_rewind_data( InstructionRewind *rewind ) {
             if ( wc->in_code_seq )
                 break;
             // if ambiguity, we make a rewind on wc
-            if ( wc->cx.pos.size() >= 1 + bool( inst != rewind->exec ) ) {
+            if ( wc->cx.pos.size() >= 2 ) {
                 rewind->offset_ncx = offset_beg;
                 rewind->need_rw = true;
                 break;

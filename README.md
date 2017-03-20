@@ -178,10 +178,11 @@ Launched on (very long) data similar to the training one, execution times are
 
 Here is a comparison of the performance of a _basic_ js scanner, written with [re2c](http://re2c.org/), written with [ragel](http://www.colm.net/open-source/ragel/) or written using hpipe (see tests/re2c/js.re, tests/re2c/js.ragel and tests/hpipe/js.hpipe):
 
-|                  |       re2c       |     re2c -g      |     hpipe      |    speedup     |
-|------------------|:----------------:|:----------------:|:--------------:|:--------------:|
-| w/o profile opt  |     6.06785s     |     3.26868s     |    2.15281s    | (2.49x) 1.52x  |
-| with profile opt |     6.36135s     |     3.26959s     |    1.82015s    | (3.49x) 1.80x  |
+|                  |       re2c       |     re2c -g      |    ragel -G2     |     hpipe      |        speedup         |
+|------------------|:----------------:|:----------------:|:----------------:|:--------------:|:----------------------:|
+| w/o profile opt  |     6.06785s     |     3.26868s     |     4.09402s     |    2.15281s    | 2.49x **1.52x** 1.90x  |
+| with profile opt |     6.36135s     |     3.26959s     |     2.42014s     |    1.82015s    | 3.49x 1.80x **1.32x**  |
+
 
 re2c is not meant to work on interrupted streams, but the base techniques are roughly the same, hence the relevance of the test.
 
