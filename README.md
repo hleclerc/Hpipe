@@ -4,16 +4,19 @@ Hpipe is the acronym of "High Performance Incremental Parser Engine".
 
 It generates optimized code to evaluate regular expressions with embedded actions (arbitrary code, that can be defined by the user).
 
-*Incremental* means that it works with streams: the crunching of the incoming data can be stopped/restarted at any point, with proper and automated handling of buffers (with reference counter or other techniques). It is a prerequisite for different types of data coming from the network or for instance from huge files that do not fit into memory. It is the first difference compared to tools like for instance re2c which assumes that data come once, in a contiguous buffer.
+*Incremental* means that it works with streams: the crunching of the incoming data can be stopped/restarted at any point, with proper and automated handling of buffers (with reference counter or other techniques,depending on what the user wants). It is a prerequisite for different types of data coming from the network or for instance from huge files that do not fit into memory. It is the first difference compared to tools like for instance re2c which assumes that data come once, in a contiguous buffer.
 
-All other things being equal,
-* Hpipe is designed for performance. Hpipe supports zero copy for most of the buffer styles, support training, anticipation, and tries to read the data only once, etc...
+Besides, all other things being equal,
+* Hpipe is designed for performance. Hpipe supports training, anticipation and zero copy for most of the buffer styles, tries to read the data only once, etc...
 * Hpipe's syntax focuses on clarity and security (over compactness). For instance, user codes are executed only if the paths succeed, escape sequences are avoided when possible, etc...
 
 <!-- TOC -->
 
 - [What is Hpipe ?](#what-is-hpipe-)
 - [Show me an example](#show-me-an-example)
+    - [What's the look of the produced code ?](#whats-the-look-of-the-produced-code-)
+    - [Another simple example: reading floating point numbers](#another-simple-example-reading-floating-point-numbers)
+    - [Buffer handling](#buffer-handling)
 - [Installation](#installation)
 - [A word on performance](#a-word-on-performance)
     - [Training](#training)
@@ -31,6 +34,8 @@ All other things being equal,
 <!-- /TOC -->
 
 # Show me an example
+
+## What's the look of the produced code ?
 
 The following code is an example of a "machine" that sums the last digit of each 'bar[0-9]', and that counts the number of 'foo' and 'bar' not followed by a digit (which can be EOF or the beginning of something else...).
 
@@ -82,17 +87,18 @@ e_7:
   goto l_16;
 ```
 
-Here is another example, to display floating point numbers:
+## Another simple example: reading floating point numbers
 
 ```python
-read_dec[ res ] = # res is a function argument
+# support function. res is a function argument
+read_dec[ res ] = 
     ( digit { res =            *data - '0'; } )
     ( digit { res = 10 * res + *data - '0'; } )**
 
 number_flt =
     read_dec[ "nfl" ]
     # in this example, '.' is mandatory for floating point numbers
-    '.' { mul = 1; } ( digit { nfl += ( mul *= 0.1 ) * ( *data - '0' );  } )**
+    '.' { mul = 1; } ( digit { nfl += ( mul *= 0.1 ) * ( *data - '0' ); } )**
     # 'e' and 'E' are optional
     ( 'e' | 'E'
         ( '+'? read_dec[ "num" ] { nfl *= std::pow( 10.0,  num ); } ) |
@@ -100,6 +106,29 @@ number_flt =
     )??
     { os << nfl << " "; }
 ```
+
+## Buffer handling
+
+In order to allow zero copy, hpipe proposes to take care of markers, for all the types of buffers (contiguous or not, interruptible or not, etc...).
+
+For instance, a http parser can be written with 
+
+```python
+# read until `end` char, reference the result in `$name` if success
+read_string[ name, end = 10 | 13 ] = beg_str_next[ name ] ( any - end )** end_str_next[ name ]
+# read `size` bytes, reference the result in `$name` if success
+read_ssized[ name, size ] = beg_str_next[ name ] skip[ size ] end_str_next[ name ]
+# read a decimal number. Store the result in `$name`
+read_number[ name ] = digit { name = *data - '0'; } ( digit { name = 10 * name + *data - '0'; } )**
+
+# this http parser simply get url, content length and content
+main = 'GET ' read_string[ 'url', ' ' ] (
+    ( 10 'Content-Length: ' read_number[ 'content_length' ] ) |
+    ( 10 eol read_ssized[ 'content', 'content_length' ] { os << "url:" << url << " cl:" << content_length << " content:" << content; } any** ) |
+    any
+)** 
+```
+
 
 # Installation
 
@@ -111,11 +140,11 @@ sudo make install
 
 # A word on performance
 
-Hpipe is made from the ground for performance. Here are some illustrations for some specific optimizations:
+Hpipe is made from the ground for performance. Here are some illustrations:
 
 ## Training
 
-Training data can be used by hpipe to transform the instruction graph before code generation. In particular, it enables to automatically decompose the tests, to minimize the average number of tests and branch mispredictions.
+Training data can be used by hpipe to transform the instruction graph before the code generation. It enables in particular to automatically decompose the tests, in order to minimize the average number of tests and branch mispredictions.
 
 Let's consider the following declaration:
 
@@ -147,7 +176,7 @@ Launched on (very long) data similar to the training one, execution times are
 
 ("profile opt" means use of `g++ -fprofile-instr-generate` -- clang gives the same kind of results with or without profile optimizations)
 
-Here is a comparison of the performance of a _basic_ js scanner, written with [re2c](http://re2c.org/) vs a scanner generated by hpipe (see tests/hpipe/js.hpipe and tests/re2c/js.re):
+Here is a comparison of the performance of a _basic_ js scanner, written with [re2c](http://re2c.org/), written with [ragel](http://www.colm.net/open-source/ragel/) or written using hpipe (see tests/re2c/js.re, tests/re2c/js.ragel and tests/hpipe/js.hpipe):
 
 |                  |       re2c       |     re2c -g      |     hpipe      |    speedup     |
 |------------------|:----------------:|:----------------:|:--------------:|:--------------:|
