@@ -27,8 +27,6 @@ bool InstructionCode::has_ret_cont() const {
 void InstructionCode::write_code( StreamSepMaker &ss, CppEmitter *cpp_emitter, std::string str, const std::string &repl ) {
     // variables
     for( auto &p : cpp_emitter->variables ) {
-        PRINT( p.first );
-
         for( std::string::size_type pos = 0; ; ) {
             pos = find_var_in_code( str, p.first, pos );
             if ( pos == std::string::npos )

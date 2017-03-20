@@ -6,8 +6,6 @@ read_number[ name ] = digit { name = *data - '0'; } ( digit { name = 10 * name +
 get = 'GET ' read_string[ 'url', ' ' ] (
     ( 10 eol read_ssized[ 'content', 'content_length' ] { os << "url:" << url << " cl:" << content_length << " content:" << content; } any** ) |
     ( 10 'Content-Length: ' read_number[ 'content_length' ] ) |
-    # ( 10 'Content-Length: ' read_dec[ 'content_length' ] ) |
-    # ( 10 'tu: ' read_string[ 'tu' ] ) |
     any
 )** 
 
@@ -33,5 +31,5 @@ beg_test GET /smurf HTTP/1.1
 
         12345
     output
-        /smurf cl:17 content:123 status=OK
+        /smurf cl:3 content:123 status=OK
 end_test
