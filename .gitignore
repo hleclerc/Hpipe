@@ -30,4 +30,4 @@ bench.cpp
 tests/re2c/js
 tests/re2c/js.cc
 tests/re2c/node_modules
-
+a.out

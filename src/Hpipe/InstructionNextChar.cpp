@@ -200,7 +200,10 @@ void InstructionNextChar::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, Cpp
             cpp_emitter->add_variable( "pending_buf", "HPIPE_BUFF_T *" );
             es << "HPIPE_DATA.pending_buf = buf;";
             es << "HPIPE_DATA.inp_cont = &&e_" << cont_label << ";";
-            es << "HPIPE_BUFF_T__INC_REF_N( buf, " << need_buf_next() << " );";
+            if ( need_buf_next() == 1 )
+                es << "HPIPE_BUFF_T__INC_REF( buf );";
+            else
+                es << "HPIPE_BUFF_T__INC_REF_N( buf, " << need_buf_next() << " );";
             es << "return RET_CONT;";
 
             // e_... (come back code)

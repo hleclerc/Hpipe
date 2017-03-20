@@ -41,7 +41,10 @@ void InstructionSkipBytes::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, Cp
         if ( need_buf_next() ) {
             cpp_emitter->add_variable( "pending_buf", "HPIPE_BUFF_T *" );
             ss << "        HPIPE_DATA.pending_buf = buf;";
-            ss << "        HPIPE_BUFF_T__INC_REF_N( buf, " << need_buf_next() << " );";
+            if ( need_buf_next() == 1 )
+                ss << "        HPIPE_BUFF_T__INC_REF( buf );";
+            else
+                ss << "        HPIPE_BUFF_T__INC_REF_N( buf, " << need_buf_next() << " );";
             ss << "        HPIPE_DATA.inp_cont = &&e_" << cont_label << ";";
         } else
             ss << "        HPIPE_DATA.inp_cont = &&c_" << cont_label << ";";
@@ -54,8 +57,10 @@ void InstructionSkipBytes::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, Cp
             ss << "        goto c_" << cont_label << ";";
         }
         ss << "    }";
-        if ( need_buf_next() )
+        if ( need_buf_next() > 1 )
             ss << "    HPIPE_BUFF_T__INC_REF_N( buf, " << need_buf_next() - 1 << " ); buf = buf->next;";
+        else if ( need_buf_next() == 1 )
+            ss << "    buf = buf->next;";
         else
             ss << "    HPIPE_BUFF_T *old = buf; buf = buf->next; HPIPE_BUFF_T__DEC_REF( old );";
         ss << "  c_" << cont_label << ":";

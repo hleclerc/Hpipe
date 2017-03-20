@@ -129,6 +129,49 @@ main = 'GET ' read_string[ 'url', ' ' ] (
 )** 
 ```
 
+For instance, for linked lists of buffers, the generated will then look like:
+
+```cpp
+    ...
+    if ( __builtin_expect( data[ 0 ] == 'C', 0 ) ) goto l_10;
+    if ( data[ 0 ] == 13 ) goto l_9;
+  l_28:
+    if ( data[ 0 ] != 10 ) goto l_6;
+    // hpipe uses markers (in this example)
+    HPIPE_DATA.__beg_content_buf = buf;
+    HPIPE_DATA.__beg_content_data = data;
+    if ( data + content_length <= end_m1 ) {
+        data += content_length;
+    } else {
+        // if stream is interrupted
+        HPIPE_DATA.__bytes_to_skip = content_length - ( buf->data + buf->used - data );
+      t_9:
+        if ( ! buf->next ) {
+            if ( last_buf )
+                goto l_38;
+            // handling of buffer retention 
+            HPIPE_DATA.pending_buf = buf;
+            HPIPE_BUFF_T__INC_REF( buf );
+            HPIPE_DATA.inp_cont = &&e_9;
+            return RET_CONT;
+          e_9:
+            HPIPE_DATA.pending_buf->next = buf;
+            HPIPE_DATA.pending_buf = buf;
+            goto c_9;
+        }
+        buf = buf->next;
+      c_9:
+        if ( HPIPE_DATA.__bytes_to_skip >= buf->used ) {
+            HPIPE_DATA.__bytes_to_skip -= buf->used;
+            goto t_9;
+        }
+        data = buf->data + HPIPE_DATA.__bytes_to_skip;
+        end_m1 = buf->data + buf->used - 1;
+    }
+    HPIPE_BUFF_T__INC_REF( buf );
+    HPIPE_CB_STRING__ASSIGN_BEG_END( HPIPE_DATA.content, HPIPE_DATA.__beg_content_buf, HPIPE_DATA.__beg_content_data, buf, data + 1 );
+    ...
+```
 
 # Installation
 
