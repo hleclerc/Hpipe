@@ -9,24 +9,27 @@ namespace Hpipe {
 */
 class CmQueue {
 public:
-    CmQueue( void *beg = 0 ) : beg( (PI8 *)beg ), end( (PI8 *)beg ) {}
+    CmQueue( void *beg, void *end, void *max ) : beg( (PI8 *)beg ), end( (PI8 *)beg ), max( (PI8 *)max ) {}
+    CmQueue( void *beg, void *max ) : CmQueue( beg, beg, max ) {}
 
     // error
     operator bool() const { return not error(); }
-    bool error() const { return beg == 0; } ///< works after at least a first read (and before free or clear)
-    bool ack_error() { beg = 0; end = 0; return false; } ///< set error flag to true, and return false
+    bool error() const { return beg > max; } ///< works after at least a first read (and before free or clear)
+    bool ack_error() { beg = max + 1; end = beg; return false; } ///< set error flag to true, and return false
 
     // size
     bool empty() const { return end == beg; }
     ST   size () const { return end - beg; }
+    ST   rese () const { return max - beg; }
+    PI8 *begin() const { return beg; }
 
     // writers
-    void write_some( const void *data, ST size ) { memcpy( end, data, size ); end += size; }
-    void write_some( const CbQueue &s ) { s.data_visitor( [ this ]( const PI8 *b, const PI8 *e ) { memcpy( end, b, e - b ); end += e - b; } ); }
-    void write_byte( PI8 val ) { *( end++ ) = val; }
+    void write_some( const void *data, ST size ) { if ( end + size > max ) ack_error(); else { memcpy( end, data, size ); end += size; } }
+    void write_some( const CbQueue &s ) { s.data_visitor( [ this ]( const PI8 *b, const PI8 *e ) { write_some( b, e - b ); } ); }
+    void write_byte( PI8 val ) { if ( end < max ) *( end++ ) = val; else ack_error(); }
     void write_byte_wo_beg_test( PI8 val ) { write_byte( val ); }
 
-    // readers. Beware there are no checks in these methods
+    // readers. Beware there are no checks in these methods (checks are in BinStream, TxtStream, ...)
     void read_some( void *data, ST size ) { memcpy( data, beg, size ); beg += size; }
     void skip_some( ST size ) { beg += size; }
 
@@ -45,6 +48,7 @@ public:
 protected:
     PI8 *beg;
     PI8 *end;
+    PI8 *max;
 };
 
 } // namespace Hpipe

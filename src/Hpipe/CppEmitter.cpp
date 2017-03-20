@@ -77,59 +77,6 @@ void CppEmitter::write_preliminaries( StreamSepMaker &ss ) {
 
     for( const std::string &str : preliminaries )
         ss << str;
-
-    switch ( buffer_type ) {
-    case BT_HPIPE_BUFFER:
-        ss << "";
-        ss << "#ifndef HPIPE_BUFF_T";
-        ss << "#define HPIPE_BUFF_T Hpipe::Buffer";
-        ss << "#endif";
-        ss << "";
-        ss << "#ifndef HPIPE_BUFF_T__DEC_REF";
-        ss << "#define HPIPE_BUFF_T__DEC_REF( buf ) HPIPE_BUFF_T::dec_ref( buf )";
-        ss << "#endif";
-        ss << "";
-        ss << "#ifndef HPIPE_BUFF_T__INC_REF";
-        ss << "#define HPIPE_BUFF_T__INC_REF( buf ) HPIPE_BUFF_T::inc_ref( buf )";
-        ss << "#endif";
-        ss << "";
-        ss << "#ifndef HPIPE_BUFF_T__INC_REF_N";
-        ss << "#define HPIPE_BUFF_T__INC_REF_N( buf, N ) HPIPE_BUFF_T::inc_ref( buf, N )";
-        ss << "#endif";
-        ss << "";
-        ss << "#ifndef HPIPE_BUFF_T__SKIP";
-        ss << "#define HPIPE_BUFF_T__SKIP( buf, ptr, N ) HPIPE_BUFF_T::skip( buf, ptr, N )";
-        ss << "#endif";
-    }
-
-    ss << "";
-    ss << "#ifndef HPIPE_ADDITIONAL_ARGS";
-    ss << "#define HPIPE_ADDITIONAL_ARGS";
-    ss << "#endif // HPIPE_ADDITIONAL_ARGS";
-    ss << "";
-    ss << "#ifndef HPIPE_DEFINITION_PREFIX";
-    ss << "#define HPIPE_DEFINITION_PREFIX";
-    ss << "#endif // HPIPE_DEFINITION_PREFIX";
-    ss << "";
-    ss << "#ifndef HPIPE_PARSE_FUNC_NAME";
-    ss << "#define HPIPE_PARSE_FUNC_NAME parse";
-    ss << "#endif // HPIPE_PARSE_FUNC_NAME";
-    ss << "";
-    ss << "#ifndef HPIPE_DATA_STRUCT_NAME";
-    ss << "#define HPIPE_DATA_STRUCT_NAME HpipeData";
-    ss << "#endif // HPIPE_DATA_STRUCT_NAME";
-    ss << "";
-    ss << "#ifndef HPIPE_DATA_CTOR_NAME";
-    ss << "#define HPIPE_DATA_CTOR_NAME init_##HPIPE_DATA_STRUCT_NAME";
-    ss << "#endif // HPIPE_DATA_CTOR_NAME";
-    ss << "";
-    ss << "#ifndef HPIPE_DATA";
-    ss << "#define HPIPE_DATA hpipe_data";
-    ss << "#endif // HPIPE_DATA";
-    ss << "";
-    ss << "#ifndef HPIPE_CHAR_T";
-    ss << "#define HPIPE_CHAR_T unsigned char";
-    ss << "#endif // HPIPE_CHAR_T";
 }
 
 void CppEmitter::write_declarations( StreamSepMaker &ss ) {
@@ -143,6 +90,38 @@ void CppEmitter::write_declarations( StreamSepMaker &ss ) {
     ss << "    RET_STOP_CONT = 5";
     ss << "};";
 
+    ss << "";
+    ss << "#ifndef HPIPE_ADDITIONAL_ARGS";
+    ss << "#define HPIPE_ADDITIONAL_ARGS";
+    ss << "#endif // HPIPE_ADDITIONAL_ARGS";
+
+    ss << "";
+    ss << "#ifndef HPIPE_PARSE_FUNC_NAME";
+    ss << "#define HPIPE_PARSE_FUNC_NAME parse";
+    ss << "#endif // HPIPE_PARSE_FUNC_NAME";
+
+    ss << "";
+    ss << "#ifndef HPIPE_DATA_STRUCT_NAME";
+    ss << "#define HPIPE_DATA_STRUCT_NAME HpipeData";
+    ss << "#endif // HPIPE_DATA_STRUCT_NAME";
+
+    ss << "";
+    ss << "#ifndef HPIPE_DATA_CTOR_NAME";
+    ss << "#define HPIPE_DATA_CTOR_NAME init_##HPIPE_DATA_STRUCT_NAME";
+    ss << "#endif // HPIPE_DATA_CTOR_NAME";
+
+    ss << "";
+    ss << "#ifndef HPIPE_CHAR_T";
+    ss << "#define HPIPE_CHAR_T unsigned char";
+    ss << "#endif // HPIPE_CHAR_T";
+
+    if ( buffer_type == BT_HPIPE_BUFFER ) {
+        ss << "";
+        ss << "#ifndef HPIPE_BUFF_T";
+        ss << "#define HPIPE_BUFF_T Hpipe::Buffer";
+        ss << "#endif";
+    }
+
     // constructor preparation
     std::ostringstream cs;
     StreamSepMaker cm( cs, "    " );
@@ -154,14 +133,19 @@ void CppEmitter::write_declarations( StreamSepMaker &ss ) {
     ctor = cs.str();
 
     // struct HpipeData
+    ss << "";
     ss << "struct HPIPE_DATA_STRUCT_NAME {";
-    if ( ctor.size() )
-        ss << "    HPIPE_DATA_STRUCT_NAME() { HPIPE_DATA_CTOR_NAME( this ); }";
+    //
+    if ( ctor.size() ) {
+        ss << "  #ifdef __cplusplus";
+        ss << "  HPIPE_DATA_STRUCT_NAME() { HPIPE_DATA_STRUCT_NAME *hpipe_data = this;\n" << ctor << "  }";
+        ss << "  #endif // __cplusplus";
+    }
     if ( size_save_glo )
-        ss << "    HPIPE_CHAR_T __save[ " << size_save_glo << " ];";
+        ss << "  HPIPE_CHAR_T __save[ " << size_save_glo << " ];";
     for( auto &p : variables )
-        ss << "    " << p.second.type << " " << p.first << ";";
-    ss << "    void *inp_cont;";
+        ss << "  " << p.second.type << " " << p.first << ";";
+    ss << "  void *inp_cont;";
     ss << "};";
 
     // constructor
@@ -186,7 +170,50 @@ void CppEmitter::write_declarations( StreamSepMaker &ss ) {
 }
 
 void CppEmitter::write_definitions( StreamSepMaker &ss ) {
-    // arguments
+    // defines
+    ss << "#ifndef HPIPE_DATA";
+    ss << "#define HPIPE_DATA hpipe_data";
+    ss << "#endif // HPIPE_DATA";
+
+    ss << "";
+    ss << "#ifndef HPIPE_DEFINITION_PREFIX";
+    ss << "#define HPIPE_DEFINITION_PREFIX";
+    ss << "#endif // HPIPE_DEFINITION_PREFIX";
+
+    ss << "";
+    ss << "#ifndef HPIPE_PARSE_FUNC_NAME";
+    ss << "#define HPIPE_PARSE_FUNC_NAME parse";
+    ss << "#endif // HPIPE_PARSE_FUNC_NAME";
+
+    ss << "";
+    ss << "#ifndef HPIPE_ADDITIONAL_ARGS";
+    ss << "#define HPIPE_ADDITIONAL_ARGS";
+    ss << "#endif // HPIPE_ADDITIONAL_ARGS";
+
+    if ( buffer_type == BT_HPIPE_BUFFER ) {
+        ss << "";
+        ss << "#ifndef HPIPE_BUFF_T";
+        ss << "#define HPIPE_BUFF_T Hpipe::Buffer";
+        ss << "#endif";
+        ss << "";
+        ss << "#ifndef HPIPE_BUFF_T__DEC_REF";
+        ss << "#define HPIPE_BUFF_T__DEC_REF( buf ) HPIPE_BUFF_T::dec_ref( buf )";
+        ss << "#endif";
+        ss << "";
+        ss << "#ifndef HPIPE_BUFF_T__INC_REF";
+        ss << "#define HPIPE_BUFF_T__INC_REF( buf ) HPIPE_BUFF_T::inc_ref( buf )";
+        ss << "#endif";
+        ss << "";
+        ss << "#ifndef HPIPE_BUFF_T__INC_REF_N";
+        ss << "#define HPIPE_BUFF_T__INC_REF_N( buf, N ) HPIPE_BUFF_T::inc_ref( buf, N )";
+        ss << "#endif";
+        ss << "";
+        ss << "#ifndef HPIPE_BUFF_T__SKIP";
+        ss << "#define HPIPE_BUFF_T__SKIP( buf, ptr, N ) HPIPE_BUFF_T::skip( buf, ptr, N )";
+        ss << "#endif";
+    }
+
+    // preparation for function signature
     std::ostringstream args;
     args << "HPIPE_ADDITIONAL_ARGS ";
     switch ( buffer_type ) {
@@ -194,6 +221,9 @@ void CppEmitter::write_definitions( StreamSepMaker &ss ) {
     case BT_BEG_END     : args << "const HPIPE_CHAR_T *data, const HPIPE_CHAR_T *end_m1"; break;
     case BT_C_STR       : args << "const HPIPE_CHAR_T *data"; break;
     }
+
+    // function signature
+    ss << "";
     ss << "unsigned HPIPE_DEFINITION_PREFIX HPIPE_PARSE_FUNC_NAME( " << args.str() << " ) {";
 
     // warm up

@@ -77,16 +77,19 @@ int main( int argc, char **argv ) {
             ss.stream = &fout;
         }
 
+        ss << "// ----------------------------------------------------------------------------------------------------";
         ss << "#ifdef HPIPE_PRELIMINARIES";
         ce.write_preliminaries( ss );
         ss << "#endif // HPIPE_PRELIMINARIES";
         ss << "";
 
+        ss << "// ----------------------------------------------------------------------------------------------------";
         ss << "#ifdef HPIPE_DECLARATIONS";
         ce.write_declarations( ss );
         ss << "#endif // HPIPE_DECLARATIONS";
         ss << "";
 
+        ss << "// ----------------------------------------------------------------------------------------------------";
         ss << "#ifdef HPIPE_DEFINITIONS";
         ce.write_definitions( ss );
         ss << "#endif // HPIPE_DEFINITIONS";
