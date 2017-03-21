@@ -34,6 +34,7 @@ void CppEmitter::read( InstructionGraph *sg ) {
     for( const std::string &str : sg->preliminaries ) preliminaries.push_back_unique( str );
     for( const std::string &str : sg->includes      ) includes     .push_back_unique( str );
     for( const std::string &str : sg->methods       ) methods      .push_back_unique( str );
+    for( const auto &p          : sg->variables     ) variables[ p.first ] = p.second;
 
     // ordering
     ++Instruction::cur_op_id;

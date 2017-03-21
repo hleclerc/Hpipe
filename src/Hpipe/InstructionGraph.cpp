@@ -38,6 +38,8 @@ void InstructionGraph::read( CharGraph *cg, const std::vector<std::string> &disp
     for( const std::string &str : cg->preliminaries ) preliminaries.push_back_unique( str );
     for( const std::string &str : cg->includes      ) includes     .push_back_unique( str );
     for( const std::string &str : cg->methods       ) methods      .push_back_unique( str );
+    for( const auto &p          : cg->variables     ) variables[ p.first ] = p.second;
+
     cx_ok = Context{ cg->char_item_ok };
     this->cg = cg;
 

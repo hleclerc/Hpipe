@@ -285,10 +285,10 @@ where the end machine is written twice (please note that there is no escaping in
 <!--* `add_str[ "A" ]`: shortcut to write a code that will append the current char value to a string named A (that will be automatically declared in the generated `HpipeData` structure). `add_str` enables specific optimizations. For instance contiguous `add_str` may be transformed to an "add mark" and a "use mark" instructions, enabling effective zero copy.
 * `clr_str[ "A" ]`: shortcut to write a code that will clear the string named A.-->
 
-There are some internal predefined machine to help generate code (mostly for test purpose):
+There are some internal predefined machine to help generate code:
+* `add_variable[ type, name, optionnal_default_value ]` will add a variable declaration in the `HpipeData` structure (+use of `optionnal_default_value` in ctor).
 * `add_include[ 'my_include.h' ]` will add `#include <my_include.h>` (only once) in the preliminary of the generated code. `<>` and `""` can be specified explicitely (as in `add_include[ '"my_include.h"' ]`)
 * `add_prel[ 'some_code' ]` or `add_preliminary[ 'some_code' ]` will add `some_code` (only once) in the preliminary of the generated code
-<!--* `add_attr[ 'some_code' ]` will add `some_code` (only once) in the attributes of the generated class.-->
 
 ## How to call and define machines ?
 

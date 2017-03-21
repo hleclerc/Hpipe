@@ -397,7 +397,20 @@ void CharGraph::read( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> i
                 }
             }
 
-            HPIPE_ERROR( "Should be resolved by clone" );
+            if ( l->children[ 0 ]->eq( "add_variable" ) ) {
+                Vec<Arg> cargs = get_cargs( l->children[ 1 ] );
+                if ( cargs.size() < 2 ) {
+                    lexer.err( l, "add_variable expects at least 2 arguments" );
+                    ok = false;
+                } else {
+                    variables[ cargs[ 1 ].val->str ] = Variable{ cargs[ 0 ].val->str, cargs.size() >= 3 ? cargs[ 2 ].val->str : "" };
+                }
+                return read( leaves, l->next, inputs );
+            }
+
+            lexer.err( l, "Should be resolved by clone" );
+            ok = false;
+            return read( leaves, l->next, inputs );
         }
 
         if ( l->eq( ".." ) ) {
@@ -464,8 +477,8 @@ void CharGraph::read( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> i
             return read( leaves, l->next, nxt );
         }
 
-        PRINTE( *l );
-        HPIPE_ERROR( "Uknown operator type" );
+        ok = false;
+        lexer.err( l, "Uknown operator type" );
         return;
     }
 
@@ -481,7 +494,9 @@ void CharGraph::read( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> i
     if ( l->type == Lexem::TRAINING or l->type == Lexem::METHODS )
         return read( leaves, l->next, inputs );
 
-    HPIPE_ERROR( "Unmanaged type %i", l->type );
+    ok = false;
+    lexer.err( l, "Unmanaged type" );
+    HPIPE_ERROR( "type: %i", l->type );
 }
 
 int CharGraph::display_dot( const char *f, const char *prg ) const {
@@ -675,7 +690,7 @@ void CharGraph::clone( Lexem *&beg, Lexem *&end, const Lexem *&l, const Vec<Arg>
         // function call ( func[ args ] )
         auto is_inline = []( const Lexem *l ) {
             return l->eq( "skip" ) or l->eq( "add_str" ) or l->eq( "clr_str" ) or l->eq( "beg_str" )  or l->eq( "beg_str_next" ) or l->eq( "end_str" )  or l->eq( "end_str_next" ) or
-                   l->eq( "add_include" ) or l->eq( "add_prel" ) or l->eq( "add_preliminary" ) or l->eq( "add_attr" );
+                   l->eq( "add_include" ) or l->eq( "add_prel" ) or l->eq( "add_preliminary" ) or l->eq( "add_variable" );
         };
 
         bool do_not_clone_ch_0 = false;
@@ -684,19 +699,7 @@ void CharGraph::clone( Lexem *&beg, Lexem *&end, const Lexem *&l, const Vec<Arg>
                 do_not_clone_ch_0 = true;
             } else {
                 // get arguments
-                Vec<Arg> cargs;
-                for( const Lexem *item = l->children[ 1 ]; item; item = item->next ) {
-                    if ( item->eq( "=" ) ) {
-                        Arg *arg = cargs.new_item();
-                        arg->name = item->children[ 0 ]->str;
-                        arg->val  = clone( item = item->next, args, "," );
-                    } else {
-                        Arg *arg = cargs.new_item();
-                        arg->val = clone( item, args, "," );
-                    }
-                    if ( not item )
-                        break;
-                }
+                Vec<Arg> cargs = get_cargs( l->children[ 1 ], args, true );
 
                 // find machine
                 if ( l->children[ 0 ]->type != Lexem::VARIABLE ) {
@@ -837,12 +840,17 @@ void CharGraph::clone( Lexem *&beg, Lexem *&end, const std::string &name, const 
     }
 
     // predefined machine
-    if ( name == "add_prel" ) { //  || name == "add_attr"
-        if ( cargs.size() != 1 ) { lexer.err( l, "function expects exactly 1 argument" ); ok = false; }
-        else if ( name == "add_prel" ) preliminaries.push_back_unique( left_shifted( cargs[ 0 ].val->str ) );
-        // else if ( name == "add_attr" ) attributes   .push_back_unique( cargs[ 0 ].val->str );
+    if ( name == "add_prel" ) {
+        if ( cargs.size() != 1 ) { lexer.err( l, "add_prel expects exactly 1 argument" ); ok = false; }
+        else preliminaries.push_back_unique( left_shifted( cargs[ 0 ].val->str ) );
         return calls.pop_back();
     }
+
+//    if ( name == "add_variable" ) {
+//        if ( cargs.size() < 2 ) { lexer.err( l, "variable expects 2 or 3 arguments (type, name, default value)" ); ok = false; }
+//        else variables[ cargs[ 1 ].val->str ] = Variable{ cargs[ 0 ].val->str, cargs.size() >= 3 ? cargs[ 2 ].val->str : "" };
+//        return calls.pop_back();
+//    }
 
     lexer.err( l, "Impossible to find the corresponding machine" );
     ok = false;
@@ -865,6 +873,33 @@ bool CharGraph::in_wait_goto( CharItem *item ) const {
             if ( ci == item )
                 return true;
     return false;
+}
+
+Vec<CharGraph::Arg> CharGraph::get_cargs( const Lexem *l, const Vec<Arg> &args, bool want_clone ) {
+    Vec<Arg> res;
+    for( const Lexem *item = l; item; item = item->next ) {
+        if ( item->eq( "=" ) ) {
+            Arg *arg = res.new_item();
+            arg->name = item->children[ 0 ]->str;
+            arg->val  = want_clone ? clone( item = item->next, args, "," ) : jump_after( item = item->next, "," );
+        } else {
+            Arg *arg = res.new_item();
+            arg->val = want_clone ? clone( item, args, "," ) : jump_after( item, "," );
+        }
+        if ( not item )
+            break;
+    }
+    return res;
+}
+
+const Lexem *CharGraph::jump_after( const Lexem *&l, const char *stop ) {
+    const Lexem *res = l;
+    while ( res->eq( "(" ) )
+        res = res->children[ 0 ];
+    do
+        l = l->next;
+    while ( l && ( stop == 0 || ! l->eq( stop ) ) );
+    return res;
 }
 
 void CharGraph::Arg::write_to_stream( std::ostream &os ) const {

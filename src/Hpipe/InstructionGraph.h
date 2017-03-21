@@ -18,6 +18,9 @@ class InstructionMark;
 */
 class InstructionGraph {
 public:
+    using VariableMap = CharGraph::VariableMap;
+    using Variable = CharGraph::Variable;
+
     InstructionGraph();
 
     void                            read                ( CharGraph *cg, const std::vector<std::string> &disp = {}, bool disp_inst_pred = false, bool disp_trans_freq = false );
@@ -31,7 +34,7 @@ public:
 
     Vec<std::string>                methods;
     Vec<std::string>                includes;
-    Vec<std::string>                loc_vars;
+    VariableMap                     variables;
     Vec<std::string>                preliminaries;
 
 protected:

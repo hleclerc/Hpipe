@@ -8,16 +8,14 @@ namespace Hpipe {
 */
 class CppEmitter {
 public:
+    using VariableMap = CharGraph::VariableMap;
+    using Variable = CharGraph::Variable;
+
     enum {
         BT_HPIPE_BUFFER,
         BT_BEG_END,
         BT_C_STR,
     };
-    struct Variable {
-        std::string type;
-        std::string default_value;
-    };
-    using VariableMap = std::map<std::string,Variable>;
 
     CppEmitter();
 
