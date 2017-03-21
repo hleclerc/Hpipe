@@ -369,7 +369,7 @@ will add some code inside the _declaration_ section (which may be in a class or 
 
 ## Sections
 
-Hpipe generates only one output file, with sections that can 
+Hpipe generates only one output file, with sections that can be activated using defines (`#define HPIPE_DECLARATIONS`, `#define HPIPE_DEFINITIONS`, ...). A lot of flexibility is allowed using macros, users are encouraged to read them in the generated code.
 
 ## Buffer styles
 

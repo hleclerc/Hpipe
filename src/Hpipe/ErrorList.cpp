@@ -9,13 +9,16 @@ static bool term_supports_color() {
 }
 
 static void display_line( std::ostream &out, const char *complete_line, unsigned length_complete_line, int col, bool display_col ) {
+    while ( length_complete_line && ( complete_line[ length_complete_line - 1 ] == 10 || complete_line[ length_complete_line - 1 ] == 13 ) )
+        --length_complete_line;
+
     if ( display_col )
         out << "  ";
     if ( length_complete_line < 64 ) {
         out.write(complete_line,length_complete_line);
         if ( display_col ) {
             out << "\n";
-            for ( int i = 1;i < 2 + col;++i )
+            for ( int i = 1; i < 2 + col;++i )
                 out << " ";
         }
     } else {
@@ -24,7 +27,7 @@ static void display_line( std::ostream &out, const char *complete_line, unsigned
             out.write( complete_line + length_complete_line - 64, 64 );
             if ( display_col ) {
                 out << "\n";
-                for ( unsigned i = 1;i < 2 + 64 + 3 - length_complete_line + col;++i )
+                for ( unsigned i = 1; i < 2 + 64 + 3 - length_complete_line + col; ++i )
                     out << " ";
             }
         } else if ( col < 64 ) { // only the beginning
@@ -32,7 +35,7 @@ static void display_line( std::ostream &out, const char *complete_line, unsigned
             out << "...";
             if ( display_col ) {
                 out << "\n";
-                for ( int i = 1;i < 2 + col;++i )
+                for ( int i = 1; i < 2 + col; ++i )
                     out << " ";
             }
         } else { // middle

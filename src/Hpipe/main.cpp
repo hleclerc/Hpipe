@@ -30,6 +30,8 @@ int main( int argc, char **argv ) {
             lexer.root()->display_dot();
             return 0;
         }
+        if ( ! error_list )
+            return 1;
 
         // char and transitions
         CharGraph cg( lexer );

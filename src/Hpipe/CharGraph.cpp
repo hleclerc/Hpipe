@@ -66,6 +66,7 @@ void CharGraph::read( const Lexem *lexem ) {
         for( unsigned i = 0; ; ++i) {
             if ( i == labels.size() ) {
                 lexer.err( 0, ( "Impossible to find the label " + wg.name ).c_str() );
+                ok = false;
                 break;
             }
             if ( labels[ i ].name == wg.name ) {
@@ -370,6 +371,7 @@ void CharGraph::read( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> i
                         return read( leaves, l->next, nxt );
                     }
                     lexer.err( l, ( std::string( p.first ) + " needs exactly 1 arg with exactly 1 value" ).c_str() );
+                    ok = false;
                     return read( leaves, l->next, inputs );
                 }
             }
@@ -387,8 +389,10 @@ void CharGraph::read( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> i
                         if ( n->eq( Lexem::OPERATOR, "(" ) )
                             n = n->children[ 0 ];
                         p.second( n->str );
-                    } else
+                    } else {
                         lexer.err( l, ( std::string( p.first ) + " needs exactly 1 arg with exactly 1 value" ).c_str() );
+                        ok = false;
+                    }
                     return read( leaves, l->next, inputs );
                 }
             }
@@ -399,8 +403,10 @@ void CharGraph::read( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> i
         if ( l->eq( ".." ) ) {
             int v_0 = l->children[ 0 ]->ascii_val();
             int v_1 = l->children[ 1 ]->ascii_val();
-            if ( v_0 < 0 or v_1 < 0 )
+            if ( v_0 < 0 or v_1 < 0 ) {
                 lexer.err( l, "'..' must be between two strings with only one char" );
+                ok = false;
+            }
 
             CharItem *nxt = ci_pool.New( CharItem::NEXT_CHAR );
             for( CharItem *input : inputs )
@@ -418,8 +424,10 @@ void CharGraph::read( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> i
             read( l_leaves, l->children[ 0 ], &tmp );
             read( l_leaves, l->children[ 1 ], &tmp );
             Cond a, b;
-            if ( tmp.edges.size() != 2 or not get_cond( a, tmp.edges[ 0 ].item ) or not get_cond( b, tmp.edges[ 1 ].item ) )
+            if ( tmp.edges.size() != 2 or not get_cond( a, tmp.edges[ 0 ].item ) or not get_cond( b, tmp.edges[ 1 ].item ) ) {
                 lexer.err( l, "'..' must be between two single char conditions" );
+                ok = false;
+            }
 
             CharItem *nxt = ci_pool.New( CharItem::NEXT_CHAR );
             for( CharItem *input : inputs )
@@ -432,8 +440,10 @@ void CharGraph::read( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> i
         }
 
         if ( l->eq( "if" ) ) {
-            if ( l->children[ 0 ]->type != Lexem::CODE )
+            if ( l->children[ 0 ]->type != Lexem::CODE ) {
                 lexer.err( l, "if currently only suport code ({...}) as parameter" );
+                ok = false;
+            }
             CharItem *nxt = ci_pool.New( CharItem::_IF, l->children[ 0 ]->str.substr( 1, l->children[ 0 ]->str.size() - 2 ) );
             for( CharItem *input : inputs )
                 input->edges << nxt;
@@ -689,8 +699,10 @@ void CharGraph::clone( Lexem *&beg, Lexem *&end, const Lexem *&l, const Vec<Arg>
                 }
 
                 // find machine
-                if ( l->children[ 0 ]->type != Lexem::VARIABLE )
-                    lexer.err( l->children[ 1 ], "xxx in xxx[] should ne a variable" );
+                if ( l->children[ 0 ]->type != Lexem::VARIABLE ) {
+                    lexer.err( l->children[ 1 ], "xxx in xxx[] should be a variable" );
+                    ok = false;
+                }
                 clone( beg, end, l->children[ 0 ]->str, l->children[ 0 ], cargs, args );
                 continue;
             }
@@ -710,8 +722,10 @@ void CharGraph::clone( Lexem *&beg, Lexem *&end, const Lexem *&l, const Vec<Arg>
                 const Lexem *val = arg.val;
                 if ( val->eq( Lexem::OPERATOR, "(" ) )
                     val = val->children[ 0 ];
-                if ( val->next )
+                if ( val->next ) {
                     lexer.err( val->next, "When a variable is used in a code, it is expected to be a single lexem" );
+                    ok = false;
+                }
                 repl_all( res->str, arg.name, val->str );
             }
             break;
@@ -737,14 +751,17 @@ void CharGraph::clone( Lexem *&beg, Lexem *&end, const std::string &name, const 
     calls.push_back( name );
     if ( calls.size() > 1000 ) {
         lexer.err( l, "call stack size exceeded" );
+        ok = false;
         return;
     }
 
     // look in args
     for( const Arg &arg : args ) {
         if ( arg.name == name ) {
-            if ( cargs.size() )
+            if ( cargs.size() ) {
                 lexer.err( l, "found an argument with the same name, but in this case, it should be used without arguments" );
+                ok = false;
+            }
 
             Lexem *res = le_pool.New( Lexem::OPERATOR, l->source, l->beg, "(" );
             if ( beg ) end->next = res;
@@ -784,6 +801,7 @@ void CharGraph::clone( Lexem *&beg, Lexem *&end, const std::string &name, const 
                 break;
             if ( narg >= margs.size() ) {
                 lexer.err( l, "too much arguments" );
+                ok = false;
                 break;
             }
             cargs[ narg ].name = margs[ narg ].name;
@@ -801,6 +819,7 @@ void CharGraph::clone( Lexem *&beg, Lexem *&end, const std::string &name, const 
             if ( not already_specified ) {
                 if ( not margs[ narg ].val ) {
                     lexer.err( l, "not enough arguments" );
+                    ok = false;
                     break;
                 }
                 cargs << margs[ narg ];
@@ -819,13 +838,14 @@ void CharGraph::clone( Lexem *&beg, Lexem *&end, const std::string &name, const 
 
     // predefined machine
     if ( name == "add_prel" ) { //  || name == "add_attr"
-        if ( cargs.size() != 1 ) lexer.err( l, "function expects exactly 1 argument" );
+        if ( cargs.size() != 1 ) { lexer.err( l, "function expects exactly 1 argument" ); ok = false; }
         else if ( name == "add_prel" ) preliminaries.push_back_unique( left_shifted( cargs[ 0 ].val->str ) );
         // else if ( name == "add_attr" ) attributes   .push_back_unique( cargs[ 0 ].val->str );
         return calls.pop_back();
     }
 
     lexer.err( l, "Impossible to find the corresponding machine" );
+    ok = false;
     return calls.pop_back();
 }
 
