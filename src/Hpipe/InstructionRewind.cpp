@@ -79,8 +79,9 @@ void InstructionRewind::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
     ss << "// RW";
 
     //
-    for( const std::string &str : strs_to_cancel )
-        ss << "HPIPE_DATA.__beg_" << str << "_buf->dec_ref_upto( HPIPE_DATA.rw_buf );";
+    if ( mark )
+        for( const std::string &str : strs_to_cancel )
+            ss << "HPIPE_DATA.__beg_" << str << "_buf->dec_ref_upto( HPIPE_DATA.rw_buf );";
 
     // prepare running strings
     std::set<std::string> running_strs;
@@ -252,7 +253,7 @@ bool InstructionRewind::need_mark() const {
 }
 
 bool InstructionRewind::no_code_at_all() const {
-    return code_seq_beg.empty() && code_seq_end.empty() && strs_to_cancel.empty();
+    return code_seq_beg.empty() && code_seq_end.empty(); // && strs_to_cancel.empty()
 }
 
 void InstructionRewind::write_dot_add( std::ostream &os, bool disp_inst_pred, bool disp_trans_freq, bool disp_rc_item ) const {

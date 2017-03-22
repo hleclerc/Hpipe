@@ -139,7 +139,7 @@ void InstructionGraph::make_init() {
     init = inst_pool << new InstructionSkip( Context( cg->root(), Context::FL_BEG ) );
 
     // first transition
-    pending_trans.emplace_back( init, 0, init->cx.forward( cg->root() ) );
+    pending_trans.emplace_back( init, 0, init->cx.forward( cg->root(), never_ending ) );
 
     // make all the remaining transitions
     while ( pending_trans.size() || pending_trans_mark.size() || pending_rewinds.size() ) {
@@ -226,7 +226,7 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
     // something to skip ?
     for( const CharItem *item : cx.pos )
         if ( item->type == CharItem::BEGIN or item->type == CharItem::PIVOT or item->type == CharItem::LABEL )
-            return tra( reg( new InstructionSkip( cx ) ), 0, cx.forward( item ) );
+            return tra( reg( new InstructionSkip( cx ) ), 0, cx.forward( item, never_ending ) );
 
     // everything is OK ?
     if ( cx.only_has( CharItem::OK ) )
@@ -235,14 +235,17 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
     // lonely skip bytes
     if ( cx.pos[ 0 ]->type == CharItem::SKIP && ( cx.pos.size() == 1 || cx.pos[ 2 ]->type == CharItem::OK ) ) {
         InstructionSkipBytes *res = reg( new InstructionSkipBytes( cx, cx.pos[ 0 ]->str, cx.beg() ) );
-        tra( res, 0, cx.forward( cx.pos[ 0 ] ) );
+        tra( res, 0, cx.forward( cx.pos[ 0 ], never_ending ) );
         tra( res, 1, cx.without( cx.pos[ 0 ] ) );
         return res;
     }
 
     // several skips
     if ( cx.has( CharItem::SKIP ) ) {
-        cg->err( "TODO: skip instructions with parallel paths" );
+        if ( never_ending )
+            cg->err( "TODO: skip instructions with parallel paths" );
+        else
+            cg->err( "TODO: skip instructions with parallel paths (have you explored the --never-ending flag ?)" );
         HPIPE_TODO;
     }
 
@@ -251,7 +254,7 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
         if ( item->type == CharItem::_EOF ) {
             InstructionEof *res = reg( new InstructionEof( cx, cx.beg() ) );
             tra( res, 0, cx.with_flag( Context::FL_NOT_EOF ).without( item ) );
-            tra( res, 1, cx.with_flag( Context::FL_EOF  ).forward( item ) );
+            tra( res, 1, cx.with_flag( Context::FL_EOF  ).forward( item, never_ending ) );
             return res;
         }
     }
@@ -261,7 +264,7 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
         for( unsigned ind = 0; ind < cx.pos.size(); ++ind ) {
             const CharItem *item = cx.pos[ ind ];
             if ( ( item->type == CharItem::BEG_STR || item->type == CharItem::BEG_STR_NEXT ) && cx.paths_to_strings.count( item->str ) == 0 )
-                return tra( new InstructionBegStr( cx, item->str, ind, item->type == CharItem::BEG_STR_NEXT ), 0, cx.with_string( item->str ).forward( item ) );
+                return tra( new InstructionBegStr( cx, item->str, ind, item->type == CharItem::BEG_STR_NEXT ), 0, cx.with_string( item->str ).forward( item, never_ending ) );
         }
     }
 
@@ -283,8 +286,8 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
             case CharItem::CLR_STR     : res = reg( new InstructionClrStr( cx, item->str, ind ) ); break;
             case CharItem::BEG_STR     : res = reg( new InstructionBegStr( cx, item->str, ind, 0 ) ); break;
             case CharItem::BEG_STR_NEXT: res = reg( new InstructionBegStr( cx, item->str, ind, 1 ) ); break;
-            case CharItem::END_STR     : res = reg( new InstructionEndStr( cx, item->str, ind, 0 ) ); if ( cx.mark ) break; return tra( res, 0, cx.without_string( item->str ).forward( item ) );
-            case CharItem::END_STR_NEXT: res = reg( new InstructionEndStr( cx, item->str, ind, 1 ) ); if ( cx.mark ) break; return tra( res, 0, cx.without_string( item->str ).forward( item ) );
+            case CharItem::END_STR     : res = reg( new InstructionEndStr( cx, item->str, ind, 0 ) ); if ( cx.mark ) break; return tra( res, 0, cx.without_string( item->str ).forward( item, never_ending ) );
+            case CharItem::END_STR_NEXT: res = reg( new InstructionEndStr( cx, item->str, ind, 1 ) ); if ( cx.mark ) break; return tra( res, 0, cx.without_string( item->str ).forward( item, never_ending ) );
             default: HPIPE_TODO;
             }
 
@@ -293,7 +296,7 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
             //                cg->err( "A code cannot correctly depend on a char data before a first char has been queried" );
 
             // transition
-            return tra( res, 0, cx.forward( item ) );
+            return tra( res, 0, cx.forward( item, never_ending ) );
         }
     }
 
@@ -327,15 +330,15 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
 
             //
             if ( conds.size() == 1 and covered.always_checked() )
-                return tra( reg( new InstructionSkip( cx ) ), 0, cx.forward( CharItem::COND ) );
+                return tra( reg( new InstructionSkip( cx ) ), 0, cx.forward( CharItem::COND, never_ending ) );
 
             // make transition and instruction for each cond in `conds`
             InstructionMultiCond *res = reg( new InstructionMultiCond( cx, conds ) );
             unsigned cpt = 0;
             for( const Cond &c : conds )
-                tra( res, cpt++, cx.forward( c ) );
+                tra( res, cpt++, cx.forward( c, never_ending ) );
             if ( not covered.always_checked() ) {
-                tra( res, cpt++, cx.forward( ~covered ) );
+                tra( res, cpt++, cx.forward( ~covered, never_ending ) );
                 res->conds << ~covered;
             }
             return res;
@@ -347,7 +350,7 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
         const CharItem *item = cx.pos[ ind ];
         if ( item->type == CharItem::_IF ) {
             InstructionIf *res = reg( new InstructionIf( cx, item->str, ind ) );
-            tra( res, 0, cx.forward( item ) );
+            tra( res, 0, cx.forward( item, never_ending ) );
             tra( res, 1, cx.without( item ) );
             return res;
         }
@@ -378,7 +381,7 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
     }
 
     Instruction *res = reg( new InstructionNextChar( cx, cx.beg() ) );
-    tra( res, 0, cx.without_flag( Context::FL_BEG ).without_flag( Context::FL_NOT_EOF ).forward( CharItem::NEXT_CHAR ) ); // if OK
+    tra( res, 0, cx.without_flag( Context::FL_BEG ).without_flag( Context::FL_NOT_EOF ).forward( CharItem::NEXT_CHAR, never_ending ) ); // if OK
 
     if ( not cx.not_eof() ) {
         if ( first_leads_to_ok >= 0 ) { // result will be an OK instruction, with an edge enabling a rewind

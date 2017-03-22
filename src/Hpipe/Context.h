@@ -25,16 +25,15 @@ public:
     bool                       operator<      ( const Context &that ) const;
     void                       write_to_stream( std::ostream &os ) const;
 
-    PC                         forward        ( const CharItem *fip ) const;          ///< replace item by item.edges[*].item
-    PC                         forward        ( const Cond &c ) const;                ///< replace item by item.edges[*].item
-    PC                         forward_code   ( unsigned ind ) const;                 ///< replace item by item.edges[*].item
-    PC                         forward        ( int type ) const;                     ///< replace item by item.edges[*].item
-    PC                         only_with      ( int type ) const;                     ///< replace item by item.edges[*].item
-    PC                         without        ( const CharItem *fip ) const;          ///<
-    PC                         keep_up_to     ( unsigned n ) const;                   ///< (assuming that all the items are conds)
+    PC                         forward        ( const CharItem *fip, bool never_ending ) const; ///< replace item by item.edges[*].item
+    PC                         forward        ( const Cond &c, bool never_ending ) const;       ///< replace item by item.edges[*].item
+    PC                         forward        ( int type, bool never_ending ) const;            ///< replace item by item.edges[*].item
+    PC                         only_with      ( int type ) const;                               ///< replace item by item.edges[*].item
+    PC                         without        ( const CharItem *fip ) const;                    ///<
+    PC                         keep_up_to     ( unsigned n ) const;                             ///< (assuming that all the items are conds)
     PC                         keep_only      ( const Vec<unsigned> &keep ) const;
-    PC                         with_mark      ( InstructionMark *mark ) const;        ///<
-    PC                         without_mark   () const;                               ///<  const Vec<unsigned> &keep_ind
+    PC                         with_mark      ( InstructionMark *mark ) const;                  ///<
+    PC                         without_mark   () const;                                         ///<  const Vec<unsigned> &keep_ind
 
 
     Context                    without_flag   ( int val ) const;
@@ -53,11 +52,11 @@ public:
     bool                       eof            () const { return flags & FL_EOF; }
     bool                       not_eof        () const { return flags & FL_NOT_EOF; }
 
-    Vec<const CharItem *>      pos;                                                   ///< items, sorted by priority
-    InstructionMark           *mark;                                                  ///<
-    Vec<unsigned>              paths_to_mark;                                         ///< for each item in pos, paths_to_mark gives index in mark->cx.pos
-    PathsToStrings             paths_to_strings;                                      ///<
-    int                        flags;                                                 ///< true if no +1 since the beginning
+    Vec<const CharItem *>      pos;                                                             ///< items, sorted by priority
+    InstructionMark           *mark;                                                            ///<
+    Vec<unsigned>              paths_to_mark;                                                   ///< for each item in pos, paths_to_mark gives index in mark->cx.pos
+    PathsToStrings             paths_to_strings;                                                ///<
+    int                        flags;                                                           ///< true if no +1 since the beginning
 };
 
 } // namespace Hpipe

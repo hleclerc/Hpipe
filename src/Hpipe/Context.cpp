@@ -32,8 +32,8 @@ struct PcMaker {
         return res;
     }
 
-    bool leads_to_ok() const {
-        return CharGraph::leads_to_ok( res.first.pos );
+    bool leads_to_ok( bool never_ending ) const {
+        return CharGraph::leads_to_ok( res.first.pos, never_ending );
     }
 
     bool has( const CharItem *item ) const {
@@ -67,7 +67,7 @@ void Context::write_to_stream( std::ostream &os ) const {
         os << " NOT_EOF";
 }
 
-Context::PC Context::forward( const CharItem *fip ) const {
+Context::PC Context::forward( const CharItem *fip, bool never_ending ) const {
     PcMaker pm( this );
 
     for( unsigned i = 0; i < pos.size(); ++i ) {
@@ -76,13 +76,13 @@ Context::PC Context::forward( const CharItem *fip ) const {
             for( const CharEdge &e : item->edges ) {
                 if ( ! pm.has( e.item ) ) {
                     pm.add( e.item, i );
-                    if ( pm.leads_to_ok() )
+                    if ( pm.leads_to_ok( never_ending ) )
                         return pm.out();
                 }
             }
         } else if ( ! pm.has( item ) ) {
             pm.add( item, i );
-            if ( pm.leads_to_ok() )
+            if ( pm.leads_to_ok( never_ending ) )
                 return pm.out();
         }
     }
@@ -90,7 +90,7 @@ Context::PC Context::forward( const CharItem *fip ) const {
     return pm.out();
 }
 
-Context::PC Context::forward( const Cond &c ) const {
+Context::PC Context::forward( const Cond &c, bool never_ending ) const {
     PcMaker pm( this );
 
     for( unsigned i = 0; i < pos.size(); ++i ) {
@@ -98,14 +98,14 @@ Context::PC Context::forward( const Cond &c ) const {
         if ( item->type != CharItem::COND ){
             if ( not pm.has( item ) ) {
                 pm.add( item, i );
-                if ( pm.leads_to_ok() )
+                if ( pm.leads_to_ok( never_ending ) )
                     return pm.out();
             }
         } else if ( c & item->cond ) {
             for( const CharEdge &e : item->edges ) {
                 if ( not pm.has( e.item ) ) {
                     pm.add( e.item, i );
-                    if ( pm.leads_to_ok() )
+                    if ( pm.leads_to_ok( never_ending ) )
                         return pm.out();
                 }
             }
@@ -115,7 +115,7 @@ Context::PC Context::forward( const Cond &c ) const {
     return pm.out();
 }
 
-Context::PC Context::forward( int type ) const {
+Context::PC Context::forward( int type, bool never_ending ) const {
     PcMaker pm( this );
 
     for( unsigned i = 0; i < pos.size(); ++i ) {
@@ -124,13 +124,13 @@ Context::PC Context::forward( int type ) const {
             for( const CharEdge &e : item->edges ) {
                 if ( not pm.has( e.item ) ) {
                     pm.add( e.item, i );
-                    if ( pm.leads_to_ok() )
+                    if ( pm.leads_to_ok( never_ending ) )
                         return pm.out();
                 }
             }
         } else if ( not pm.has( item ) ) {
             pm.add( item, i );
-            if ( pm.leads_to_ok() )
+            if ( pm.leads_to_ok( never_ending ) )
                 return pm.out();
         }
     }

@@ -20,10 +20,12 @@ void InstructionSkipBytes::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, Cp
 
         // cpp_emitter->need_loc_var(  );
         std::string v = var;
+        if ( cpp_emitter->variables.count( v ) )
+            v = "HPIPE_DATA." + v;
         if ( beg ) {
-            ss << "if ( " << var << " ) {";
+            ss << "if ( " << v << " ) {";
             ss.beg += "    ";
-            ss << "size_t __l = " << var << " - 1;";
+            ss << "size_t __l = " << v << " - 1;";
             v = "__l";
         }
         // we can stay in the same buffer

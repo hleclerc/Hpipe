@@ -528,7 +528,7 @@ CharItem *CharGraph::root() {
 
 namespace {
 
-void get_next_ltor( Vec<const CharItem *> &nitems, const CharItem *item, bool impossible_ko ) {
+void get_next_ltor( Vec<const CharItem *> &nitems, const CharItem *item, bool never_ending ) {
     switch( item->type ) {
     case CharItem::COND:
     case CharItem::_EOF:
@@ -538,11 +538,11 @@ void get_next_ltor( Vec<const CharItem *> &nitems, const CharItem *item, bool im
         nitems.push_back_unique( item );
         break;
     case CharItem::NEXT_CHAR:
-        if ( ! impossible_ko )
+        if ( ! never_ending )
             break;
     default:
         for( const CharEdge &e : item->edges )
-            get_next_ltor( nitems, e.item, impossible_ko );
+            get_next_ltor( nitems, e.item, never_ending );
     }
 }
 
