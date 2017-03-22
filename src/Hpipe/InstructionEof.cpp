@@ -21,9 +21,11 @@ Instruction *InstructionEof::clone( PtrPool<Instruction> &inst_pool, const Conte
 
 void InstructionEof::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
     // eof test
+    if ( beg && cpp_emitter->need_buf() )
+        ss << "if ( ! buf ) goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << ";";
     ss << "if ( "
        << ( cpp_emitter->buffer_type == CppEmitter::BT_C_STR ? "data[ " + to_string( 1 - beg ) + " ] == " + to_string( cpp_emitter->stop_char ) : "data " + std::string( beg ? ">" : ">=" ) + " end_m1" )
-       << ( cpp_emitter->interruptible() ? " and last_buf" : "" )
+       << ( cpp_emitter->interruptible() ? " && last_buf" : ( cpp_emitter->need_buf() ? " && end <= buf->used" : "" ) )
        << " ) goto l_" << next[ 1 ].inst->get_id_gen( cpp_emitter ) << ";";
 
     // else

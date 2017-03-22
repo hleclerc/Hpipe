@@ -12,6 +12,7 @@ public:
     using Variable = CharGraph::Variable;
 
     enum {
+        BT_HPIPE_CB_STRING_PTR,
         BT_HPIPE_BUFFER,
         BT_BEG_END,
         BT_C_STR,
@@ -36,6 +37,7 @@ public:
 
     // helpers for Instruction*::...
     bool                  interruptible      () const;
+    bool                  need_buf           () const;
     std::string           repl_data          ( std::string code, const std::string &repl );
     void                  write_label        ( StreamSepMaker &ss, unsigned num, char letter = 'l' );
     void                  add_variable       ( const std::string &name, const std::string &type, const std::string &default_value = {} );

@@ -14,7 +14,7 @@ void InstructionMark::write_dot( std::ostream &os, std::vector<std::string> *edg
 
 void InstructionMark::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter ) {
     if ( cpp_emitter->interruptible() ) {
-        if ( cpp_emitter->buffer_type == CppEmitter::BT_HPIPE_BUFFER ) {
+        if ( cpp_emitter->need_buf() ) {
             cpp_emitter->add_variable( "pending_buf", "HPIPE_BUFF_T *"  );
             cpp_emitter->add_variable( "rw_buf", "HPIPE_BUFF_T *"  );
             ss << "HPIPE_DATA.pending_buf = buf;";
@@ -25,8 +25,8 @@ void InstructionMark::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEmit
     } else {
         cpp_emitter->loc_vars.push_back_unique( "const HPIPE_CHAR_T *rw_ptr;"  );
         ss << "rw_ptr = data;";
-        if ( cpp_emitter->buffer_type == CppEmitter::BT_HPIPE_BUFFER ) {
-            cpp_emitter->loc_vars.push_back_unique( "HPIPE_BUFF_T *rw_buf;"  );
+        if ( cpp_emitter->need_buf() ) {
+            cpp_emitter->loc_vars.push_back_unique( "const HPIPE_BUFF_T *rw_buf;"  );
             ss << "rw_buf = buf;";
         }
     }

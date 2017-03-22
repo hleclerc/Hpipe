@@ -9,8 +9,9 @@ namespace Hpipe {
 */
 class Buffer {
 public:
+    using CBF = const Buffer *;
     using PI8 = unsigned char;
-    using PT = size_t;
+    using PT  = size_t;
 
     enum { default_size = 2048 - 2 * sizeof( PT ) - sizeof( Buffer * ) - sizeof( int ), nb_in_base_data = 4 };
 
@@ -36,50 +37,50 @@ public:
         free( (Buffer *)buf );
     }
 
-    /// return true if buf has changed
-    static bool skip( Buffer *&buf, const PI8 *&data, PT nb_to_skip ) {
-        if ( ! buf || ! nb_to_skip )
+    /// return nb bytes in skipped buffers
+    static PT skip( CBF *buf, const PI8 *&data, PT nb_to_skip ) {
+        if ( ! *buf || ! nb_to_skip )
             return false;
 
-        bool change = false;
-        while ( nb_to_skip >= buf->data + buf->used - data ) {
-            nb_to_skip -= buf->data + buf->used - data;
-            Buffer *old = buf;
-            buf = buf->next;
+        PT skipped = 0;
+        while ( nb_to_skip >= (*buf)->data + (*buf)->used - data ) {
+            nb_to_skip -= (*buf)->data + (*buf)->used - data;
+            const Buffer *old = *buf;
+            skipped += (*buf)->used;
+            *buf = (*buf)->next;
             dec_ref( old );
-            if ( ! buf )
-                return true;
-            data = buf->data;
-            change = true;
+            if ( ! *buf )
+                return skipped;
+            data = (*buf)->data;
         }
         data += nb_to_skip;
-        return change;
+        return skipped;
     }
 
     /// return true if buf has changed
-    static bool skip( Buffer *&buf, const PI8 *&data, PT nb_to_skip, unsigned nb_to_keep ) {
-        if ( ! buf )
+    static PT skip( CBF *buf, const PI8 *&data, PT nb_to_skip, unsigned nb_to_keep ) {
+        if ( ! *buf )
             return false;
 
-        bool change = false;
-        while ( nb_to_skip >= buf->data + buf->used - data ) {
-            nb_to_skip -= buf->data + buf->used - data;
-            Buffer *old = buf;
-            buf = buf->next;
+        PT skipped = 0;
+        while ( nb_to_skip >= (*buf)->data + (*buf)->used - data ) {
+            nb_to_skip -= (*buf)->data + (*buf)->used - data;
+            const Buffer *old = *buf;
+            skipped += (*buf)->used;
+            *buf = (*buf)->next;
             if ( nb_to_keep )
                 inc_ref( old, nb_to_keep - 1 );
             else
                 dec_ref( old );
-            if ( ! buf )
-                return true;
-            data = buf->data;
-            change = true;
+            if ( ! *buf )
+                return skipped;
+            data = (*buf)->data;
         }
         data += nb_to_skip;
-        return change;
+        return skipped;
     }
 
-    static PT size_between( Buffer *beg_buf, const PI8 *beg_data, Buffer *end_buf, const PI8 *end_data ) {
+    static PT size_between( const Buffer *beg_buf, const PI8 *beg_data, const Buffer *end_buf, const PI8 *end_data ) {
         if ( beg_buf == end_buf )
             return end_data - beg_data;
 
@@ -101,6 +102,11 @@ public:
 
     static Buffer *inc_ref( Buffer *p ) {
         ++p->cpt_use;
+        return p;
+    }
+
+    static const Buffer *inc_ref( const Buffer *p, unsigned n ) {
+        p->cpt_use += n;
         return p;
     }
 

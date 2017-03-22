@@ -1,6 +1,6 @@
 main = '<' ( any { os << *data; } )* '>'
 
-beg_test basic include read
+beg_test <foo>
     input
         <foo>
     output
@@ -10,6 +10,12 @@ end_test
 beg_test KO
     input
         <foo
+    output
+        status=KO
+end_test
+
+beg_test Ko
+    input
     output
         status=KO
 end_test

@@ -68,9 +68,10 @@ int main( int argc, char **argv ) {
         CppEmitter ce;
         ce.trace_labels = trace_labels;
 
-        if      ( strcmp( style, "HPIPE_BUFFER"  ) == 0 ) { ce.buffer_type = CppEmitter::BT_HPIPE_BUFFER; }
-        else if ( strcmp( style, "BEG_END"       ) == 0 ) { ce.buffer_type = CppEmitter::BT_BEG_END     ; }
-        else if ( strcmp( style, "C_STR"         ) == 0 ) { ce.buffer_type = CppEmitter::BT_C_STR       ; }
+        if      ( strcmp( style, "HPIPE_CB_STRING_PTR" ) == 0 ) { ce.buffer_type = CppEmitter::BT_HPIPE_CB_STRING_PTR; }
+        else if ( strcmp( style, "HPIPE_BUFFER"        ) == 0 ) { ce.buffer_type = CppEmitter::BT_HPIPE_BUFFER       ; }
+        else if ( strcmp( style, "BEG_END"             ) == 0 ) { ce.buffer_type = CppEmitter::BT_BEG_END            ; }
+        else if ( strcmp( style, "C_STR"               ) == 0 ) { ce.buffer_type = CppEmitter::BT_C_STR              ; }
         else { std::cerr << "Unknown parse style ( " << style << " ). Possible values are HPIPE_BUFFER, BEG_END or C_STR" << std::endl; return 1; }
 
         ce.read( &ig );

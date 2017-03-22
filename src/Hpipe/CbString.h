@@ -52,6 +52,10 @@ public:
 
     void free();
 
+    const Buffer *get_buf() { return beg; }
+    PT            get_off() { return off; }
+    PT            get_end() { return end; }
+
     // errors
     // operator bool() const { return not error(); }
     bool error() const { return ST( off ) < 0; }
@@ -90,6 +94,8 @@ public:
     CbString &skip_byte   () { read_byte(); return *this; }
 
     const PI8 *ptr() const { return beg->data + off; }
+
+
 
     // checkings for readers that save a signal (that will give error() != 0) if not ok. To be done before each read.
     bool ack_read_byte()         { if ( off   >=    end ) return ack_error(); return true; } ///< return true if ok to read a byte. Else, set end to 0 (to signal an error) and return false.

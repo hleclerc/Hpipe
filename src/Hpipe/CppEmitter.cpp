@@ -82,6 +82,8 @@ void CppEmitter::write_preliminaries( StreamSepMaker &ss ) {
 
 void CppEmitter::write_declarations( StreamSepMaker &ss ) {
     // constants
+    ss << "#ifndef HPIPE_RET_CONSTANTS";
+    ss << "#define HPIPE_RET_CONSTANTS";
     ss << "enum {";
     ss << "    RET_CONT      = 0,";
     ss << "    RET_OK        = 1,";
@@ -90,6 +92,7 @@ void CppEmitter::write_declarations( StreamSepMaker &ss ) {
     ss << "    RET_ENDED_KO  = 4,";
     ss << "    RET_STOP_CONT = 5";
     ss << "};";
+    ss << "#endif // HPIPE_RET_CONSTANTS";
 
     ss << "";
     ss << "#ifndef HPIPE_ADDITIONAL_ARGS";
@@ -116,7 +119,7 @@ void CppEmitter::write_declarations( StreamSepMaker &ss ) {
     ss << "#define HPIPE_CHAR_T unsigned char";
     ss << "#endif // HPIPE_CHAR_T";
 
-    if ( buffer_type == BT_HPIPE_BUFFER ) {
+    if ( buffer_type == BT_HPIPE_BUFFER || buffer_type == BT_HPIPE_CB_STRING_PTR ) {
         ss << "";
         ss << "#ifndef HPIPE_BUFF_T";
         ss << "#define HPIPE_BUFF_T Hpipe::Buffer";
@@ -146,7 +149,8 @@ void CppEmitter::write_declarations( StreamSepMaker &ss ) {
         ss << "  HPIPE_CHAR_T __save[ " << size_save_glo << " ];";
     for( auto &p : variables )
         ss << "  " << p.second.type << " " << p.first << ";";
-    ss << "  void *inp_cont;";
+    if ( interruptible() )
+        ss << "  void *inp_cont;";
     ss << "};";
 
     // constructor
@@ -163,9 +167,10 @@ void CppEmitter::write_declarations( StreamSepMaker &ss ) {
     std::ostringstream args;
     args << "HPIPE_ADDITIONAL_ARGS ";
     switch ( buffer_type ) {
-    case BT_HPIPE_BUFFER: args << "HPIPE_BUFF_T *buf, bool last_buf, const HPIPE_CHAR_T *data = 0, const HPIPE_CHAR_T *end_m1 = 0"; break;
-    case BT_BEG_END     : args << "const HPIPE_CHAR_T *data, const HPIPE_CHAR_T *end_m1"; break;
-    case BT_C_STR       : args << "const HPIPE_CHAR_T *data"; break;
+    case BT_HPIPE_CB_STRING_PTR: args << "const HPIPE_BUFF_T *buf, size_t off, size_t end"; break;
+    case BT_HPIPE_BUFFER       : args << "HPIPE_BUFF_T *buf, bool last_buf, const HPIPE_CHAR_T *data = 0, const HPIPE_CHAR_T *end_m1 = 0"; break;
+    case BT_BEG_END            : args << "const HPIPE_CHAR_T *data, const HPIPE_CHAR_T *end_m1"; break;
+    case BT_C_STR              : args << "const HPIPE_CHAR_T *data"; break;
     }
     ss << "unsigned HPIPE_PARSE_FUNC_NAME( " << args.str() << " );";
 }
@@ -191,7 +196,7 @@ void CppEmitter::write_definitions( StreamSepMaker &ss ) {
     ss << "#define HPIPE_ADDITIONAL_ARGS";
     ss << "#endif // HPIPE_ADDITIONAL_ARGS";
 
-    if ( buffer_type == BT_HPIPE_BUFFER ) {
+    if ( need_buf() ) {
         ss << "";
         ss << "#ifndef HPIPE_BUFF_T";
         ss << "#define HPIPE_BUFF_T Hpipe::Buffer";
@@ -212,15 +217,28 @@ void CppEmitter::write_definitions( StreamSepMaker &ss ) {
         ss << "#ifndef HPIPE_BUFF_T__SKIP";
         ss << "#define HPIPE_BUFF_T__SKIP( buf, ptr, N ) HPIPE_BUFF_T::skip( buf, ptr, N )";
         ss << "#endif";
+        ss << "";
+        ss << "#ifndef HPIPE_BUFF_T__SKIP_N";
+        ss << "#define HPIPE_BUFF_T__SKIP_N( buf, ptr, N, K ) HPIPE_BUFF_T::skip( buf, ptr, N, K )";
+        ss << "#endif";
+        ss << "";
+        ss << "#ifndef HPIPE_BUFF_T__DEC_REF_UPTO";
+        ss << "#define HPIPE_BUFF_T__DEC_REF_UPTO( beg, end ) beg->dec_ref_upto( end )";
+        ss << "#endif";
+        ss << "";
+        ss << "#ifndef HPIPE_BUFF_T__DEC_REF_UPTO_N";
+        ss << "#define HPIPE_BUFF_T__DEC_REF_UPTO_N( beg, end, K ) beg->dec_ref_upto( end, K )";
+        ss << "#endif";
     }
 
     // preparation for function signature
     std::ostringstream args;
     args << "HPIPE_ADDITIONAL_ARGS ";
     switch ( buffer_type ) {
-    case BT_HPIPE_BUFFER: args << "HPIPE_BUFF_T *buf, bool last_buf, const HPIPE_CHAR_T *data, const HPIPE_CHAR_T *end_m1"; break;
-    case BT_BEG_END     : args << "const HPIPE_CHAR_T *data, const HPIPE_CHAR_T *end_m1"; break;
-    case BT_C_STR       : args << "const HPIPE_CHAR_T *data"; break;
+    case BT_HPIPE_CB_STRING_PTR: args << "const HPIPE_BUFF_T *buf, size_t off, size_t end"; break;
+    case BT_HPIPE_BUFFER       : args << "HPIPE_BUFF_T *buf, bool last_buf, const HPIPE_CHAR_T *data, const HPIPE_CHAR_T *end_m1"; break;
+    case BT_BEG_END            : args << "const HPIPE_CHAR_T *data, const HPIPE_CHAR_T *end_m1"; break;
+    case BT_C_STR              : args << "const HPIPE_CHAR_T *data"; break;
     }
 
     // function signature
@@ -230,6 +248,11 @@ void CppEmitter::write_definitions( StreamSepMaker &ss ) {
     // warm up
     StreamSepMaker nss( *ss.stream, ss.beg + "    " );
     switch ( buffer_type ) {
+    case BT_HPIPE_CB_STRING_PTR:
+        nss << "while ( buf && off >= buf->used ) { off -= buf->used; end -= buf->used; buf = buf->next; }";
+        nss << "const HPIPE_CHAR_T *data = buf ? buf->data + off : (const HPIPE_CHAR_T *)1;";
+        nss << "const HPIPE_CHAR_T *end_m1 = buf ? buf->data - 1 + ( end > buf->used ? buf->used : end ) : 0;";
+        break;
     case BT_HPIPE_BUFFER:
         nss << "if ( ! data ) data = buf->data;";
         nss << "if ( ! end_m1 ) end_m1 = buf->data - 1 + buf->used;";
@@ -303,6 +326,27 @@ int CppEmitter::test( const std::vector<Lexer::TestData> &tds ) {
     ss << "";
     ss << "int Test::exec( const unsigned char *name, const HPIPE_CHAR_T *data, unsigned size, std::string expected ) {";
     switch ( buffer_type ) {
+    case BT_HPIPE_CB_STRING_PTR:
+        ns << "int res = RET_CONT;";
+        ns << "Hpipe::Buffer *beg = 0, *old = 0;";
+        ns << "for( unsigned i = 0; i < size; ++i ) {";
+        ns << "    Hpipe::Buffer *buf = HPIPE_BUFF_T::New( 1, old );";
+        ns << "    old = buf; if ( ! beg ) beg = buf;";
+        ns << "    buf->data[ 0 ] = data[ i ];";
+        ns << "    buf->used = 1;";
+        ns << "}";
+        ns << "res = HPIPE_PARSE_FUNC_NAME( beg, 0, size );";
+        ns << "while( beg ) {";
+        ns << "    Hpipe::Buffer *old = beg;";
+        ns << "    beg = beg->next;";
+        ns << "    HPIPE_BUFF_T::dec_ref( old );";
+        ns << "}";
+        ns << "switch ( res ) {";
+        ns << "case RET_CONT: if ( os.str().size() ) os << ' '; os << \"status=CNT\"; break;"; //
+        ns << "case RET_OK  : if ( os.str().size() ) os << ' '; os << \"status=OK\" ; break;";
+        ns << "case RET_KO  : if ( os.str().size() ) os << ' '; os << \"status=KO\" ; break;";
+        ns << "}";
+        break;
     case BT_HPIPE_BUFFER:
         ns << "int res = RET_CONT;";
         ns << "for( unsigned i = 0; i < size; ++i ) {";
@@ -356,10 +400,10 @@ int CppEmitter::test( const std::vector<Lexer::TestData> &tds ) {
     }
     ss << "    int res = 0;";
     for( const Lexer::TestData &td : tds ) {
-        if ( buffer_type == BT_HPIPE_BUFFER )
+        if ( need_buf() )
             ss << "    Hpipe::Buffer::nb_alive_bufs = 0;";
         ss << "    res |= Test().exec( name_" << &td << ", inp_" << &td << ", " << td.inp.size() << ", std::string( (const char *)out_" << &td << ", " << td.out.size() << " ) );";
-        if ( buffer_type == BT_HPIPE_BUFFER )
+        if ( need_buf() )
             ss << "    if ( Hpipe::Buffer::nb_alive_bufs ) { std::cout << \"(BAD) nb_remaining_bufs=\" << Hpipe::Buffer::nb_alive_bufs << std::endl; res = 1; }";
     }
     ss << "    return res;";
@@ -393,6 +437,18 @@ bool CppEmitter::bench(const std::vector<Lexer::TrainingData> &tds) {
 
     ss << "void Bench::exec( const unsigned char *name, const unsigned char *data, unsigned size, const char *display ) {";
     switch ( buffer_type ) {
+    case BT_HPIPE_CB_STRING_PTR:
+        ns << "Hpipe::Buffer *buf = Hpipe::Buffer::New( size );";
+        ns << "memcpy( buf->data, data, size );";
+        ns << "buf->used = size;";
+        ns << "auto t0 = std::clock();";
+        ns << "for( unsigned var = 0; var < 1000000; ++var ) {";
+        ns << "    Bench::HPIPE_DATA_CTOR_NAME( &hpipe_data );";
+        ns << "    parse( buf, 0, size );";
+        ns << "}";
+        ns << "auto t1 = std::clock();";
+        ns << "HPIPE_BUFF_T::dec_ref( buf );";
+        break;
     case BT_HPIPE_BUFFER:
         ns << "Hpipe::Buffer *buf = Hpipe::Buffer::New( size );";
         ns << "memcpy( buf->data, data, size );";
@@ -458,6 +514,10 @@ bool CppEmitter::bench(const std::vector<Lexer::TrainingData> &tds) {
 
 bool CppEmitter::interruptible() const {
     return buffer_type == BT_HPIPE_BUFFER;
+}
+
+bool CppEmitter::need_buf() const {
+    return buffer_type == BT_HPIPE_BUFFER || buffer_type == BT_HPIPE_CB_STRING_PTR;
 }
 
 std::string CppEmitter::repl_data( std::string code, const std::string &repl ) {

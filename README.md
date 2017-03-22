@@ -429,6 +429,7 @@ void input_data_event() {
 
 Of course, using this kind of buffer is not the taste of everyone. One can use the option `-s` or `--style` to choose the buffer style:
 - `-s HPIPE_BUFFER` generates code as shown above.
+- `-s HPIPE_CB_STRING_PTR` generates code that assumes that data comes once, in a chained list of buffer with a begin and an end offset (relative to the first buffer, the one given as argument).
 - `-s BEG_END` will generate code for a unique (non interruptible) buffer defined using a `const unsigned char *` for the beginning and also for the end.
 - `-s C_STR` will generate code for a unique (non interruptible) buffer defined using a `const unsigned char *` for the beginning, and ended by the value after the `--stop-char` cmd arg (0 by default).
 

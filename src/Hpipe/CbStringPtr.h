@@ -46,6 +46,10 @@ public:
     bool empty() const { return end == off; }
     PT   size() const { return end - off; }
 
+    const Buffer *get_buf() { return beg; }
+    PT            get_off() { return off; }
+    PT            get_end() { return end; }
+
     // readers. Beware there are no checks in these methods (ack_read_... must be called before, to check if possible)
     void read_some( void *data, PT size );
     CbStringPtr &skip_some( PT size ) {

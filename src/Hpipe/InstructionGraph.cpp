@@ -435,7 +435,6 @@ void InstructionGraph::simplify_marks() {
         for( InstructionRewind *rw : mark->rewinds ) {
             if ( rw->need_mark() ) {
                 need_mark = true;
-                PRINT( *rw );
                 break;
             }
         }

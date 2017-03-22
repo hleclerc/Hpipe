@@ -33,7 +33,7 @@ void InstructionBegStr::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
 }
 
 void InstructionBegStr::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter, std::string repl_data, std::string repl_buf ) {
-    if ( cpp_emitter->buffer_type == CppEmitter::BT_HPIPE_BUFFER ) {
+    if ( cpp_emitter->need_buf() ) {
         cpp_emitter->preliminaries.push_back_unique( "#ifndef HPIPE_SIZE_T\n#define HPIPE_SIZE_T size_t\n#endif // HPIPE_SIZE_T\n" );
         cpp_emitter->preliminaries.push_back_unique( "#ifndef HPIPE_CB_STRING_T\n#define HPIPE_CB_STRING_T Hpipe::CbString\n#endif // HPIPE_CB_STRING_T\n" );
 
