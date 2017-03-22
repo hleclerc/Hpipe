@@ -294,6 +294,7 @@ There are some internal predefined machine to help generate code:
 * `add_variable[ type, name, optionnal_default_value ]` will add a variable declaration in the `HpipeData` structure (+use of `optionnal_default_value` in ctor).
 * `add_include[ 'my_include.h' ]` will add `#include <my_include.h>` (only once) in the preliminary of the generated code. `<>` and `""` can be specified explicitely (as in `add_include[ '"my_include.h"' ]`)
 * `add_prel[ 'some_code' ]` or `add_preliminary[ 'some_code' ]` will add `some_code` (only once) in the preliminary of the generated code
+* `import my_file.hpipe` allows to import content from another hpipe file.
 
 ## How to call and define machines ?
 

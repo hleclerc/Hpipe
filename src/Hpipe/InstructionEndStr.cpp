@@ -39,22 +39,20 @@ void InstructionEndStr::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
 
 void InstructionEndStr::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter, std::string repl_data, std::string repl_buf ) {
     if ( cpp_emitter->need_buf() ) {
-        cpp_emitter->preliminaries.push_back_unique( "#ifndef HPIPE_CB_STRING__ASSIGN_BEG_END\n#define HPIPE_CB_STRING__ASSIGN_BEG_END( var, beg_buf, beg_ptr, end_buf, end_ptr ) var = HPIPE_CB_STRING_T( HPIPE_CB_STRING_T::NoIncRef(), beg_buf, beg_ptr, end_buf, end_ptr )\n#endif // HPIPE_CB_STRING__ASSIGN_BEG_END\n" );
-
-        if ( cpp_emitter->buffer_type == CppEmitter::BT_HPIPE_CB_STRING_PTR ) {
-            ss << "HPIPE_BUFF_T__SKIP_N( HPIPE_DATA.__beg_" << var << "_buf, HPIPE_DATA.__beg_" << var << "_data, HPIPE_DATA.__beg_" << var << "_off, 1 );";
-            ss << "HPIPE_BUFF_T__DEC_REF_UPTO_N( HPIPE_DATA.__beg_" << var << "_buf, " << repl_buf << ", 2 );";
+        if ( cpp_emitter->interruptible() ) {
+            cpp_emitter->preliminaries.push_back_unique( "#ifndef HPIPE_CB_STRING__ASSIGN_BEG_END\n#define HPIPE_CB_STRING__ASSIGN_BEG_END( var, beg_buf, beg_ptr, end_buf, end_ptr ) var = HPIPE_CB_STRING_T( HPIPE_CB_STRING_T::NoIncRef(), beg_buf, beg_ptr, end_buf, end_ptr )\n#endif // HPIPE_CB_STRING__ASSIGN_BEG_END\n" );
+            ss << "HPIPE_BUFF_T__SKIP( &HPIPE_DATA.__beg_" << var << "_buf, HPIPE_DATA.__beg_" << var << "_data, HPIPE_DATA.__beg_" << var << "_off );";
+            if ( want_next_char )
+                ss << "HPIPE_BUFF_T__INC_REF( " << repl_buf << " );";
+            else
+                ss << "if ( " << repl_data << " > " << repl_buf << "->data ) HPIPE_BUFF_T__INC_REF( " << repl_buf << " );";
+            ss << "HPIPE_CB_STRING__ASSIGN_BEG_END( HPIPE_DATA." << var << ", HPIPE_DATA.__beg_" << var << "_buf, HPIPE_DATA.__beg_" << var << "_data, " << repl_buf << ", " << repl_data << ( want_next_char ? " + 1" : "" ) <<  " );";
         } else {
-            ss << "HPIPE_BUFF_T__SKIP( HPIPE_DATA.__beg_" << var << "_buf, HPIPE_DATA.__beg_" << var << "_data, HPIPE_DATA.__beg_" << var << "_off );";
+            cpp_emitter->preliminaries.push_back_unique( "#ifndef HPIPE_CB_STRING_PTR__ASSIGN_BEG_END\n#define HPIPE_CB_STRING_PTR__ASSIGN_BEG_END( var, beg_buf, beg_ptr, end_buf, end_ptr ) var = HPIPE_CB_STRING_PTR_T( beg_buf, beg_ptr, end_buf, end_ptr )\n#endif // HPIPE_CB_STRING_PTR__ASSIGN_BEG_END\n" );
+            ss << "HPIPE_BUFF_T__SKIP_N( &HPIPE_DATA.__beg_" << var << "_buf, HPIPE_DATA.__beg_" << var << "_data, HPIPE_DATA.__beg_" << var << "_off, 1 );";
+            ss << "HPIPE_CB_STRING_PTR__ASSIGN_BEG_END( HPIPE_DATA." << var << ", HPIPE_DATA.__beg_" << var << "_buf, HPIPE_DATA.__beg_" << var << "_data, " << repl_buf << ", " << repl_data << ( want_next_char ? " + 1" : "" ) <<  " );";
         }
 
-        if ( want_next_char ) {
-            ss << "HPIPE_BUFF_T__INC_REF( " << repl_buf << " );";
-            ss << "HPIPE_CB_STRING__ASSIGN_BEG_END( HPIPE_DATA." << var << ", HPIPE_DATA.__beg_" << var << "_buf, HPIPE_DATA.__beg_" << var << "_data, " << repl_buf << ", " << repl_data << " + 1 );";
-        } else {
-            ss << "if ( " << repl_data << " > " << repl_buf << "->data ) HPIPE_BUFF_T__INC_REF( " << repl_buf << " );";
-            ss << "HPIPE_CB_STRING__ASSIGN_BEG_END( HPIPE_DATA." << var << ", HPIPE_DATA.__beg_" << var << "_buf, HPIPE_DATA.__beg_" << var << "_data, " << repl_buf << ", " << repl_data << " );";
-        }
     } else {
         cpp_emitter->preliminaries.push_back_unique( "#ifndef HPIPE_CM_STRING__ASSIGN_BEG_END\n#define HPIPE_CM_STRING__ASSIGN_BEG_END( var, beg_ptr, end_ptr ) var = HPIPE_CM_STRING( beg_ptr, end_ptr )\n#endif // HPIPE_CM_STRING__ASSIGN_BEG_END\n" );
 

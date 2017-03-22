@@ -20,8 +20,8 @@ int main( int argc, char **argv ) {
     try {
         // lexems
         ErrorList error_list;
-        Lexer lexer( error_list );
         Pool<Source> source_pool;
+        Lexer lexer( error_list, source_pool );
         if ( not disp_lexem_graph )
             lexer.read( source_pool.New( "src/Hpipe/predef.sipe", predef, false ) );
         for( int i = beg_files; i < argc; ++i )

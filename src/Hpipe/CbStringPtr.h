@@ -16,27 +16,8 @@ public:
     CbStringPtr( const CbStringPtr &bp );
     CbStringPtr( const CbString    &bs );
     CbStringPtr( const CbQueue     &bs );
-    CbStringPtr( const Buffer *beg_buf, const PI8 *beg_dat, const PI8 *end_dat ) { ///< beg_dat must be in beg_buf->data
-        while ( beg_buf and ( beg_dat < beg_buf->data or beg_dat >= beg_buf->data + beg_buf->used ) )
-            beg_buf = beg_buf->next;
-        beg = beg_buf;
-
-        if ( not beg_buf ) {
-            off = 0;
-            end = 0;
-            return;
-        }
-
-        off = beg_dat - beg_buf->data;
-
-        end = 0;
-        while ( beg_buf and ( end_dat < beg_buf->data or end_dat >= beg_buf->data + beg_buf->used ) ) {
-            end += beg_buf->used;
-            beg_buf = beg_buf->next;
-        }
-        if ( beg_buf )
-            end += end_dat - beg_buf->data;
-    }
+    CbStringPtr( const Buffer *beg_buf, const PI8 *beg_dat, const PI8 *end_dat );
+    CbStringPtr( const Hpipe::Buffer *beg_buff, const Buffer::PI8 *beg_data, const Hpipe::Buffer *end_buff, const Buffer::PI8 *end_data );
 
     // errors
     bool error() const { return ST( off ) < 0; }

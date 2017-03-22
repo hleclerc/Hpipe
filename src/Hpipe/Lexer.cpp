@@ -24,7 +24,7 @@ static const char *starts_with( const char *beg, const char *str ) {
 
 }
 
-Lexer::Lexer( ErrorList &error_list ) : first_item( Lexem::NONE, 0, 0, {} ), error_list( error_list ) {
+Lexer::Lexer( ErrorList &error_list, Pool<Source> &source_pool ) : first_item( Lexem::NONE, 0, 0, {} ), error_list( error_list ), source_pool( source_pool ) {
     // static information on operators
     num_grp_bracket = -1;
     #define OPERATOR( S, N, G ) if ( strcmp( S, "[" ) == 0 ) num_grp_bracket = G;
@@ -154,6 +154,29 @@ int Lexer::read_tok( Source *source, const char *cur ) {
         BEG_END( "methods" , Lexem::METHODS  );
         BEG_END( "training", Lexem::TRAINING );
         #undef BEG_END
+
+        if ( cur - beg == 6 and strncmp( beg, "import", 6 ) == 0 ) {
+            while ( *cur == ' ' )
+                ++cur;
+            const char *inc = cur;
+            while ( *cur != ' ' && *cur != '\n' && *cur != '\r' && *cur != '\t' && *cur != 0 )
+                ++cur;
+
+            std::string dir( source->provenance );
+            std::string::size_type ind = dir.rfind( '/' );
+            if ( ind == std::string::npos )
+                dir.resize( 0 );
+            else
+                dir.resize( ind + 1 );
+            Source *new_source = source_pool.New( ( dir + std::string( inc, cur ) ).c_str() );
+
+            const char *data = new_source->data;
+            if ( not data )
+                error_list.add( source, 0, ( "Impossible to open '" + std::string( new_source->provenance ) + "'" ).c_str() );
+            while ( int inc = read_tok( new_source, data ) )
+                data += inc;
+            return cur - beg;
+        }
 
         // if ...
         if ( cur - beg == 2 and strncmp( beg, "if", 2 ) == 0 )

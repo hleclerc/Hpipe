@@ -25,7 +25,7 @@ public:
         std::string inp;
     };
 
-    Lexer( ErrorList &error_list );
+    Lexer( ErrorList &error_list, Pool<Source> &source_pool );
 
     Lexem                *read           ( Source *source ); ///< append the data from source
 
@@ -58,6 +58,7 @@ protected:
     Lexem                 first_item, *last;
     std::vector<Lexem *>  stack_last;
     ErrorList            &error_list;
+    Pool<Source>         &source_pool;
     Pool<Lexem>           lexem_pool;
     int                   num_grp_bracket;
 };

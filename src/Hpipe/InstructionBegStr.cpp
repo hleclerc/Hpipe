@@ -35,12 +35,18 @@ void InstructionBegStr::write_cpp( StreamSepMaker &ss, StreamSepMaker &es, CppEm
 void InstructionBegStr::write_cpp_code_seq( StreamSepMaker &ss, StreamSepMaker &es, CppEmitter *cpp_emitter, std::string repl_data, std::string repl_buf ) {
     if ( cpp_emitter->need_buf() ) {
         cpp_emitter->preliminaries.push_back_unique( "#ifndef HPIPE_SIZE_T\n#define HPIPE_SIZE_T size_t\n#endif // HPIPE_SIZE_T\n" );
-        cpp_emitter->preliminaries.push_back_unique( "#ifndef HPIPE_CB_STRING_T\n#define HPIPE_CB_STRING_T Hpipe::CbString\n#endif // HPIPE_CB_STRING_T\n" );
+        if ( cpp_emitter->interruptible() )
+            cpp_emitter->preliminaries.push_back_unique( "#ifndef HPIPE_CB_STRING_T\n#define HPIPE_CB_STRING_T Hpipe::CbString\n#endif // HPIPE_CB_STRING_T\n" );
+        else
+            cpp_emitter->preliminaries.push_back_unique( "#ifndef HPIPE_CB_STRING_PTR_T\n#define HPIPE_CB_STRING_PTR_T Hpipe::CbStringPtr\n#endif // HPIPE_CB_STRING_PTR_T\n" );
 
         cpp_emitter->add_variable( "__beg_" + var + "_off" , "HPIPE_SIZE_T"         );
-        cpp_emitter->add_variable( "__beg_" + var + "_buf" , "HPIPE_BUFF_T *"       );
+        cpp_emitter->add_variable( "__beg_" + var + "_buf" , "const HPIPE_BUFF_T *" );
         cpp_emitter->add_variable( "__beg_" + var + "_data", "const HPIPE_CHAR_T *" );
-        cpp_emitter->add_variable( var, "HPIPE_CB_STRING_T" );
+        if ( cpp_emitter->interruptible() )
+            cpp_emitter->add_variable( var, "HPIPE_CB_STRING_T" );
+        else
+            cpp_emitter->add_variable( var, "HPIPE_CB_STRING_PTR_T" );
 
         ss << "HPIPE_DATA.__beg_" << var << "_off = " << ( cx.beg() ? 0 : want_next_char ) << ";";
         ss << "HPIPE_DATA.__beg_" << var << "_buf = " << repl_buf << ";";

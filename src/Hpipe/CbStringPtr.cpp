@@ -18,6 +18,46 @@ CbStringPtr::CbStringPtr( const CbQueue &bs ) {
     end = bs.off + bs.size();
 }
 
+CbStringPtr::CbStringPtr( const Buffer *beg_buf, const PI8 *beg_dat, const PI8 *end_dat ) {
+    while ( beg_buf and ( beg_dat < beg_buf->data or beg_dat >= beg_buf->data + beg_buf->used ) )
+        beg_buf = beg_buf->next;
+    beg = beg_buf;
+
+    if ( not beg_buf ) {
+        off = 0;
+        end = 0;
+        return;
+    }
+
+    off = beg_dat - beg_buf->data;
+
+    end = 0;
+    while ( beg_buf and ( end_dat < beg_buf->data or end_dat >= beg_buf->data + beg_buf->used ) ) {
+        end += beg_buf->used;
+        beg_buf = beg_buf->next;
+    }
+    if ( beg_buf )
+        end += end_dat - beg_buf->data;
+}
+
+CbStringPtr::CbStringPtr( const Buffer *beg_buff, const Buffer::PI8 *beg_data, const Buffer *end_buff, const Buffer::PI8 *end_data ) {
+    beg = beg_buff;
+    if ( beg_buff ) {
+        off = beg_data - beg_buff->data;
+        if ( end_buff == beg_buff ) {
+            end = end_data - beg_buff->data;
+        } else {
+            end = 0;
+            for ( ; beg_buff != end_buff; beg_buff = beg_buff->next )
+                end += beg_buff->used;
+            end += end_data - end_buff->data;
+        }
+    } else {
+        off = 0;
+        end = 0;
+    }
+}
+
 bool CbStringPtr::ack_error() {
     off = -1;
     end = -1;
