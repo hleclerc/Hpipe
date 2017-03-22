@@ -29,7 +29,7 @@ public:
     void                     apply         ( std::function<void(CharItem *)> f );
     CharItem                *root          ();
 
-    static bool              leads_to_ok   ( const Vec<const CharItem *> &items, bool impossible_ko = false );
+    static bool              leads_to_ok   ( const Vec<const CharItem *> &items, bool never_ending = false );
 
     Vec<Lexer::TrainingData> training_data () const { return lexer.training_data(); }
 

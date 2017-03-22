@@ -491,7 +491,7 @@ void CharGraph::read( Vec<CharItem *> &leaves, const Lexem *l, Vec<CharItem *> i
         return read( leaves, l->next, nxt );
     }
 
-    if ( l->type == Lexem::TRAINING or l->type == Lexem::METHODS )
+    if ( l->type == Lexem::TRAINING or l->type == Lexem::METHODS or l->type == Lexem::FLAGS or l->type == Lexem::TEST )
         return read( leaves, l->next, inputs );
 
     ok = false;
@@ -546,15 +546,15 @@ void get_next_ltor( Vec<const CharItem *> &nitems, const CharItem *item, bool im
     }
 }
 
-bool leads_to_ok_rec( const Vec<const CharItem *> &items, std::set<Vec<const CharItem *> > &visited, bool impossible_ko ) {
+bool leads_to_ok_rec( const Vec<const CharItem *> &items, std::set<Vec<const CharItem *> > &visited, bool never_ending ) {
     // dead end...
     if ( items.empty() )
         return false;
 
-    // get next items that are COND, OK, KO, _IF, or _EOF, stopping if CharItem::NEXT
+    // get next items that are COND, OK, KO, _IF, or _EOF, stopping if CharItem::NEXT (unless never_ending)
     Vec<const CharItem *> nitems;
     for( const CharItem *item : items )
-        get_next_ltor( nitems, item, impossible_ko );
+        get_next_ltor( nitems, item, never_ending );
 
     // we have already seen this case ?
     std::sort( nitems.begin(), nitems.end() );
@@ -584,7 +584,7 @@ bool leads_to_ok_rec( const Vec<const CharItem *> &items, std::set<Vec<const Cha
     if ( not covered.always_checked() )
         return false; // possible to stop this path
 
-    if ( eofs.size() && ! leads_to_ok_rec( eofs, visited, impossible_ko ) )
+    if ( eofs.size() && ! leads_to_ok_rec( eofs, visited, never_ending ) )
         return false;
 
     // get char sets
@@ -614,7 +614,7 @@ bool leads_to_ok_rec( const Vec<const CharItem *> &items, std::set<Vec<const Cha
             if ( item->type == CharItem::COND and ( c & item->cond ) )
                 for( const CharEdge &e : item->edges )
                     citems.push_back_unique( e.item );
-        if ( ! leads_to_ok_rec( citems, visited, impossible_ko ) )
+        if ( ! leads_to_ok_rec( citems, visited, never_ending ) )
             return false;
     }
     return true;
@@ -622,9 +622,9 @@ bool leads_to_ok_rec( const Vec<const CharItem *> &items, std::set<Vec<const Cha
 
 }
 
-bool CharGraph::leads_to_ok( const Vec<const CharItem *> &items, bool impossible_ko ) {
+bool CharGraph::leads_to_ok( const Vec<const CharItem *> &items, bool never_ending ) {
     std::set<Vec<const CharItem *>> visited;
-    return leads_to_ok_rec( items, visited, impossible_ko );
+    return leads_to_ok_rec( items, visited, never_ending );
 }
 
 void CharGraph::err( const std::string &msg ) {
@@ -755,7 +755,7 @@ void CharGraph::clone( Lexem *&beg, Lexem *&end, const std::string &name, const 
     if ( calls.size() > 1000 ) {
         lexer.err( l, "call stack size exceeded" );
         ok = false;
-        return;
+        abort();
     }
 
     // look in args
@@ -840,17 +840,17 @@ void CharGraph::clone( Lexem *&beg, Lexem *&end, const std::string &name, const 
     }
 
     // predefined machine
-    if ( name == "add_prel" ) {
-        if ( cargs.size() != 1 ) { lexer.err( l, "add_prel expects exactly 1 argument" ); ok = false; }
-        else preliminaries.push_back_unique( left_shifted( cargs[ 0 ].val->str ) );
-        return calls.pop_back();
-    }
+    //    if ( name == "add_prel" ) {
+    //        if ( cargs.size() != 1 ) { lexer.err( l, "add_prel expects exactly 1 argument" ); ok = false; }
+    //        else preliminaries.push_back_unique( left_shifted( cargs[ 0 ].val->str ) );
+    //        return calls.pop_back();
+    //    }
 
-//    if ( name == "add_variable" ) {
-//        if ( cargs.size() < 2 ) { lexer.err( l, "variable expects 2 or 3 arguments (type, name, default value)" ); ok = false; }
-//        else variables[ cargs[ 1 ].val->str ] = Variable{ cargs[ 0 ].val->str, cargs.size() >= 3 ? cargs[ 2 ].val->str : "" };
-//        return calls.pop_back();
-//    }
+    //    if ( name == "add_variable" ) {
+    //        if ( cargs.size() < 2 ) { lexer.err( l, "variable expects 2 or 3 arguments (type, name, default value)" ); ok = false; }
+    //        else variables[ cargs[ 1 ].val->str ] = Variable{ cargs[ 0 ].val->str, cargs.size() >= 3 ? cargs[ 2 ].val->str : "" };
+    //        return calls.pop_back();
+    //    }
 
     lexer.err( l, "Impossible to find the corresponding machine" );
     ok = false;

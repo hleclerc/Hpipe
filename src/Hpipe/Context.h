@@ -48,7 +48,7 @@ public:
     bool                       only_has       ( int char_item_type ) const;
     bool                       has            ( int char_item_type ) const;
     int                        index_of_first ( int char_item_type ) const;
-    bool                       leads_to_ok    () const;
+    bool                       leads_to_ok    ( bool never_ending ) const;
     bool                       beg            () const { return flags & FL_BEG; }
     bool                       eof            () const { return flags & FL_EOF; }
     bool                       not_eof        () const { return flags & FL_NOT_EOF; }

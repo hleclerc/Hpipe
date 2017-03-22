@@ -38,6 +38,7 @@ public:
     Vec<TestData>         test_data      () const;
     Vec<TrainingData>     training_data  () const;
     std::string           methods        () const;
+    Vec<std::string>      flags          () const;
 
 protected:
     const Lexem          *base           () const; ///< base lexem

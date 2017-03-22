@@ -1,0 +1,19 @@
+main = { os << "B"; } any any
+
+beg_flags
+    --never-ending
+end_flags
+
+beg_test real success
+    input
+        12
+    output
+        B status=OK
+end_test
+
+beg_test fake success
+    input
+        1
+    output
+        B status=KO
+end_test

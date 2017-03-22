@@ -33,6 +33,18 @@ int main( int argc, char **argv ) {
         if ( ! error_list )
             return 1;
 
+        // update flags
+        Vec<std::string> lfs = lexer.flags();
+        Vec<const char *> lfc;
+        lfc << "beg_flags section";
+        for( std::string &str : lfs )
+            lfc << str.c_str();
+        #undef PREPARG_ARGV
+        #undef PREPARG_ARGC
+        #define PREPARG_ARGC lfc.size()
+        #define PREPARG_ARGV lfc
+        #include <PrepArg/parse.h>
+
         // char and transitions
         CharGraph cg( lexer );
         cg.read( lexer.find_machine( "main" ) );
@@ -43,9 +55,10 @@ int main( int argc, char **argv ) {
 
         // instruction graph
         InstructionGraph ig;
-        ig.stop_char   = strcmp( style, "C_STR" ) == 0 ? stop_char : -1;
-        ig.boyer_moore = boyer_moore;
-        ig.no_training = no_training;
+        ig.stop_char    = strcmp( style, "C_STR" ) == 0 ? stop_char : -1;
+        ig.boyer_moore  = boyer_moore;
+        ig.no_training  = no_training;
+        ig.never_ending = never_ending;
 
         std::istringstream iss( disp_inst_graph );
         std::vector<std::string> disp( std::istream_iterator<std::string>{ iss }, std::istream_iterator<std::string>{} );

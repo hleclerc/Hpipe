@@ -254,8 +254,8 @@ int Context::index_of_first( int char_item_type ) const {
     return -1;
 }
 
-bool Context::leads_to_ok() const {
-    return ( flags & FL_OK ) || CharGraph::leads_to_ok( pos );
+bool Context::leads_to_ok( bool never_ending ) const {
+    return ( flags & FL_OK ) || CharGraph::leads_to_ok( pos, never_ending );
 }
 
 } // namespace Hpipe

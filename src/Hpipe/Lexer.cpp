@@ -74,7 +74,7 @@ Lexem *Lexer::read( Source *source ) {
     for( Lexem *item = res; item; item = item->next ) {
         if ( item->eq( Lexem::OPERATOR, "=" ) ) {
             for( Lexem *next = item->next; ; next = next->next ) {
-                if ( not next or next->eq( Lexem::OPERATOR, "=" ) or next->type == Lexem::TEST or next->type == Lexem::TRAINING or next->type == Lexem::METHODS ) {
+                if ( not next or next->eq( Lexem::OPERATOR, "=" ) or next->type == Lexem::TEST or next->type == Lexem::TRAINING or next->type == Lexem::METHODS or next->type == Lexem::FLAGS ) {
                     if ( next != item->next ) {
                         item->children[ 1 ] = item->next;
                         item->next->parent = item;
@@ -150,8 +150,9 @@ int Lexer::read_tok( Source *source, const char *cur ) {
                 return push_tok( source, beg, cur, TYPE ); \
             }
         BEG_END( "test"    , Lexem::TEST     );
-        BEG_END( "training", Lexem::TRAINING );
+        BEG_END( "flags"   , Lexem::FLAGS    );
         BEG_END( "methods" , Lexem::METHODS  );
+        BEG_END( "training", Lexem::TRAINING );
         #undef BEG_END
 
         // if ...
@@ -364,6 +365,27 @@ std::string Lexer::methods() const {
             if ( res.size() )
                 res += '\n';
             res += std::string( item->str.begin() + sizeof( "beg_methods" ) - 1, item->str.end() - sizeof( "end_methods" ) );
+        }
+    }
+    return res;
+}
+
+Vec<std::string> Lexer::flags() const {
+    Vec<std::string> res;
+    for( const Lexem *item = root(); item ; item = item->next ) {
+        if ( item->type == Lexem::FLAGS ) {
+            std::istringstream is( std::string( item->str.begin() + sizeof( "beg_flags" ) - 1, item->str.end() - sizeof( "end_flags" ) ) );
+            std::string line;
+            while ( std::getline( is, line ) ) {
+                // trim
+                while ( line.size() && ( line.front() == ' ' || line.front() == '\t' ) )
+                    line = line.substr( 1 );
+                while ( line.size() && ( line.back() == ' ' || line.back() == '\t' ) )
+                    line.pop_back();
+                // register
+                if ( line.size() )
+                    res << line;
+            }
         }
     }
     return res;

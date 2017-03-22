@@ -31,6 +31,7 @@ public:
     int                             stop_char;
     bool                            no_training;
     bool                            boyer_moore;
+    bool                            never_ending;
 
     Vec<std::string>                methods;
     Vec<std::string>                includes;

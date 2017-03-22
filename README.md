@@ -26,7 +26,12 @@ Besides, all other things being equal,
     - [How to call and define machines ?](#how-to-call-and-define-machines-)
     - [Predefined machines](#predefined-machines)
     - [Aditional sections](#aditional-sections)
+        - [Test](#test)
+        - [Training data](#training-data)
+        - [Methods](#methods)
+        - [Flags](#flags)
     - [Operator precedence](#operator-precedence)
+- [Important flags](#important-flags)
 - [Output file](#output-file)
     - [Sections](#sections)
     - [Buffer styles](#buffer-styles)
@@ -314,6 +319,8 @@ They are defined in [src/Hpipe/Predef.sipe](https://github.com/hleclerc/Hpipe/bl
 
 ## Aditional sections
 
+### Test
+
 It is possible to define test(s) inside machine definition, using:
 
 ```
@@ -326,6 +333,8 @@ end_test
 ```
 
 `input` and `output` are shifted to the left (space at the beginning of the line are here to separate sections). `hpipe --test foo.hpipe` allows to launch the tests in `foo.hpipe` (one can use the flag `style` to test with different kinds of buffers).
+
+### Training data
 
 Training data uses a similar syntax:
 
@@ -340,7 +349,7 @@ end_training
 
 `freq` represent a frequency (of course relevant only if several training data are present).
 
-Additionnaly, there is a "methods" section:
+### Methods
 
 ```
 beg_methods
@@ -351,6 +360,17 @@ end_methods
 ```
 
 will add some code inside the _declaration_ section (which may be in a class or not, depending on how the generated code is used).
+
+### Flags
+
+```
+beg_flags
+    --never-ending
+    --...
+end_flags
+```
+
+allows to inline some command line flags (for instance for machine intended to work only under some context, ...).
 
 ## Operator precedence
 
@@ -364,6 +384,11 @@ will add some code inside the _declaration_ section (which may be in a class or 
 | 5                |    `|`                     |
 | 6                |    `,`                     |
 | 7                |      `=`                   |
+
+# Important flags
+
+* `--never-ending` indicates that a machine is not going to fail due to the end of the stream. For instance in `{ some_code; } any any`, by default, one will have to read the two chars before executing `{ some_code; }`. If `--never-ending` is specified, `{ some_code; }` will be executed directly: one will consider that lack of data is not a failure reason.
+* `--style buffer_style`: defines how the data are given (contiguous buffers or not, interruptible or not, ...). See [Buffer styles](#buffer-styles).
 
 # Output file
 

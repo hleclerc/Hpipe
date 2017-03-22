@@ -17,6 +17,7 @@ public:
         METHODS,
         STRING,
         NUMBER,
+        FLAGS,
         TEST,
         CODE,
         NONE,

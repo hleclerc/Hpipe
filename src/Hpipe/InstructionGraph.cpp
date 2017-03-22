@@ -29,9 +29,10 @@
 namespace Hpipe {
 
 InstructionGraph::InstructionGraph() {
-    stop_char        = -1;
-    no_training      = false;
-    boyer_moore = false;
+    stop_char    = -1;
+    no_training  = false;
+    boyer_moore  = false;
+    never_ending = false;
 }
 
 void InstructionGraph::read( CharGraph *cg, const std::vector<std::string> &disp, bool disp_inst_pred, bool disp_trans_freq ) {
@@ -181,7 +182,7 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
 
 Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pending_trans, const PendingTrans &pt, const Context &cx ) {
     // normalization
-    if ( ( cx.flags & Context::FL_OK ) && CharGraph::leads_to_ok( cx.pos ) )
+    if ( ( cx.flags & Context::FL_OK ) && CharGraph::leads_to_ok( cx.pos, never_ending ) )
         return make_transitions( pending_trans, pt, cx.without_flag( Context::FL_OK ) );
 
     // helper func
@@ -198,7 +199,7 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
     }
 
     // we can cancel a mark ?
-    if ( cx.mark && ( CharGraph::leads_to_ok( cx.pos ) || cx.pos.empty() ) ) {
+    if ( cx.mark && ( CharGraph::leads_to_ok( cx.pos, never_ending ) || cx.pos.empty() ) ) {
         if ( cx.paths_to_mark.contains( cx.mark->num_active_item ) == false ||
              cx.paths_to_mark.only_has( cx.mark->num_active_item ) ) {
             InstructionRewind *res = inst_pool << new InstructionRewind( cx );
@@ -269,7 +270,7 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
         const CharItem *item = cx.pos[ ind ];
         if ( item->code_like() ) {
             // if it's too early to decide if this code can be executed, we have to add a mark
-            if ( not cx.mark and ( cx.pos.size() >= 2 or not cx.leads_to_ok() ) ) {
+            if ( not cx.mark and ( cx.pos.size() >= 2 or not cx.leads_to_ok( never_ending ) ) ) {
                 InstructionMark *res = reg( new InstructionMark( cx, ind ) );
                 return tra( res, 0, cx.with_mark( res ) );
             }
@@ -359,7 +360,7 @@ Instruction *InstructionGraph::make_transitions( std::deque<PendingTrans> &pendi
     int first_leads_to_ok = -1;
     if ( cx.only_has( CharItem::NEXT_CHAR ) ) {
         for( unsigned i = 0; i < cx.pos.size(); ++i ) {
-            if ( CharGraph::leads_to_ok( cx.pos[ i ] ) ) {
+            if ( CharGraph::leads_to_ok( cx.pos[ i ], false ) ) {
                 first_leads_to_ok = i;
                 break;
             }

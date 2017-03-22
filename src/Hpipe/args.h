@@ -10,6 +10,7 @@ BARG( 'b', benchmark         , "benchmark with training data"                   
 BARG(  0 , boyer_moore       , "Boyer-Moore like optimization"                                                                 , false          );
 BARG(  0 , trace_labels      , "Add a print upon labels in generated code"                                                     , false          );
 BARG(  0 , no_training       , "Do not use training data"                                                                      , false          );
+BARG(  0 , never_ending      , "true if lack of data is not to be a failure reason"                                            , false          );
 SARG( 'o', output            , "Name of the output file"                                                                       , 0              );
 SARG( 's', style             , "Output style (HPIPE_BUFFER, BEG_END or C_STR)"                                                 , "HPIPE_BUFFER" );
 IARG(  0 , stop_char         , "stop char (notably for C_STR style)"                                                           , 0              );
