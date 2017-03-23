@@ -13,6 +13,7 @@ namespace Hpipe {
 */
 class CbStringPtr {
 public:
+    CbStringPtr();
     CbStringPtr( const CbStringPtr &bp );
     CbStringPtr( const CbString    &bs );
     CbStringPtr( const CbQueue     &bs );

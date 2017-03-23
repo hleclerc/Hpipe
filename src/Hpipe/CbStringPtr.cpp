@@ -3,6 +3,9 @@
 
 namespace Hpipe {
 
+CbStringPtr::CbStringPtr() : beg( 0 ), off( 0 ), end( 0 ) {
+}
+
 CbStringPtr::CbStringPtr( const CbStringPtr &bp ) : beg( bp.beg ), off( bp.off ), end( bp.end ) {
 }
 
