@@ -1,4 +1,5 @@
 #include "CmString.h"
+#include <iostream>
 
 namespace Hpipe {
 

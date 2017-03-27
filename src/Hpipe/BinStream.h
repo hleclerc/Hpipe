@@ -111,6 +111,10 @@ struct BinStream {
         return *this;
     }
 
+    BinStream &write_String( const void *val, size_t len ) {
+        return write_unsigned( len ).write_some( val, len );
+    }
+
     template<class T>
     BinStream &write_le( T val ) { // little endian
         for( PT i = 0; i < sizeof( val ); ++i, val >>= 8 )

@@ -1,7 +1,8 @@
 #pragma once
 
-#include "../Containers/EnableIf.h"
 #include "BinStream.h"
+#include "EnableIf.h"
+#include "Assert.h"
 #include <vector>
 
 namespace Hpipe {
@@ -14,66 +15,55 @@ struct BinStreamWithOffsets : BinStream<TB> {
     }
 
     void crunch() {
-        if ( offsets_to_int_to_reduce.size() == 0 )
+        if ( offsets.empty() )
             return;
 
         // get needed size for each int to reduce
         if ( only_positive_offsets ) {
-            std::vector<ST> sizeof_rems( offsets_to_int_to_reduce.size(), 0 ); // nb bytes to remove at each int_to_reduce position
-            for( PT i = offsets_to_int_to_reduce.size(); i--; ) {
-                TO  pos = offsets_to_int_to_reduce[ i ];                   // location of the offset data
-                #ifdef Hpipe_JS
-                PI8 *ptr = (PI8 *)this->buf->ptr( pos );                   // pointer to the offset data
-                TO   val;                                                  // offset value
-                memcpy( &val, ptr, sizeof( TO ) );
-                #else
+            std::vector<ST> sizeof_rems( offsets.size(), 0 ); // nb bytes to remove at each int_to_reduce position
+            for( PT i = offsets.size(); i--; ) {
+                TO  pos = offsets[ i ];                                    // location of the offset data
                 TO *ptr = reinterpret_cast<TO *>( this->buf->ptr( pos ) ); // pointer to the offset data
-                TO  val = *ptr;                                            // offset value
-                #endif
-                TO  lim = pos + sizeof( TO ) + val;                        // pointed position
+                TO  lim = *ptr;                                            // offset value
+                TO  off = lim - pos;                                       // offset value
 
                 // compute the new val
-                for( PT j = i + 1; j < offsets_to_int_to_reduce.size() and offsets_to_int_to_reduce[ j ] < lim; ++j )
-                    val -= sizeof_rems[ j ]; // to update offset value according to needed sizes after pos and before lim
-                sizeof_rems[ i ] = sizeof( TO ) - this->size_needed_for( val );
+                if ( off > 0 ) {
+                    for( PT j = i + 1; j < offsets.size() and offsets[ j ] < lim; ++j )
+                        off -= sizeof_rems[ j ]; // to update offset value according to needed sizes after pos and before lim
+                    for ( TO old_need = sizeof( TO ), base_off = off - old_need; ; ) {
+                        TO need = this->size_needed_for( off );
+                        if ( old_need == need )
+                            break;
+                        off = base_off + need;
+                        old_need = need;
+                    }
+                }
+                sizeof_rems[ i ] = sizeof( TO ) - this->size_needed_for( off );
 
                 // write the new val
-                CmQueue cm( ptr, ptr + 16 ); BinStream<CmQueue> bw( &cm ); bw << val;
+                CmQueue cm( ptr, ptr + 2 ); BinStream<CmQueue> bw( &cm ); bw << off;
             }
 
             // update the buffer, with updated offsets
-            for( PT i = offsets_to_int_to_reduce.size(); i--; )
-                offsets_to_int_to_reduce[ i ] += sizeof( TO ) - sizeof_rems[ i ]; // offset_to_... become a list of offset of data to be removed
-            this->buf->remove_chunks( offsets_to_int_to_reduce, sizeof_rems );
-            offsets_to_int_to_reduce.clear();
+            for( size_t i = 0; i < offsets.size(); ++i )
+                offsets[ i ] += sizeof( TO ) - sizeof_rems[ i ];
+            this->buf->remove_chunks( offsets, sizeof_rems );
+            offsets.clear();
         } else {
-            TODO;
+            HPIPE_TODO;
         }
     }
 
-    void beg_mark() {
-        offsets_to_active_beg_msg_length.push_back( TO( this->size() ) );
-        offsets_to_int_to_reduce.push_back( TO( this->size() ) );
-        this->buf->make_room( sizeof( TO ) );
+    ///
+    TO *new_offset() {
+        offsets.push_back( this->size() );
+        TO *res = reinterpret_cast<TO *>( this->buf->make_room( sizeof( TO ) ) );
+        *res = 0;
+        return res;
     }
 
-    void end_mark() {
-        TO o = offsets_to_active_beg_msg_length.back();
-        offsets_to_active_beg_msg_length.pop_back();
-        #ifdef Hpipe_JS
-        TO v = this->buf->size() - o - sizeof( TO );
-        memcpy( this->buf->ptr( o ), &v, sizeof( TO ) );
-        #else
-        *reinterpret_cast<TO *>( this->buf->ptr( o ) ) = this->buf->size() - o - sizeof( TO );
-        #endif
-    }
-
-    ST nb_open_marks() const {
-        return offsets_to_active_beg_msg_length.size();
-    }
-
-    std::vector<TO> offsets_to_active_beg_msg_length; ///< stack
-    std::vector<TO> offsets_to_int_to_reduce;
+    std::vector<TO> offsets;
 };
 
 

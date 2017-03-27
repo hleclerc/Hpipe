@@ -2,7 +2,7 @@
 
 #include "TypeConfig.h"
 // #include "WriteAs.h"
-#include "Print.h"
+#include <iostream>
 #include <limits>
 
 namespace Hpipe {

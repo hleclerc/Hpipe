@@ -9,7 +9,7 @@ namespace Hpipe {
 */
 class CmQueue {
 public:
-    CmQueue( void *beg, void *end, void *max ) : beg( (PI8 *)beg ), end( (PI8 *)beg ), max( (PI8 *)max ) {}
+    CmQueue( void *beg, void *end, void *max ) : beg( (PI8 *)beg ), end( (PI8 *)end ), max( (PI8 *)max ) {}
     CmQueue( void *beg, void *max ) : CmQueue( beg, beg, max ) {}
 
     // error
@@ -45,7 +45,7 @@ public:
 
     operator std::string() { return { beg, end }; }
 
-protected:
+// protected:
     PI8 *beg;
     PI8 *end;
     PI8 *max;
