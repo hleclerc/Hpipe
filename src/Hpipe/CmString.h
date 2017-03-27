@@ -28,6 +28,8 @@ public:
     // size
     bool       empty          () const { return end == beg; }
     ST         size           () const { return end - beg; }
+    const PI8 *get_beg        () const { return beg; }
+    const PI8 *get_end        () const { return end; }
 
     // readers. Beware there are no checks in these methods
     void       read_some      ( void *data, ST size ) { memcpy( data, beg, size ); beg += size; }
