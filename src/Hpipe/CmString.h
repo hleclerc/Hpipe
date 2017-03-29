@@ -48,6 +48,7 @@ public:
     void       write_to_stream( std::ostream &os ) const;
 
     bool       equal          ( const PI8 *ptr, ST len ) const { return end - beg == len and bcmp( beg, ptr, len ) == 0; }
+    bool       equal          ( const char *ptr ) const { return equal( (const PI8 *)ptr, strlen( ptr ) ); }
 
 protected:
     const PI8 *beg;
