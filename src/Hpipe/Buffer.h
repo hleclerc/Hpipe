@@ -43,7 +43,7 @@ public:
             return false;
 
         PT skipped = 0;
-        while ( nb_to_skip >= (*buf)->data + (*buf)->used - data ) {
+        while ( nb_to_skip >= PT( (*buf)->data + (*buf)->used - data ) ) {
             nb_to_skip -= (*buf)->data + (*buf)->used - data;
             const Buffer *old = *buf;
             skipped += (*buf)->used;
@@ -63,7 +63,7 @@ public:
             return false;
 
         PT skipped = 0;
-        while ( nb_to_skip >= (*buf)->data + (*buf)->used - data ) {
+        while ( nb_to_skip >= PT( (*buf)->data + (*buf)->used - data ) ) {
             nb_to_skip -= (*buf)->data + (*buf)->used - data;
             const Buffer *old = *buf;
             skipped += (*buf)->used;

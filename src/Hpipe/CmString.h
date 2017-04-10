@@ -20,6 +20,9 @@ public:
     void       clear          () { beg = 0; end = 0; }
 
     operator   std::string    () const { return { beg, end }; }
+    bool       operator==     ( const CmString &that ) const { return size() == that.size() && strncmp( (const char *)beg, (const char *)that.beg, size() ) == 0; }
+    bool       operator==     ( const std::string &that ) const { return size() == that.size() && strncmp( (const char *)beg, that.data(), size() ) == 0; }
+    bool       operator==     ( const char *that ) const { return size() == strlen( that ) && strncmp( (const char *)beg, that, size() ) == 0; }
     
     // error
     operator   bool           () const { return not error(); }
@@ -28,7 +31,7 @@ public:
 
     // size
     bool       empty          () const { return end == beg; }
-    ST         size           () const { return end - beg; }
+    size_t     size           () const { return end - beg; }
     const PI8 *get_beg        () const { return beg; }
     const PI8 *get_end        () const { return end; }
 
