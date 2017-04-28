@@ -13,6 +13,7 @@ class CmString {
 public:
     CmString                  ( const void *beg, const void *end ) : beg( (const PI8 *)beg ), end( (const PI8 *)end ) {}
     CmString                  ( const void *beg, size_t len ) : beg( (const PI8 *)beg ), end( (const PI8 *)beg + len ) {}
+    CmString                  ( const std::string &str ) : CmString( str.data(), str.size() ) {}
     CmString                  ( const char *beg ) : CmString( beg, strlen( beg ) ) {}
     CmString                  () : beg( 0 ), end( 0 ) {}
 
