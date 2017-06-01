@@ -235,7 +235,7 @@ Here is a comparison of the performance of a _basic_ js scanner, written with [r
 | with profile opt |     6.36135s     |     3.26959s     |     2.42014s     |    1.82015s    | 3.49x 1.80x **1.32x**  |
 
 
-re2c is not meant to work on interrupted streams, but the base techniques are roughly the same, hence the relevance of the test.
+re2c is not meant to work on interrupted streams, but the base techniques are roughly the same, hence the relevance of the test. By the way, languages like javascript are meant to be *easily* parsed, meaning that the most simple parsing codes should already been roughly optimized (i.e. this test is only about basic training, not about the other kinds of optimizations applicable for other kinds of input).
 
 ## Anticipation
 
