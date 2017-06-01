@@ -10,9 +10,12 @@ Besides, all other things being equal,
 * Hpipe is designed for performance. Hpipe supports training, anticipation and zero copy for most of the buffer styles, tries to read the data only once, etc...
 * Hpipe's syntax and semantic focuses on *security* and *clarity* (over compactness). For instance, user codes are executed only if the paths fully succeed (not the case for ragel), escape sequences are avoided when possible, etc...
 
+# Table of contents
+
 <!-- TOC -->
 
 - [What is Hpipe ?](#what-is-hpipe-)
+- [Table of contents](#table-of-contents)
 - [Show me an example](#show-me-an-example)
     - [What's the look of the produced code ?](#whats-the-look-of-the-produced-code-)
     - [Another simple example: reading floating point numbers](#another-simple-example-reading-floating-point-numbers)
